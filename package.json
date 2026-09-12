@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "engines": {
-    "node": "22.x"
+    "node": ">=22 <27"
   },
   "scripts": {
     "dev": "next dev --webpack -p 5001",
@@ -13,7 +13,7 @@
     "lint": "eslint . --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
     "test:workflow": "node --experimental-strip-types --test scripts/workflow.test.mjs",
-    "verify:mvp": "node scripts/verify-mvp.cjs"
+    "verify:mvp": "node scripts/verify-mvp.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

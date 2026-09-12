@@ -3,3 +3,6 @@ node_modules/
 *.tsbuildinfo
 .DS_Store
 .lark-*/
+draft_*/
+artifacts/
+playwright-report/

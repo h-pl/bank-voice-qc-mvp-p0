@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant S as 系统
+    participant Q as 质检主管
+    participant I as 质检员
+    participant A as 客服坐席
+    alt 自动发现
+        S->>Q: 创建候选风险并展示证据
+    else 人工抽查
+        Q->>S: 创建抽查任务并标记人工来源
+    end
+    alt 候选风险已有关闭依据
+        Q->>S: 区分误报或证据不足并说明理由
+    else 进入人工复核（含人工抽查）
+        opt 通话中需要提醒
+            Q->>A: 提醒并记录发送事件
+            A-->>Q: 已读及执行或异议反馈
+            Note over Q,A: 提醒异议不阻断通话结束后的复核
+            S->>S: 通话结束后封存证据并去重
+        end
+        alt 已有有效分派
+            S->>I: 按既定人员和期限进入复核
+        else 缺少有效分派
+            S-->>Q: 产生分派补全待办
+            Q->>S: 补全质检员、核查要求和期限
+            S->>I: 创建或更新复核任务
+        end
+        I->>Q: 提交意见与证据
+        alt 人工抽查在检查范围内未发现问题
+            Q->>S: 记录检查范围内未发现问题并结束抽查
+            Note over S,Q: 不创建虚假风险，不计入 AI 误报
+        else 需要确认风险结论
+            Q->>A: 确认并送达结论
+            opt 风险成立且需要整改
+                Q->>A: 创建关联整改任务
+            end
+        end
+    end

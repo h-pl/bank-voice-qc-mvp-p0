@@ -1,70 +1,491 @@
-'use client';
-import {useCallback,useEffect,useRef,useState,useSyncExternalStore,type FormEvent} from 'react';
-import {Icon,type IconName} from '../components/icon';
-import {Badge,Button,Empty,Modal} from '../components/ui';
-import {rules,ruleCategories} from '../lib/fixtures';
-import {officialIndicators} from '../lib/official-indicators';
-import {getSnapshot,getServerSnapshot,subscribe,updateState,resetState} from '../lib/store';
-import {actionNames,allowedActions,conclusionNames,isWorkOrder,nav,owner,roleNames,rolePeople,statusNames,toCsv,transition,visible,type Action,type Case,type Conclusion,type Role,type View} from '../lib/workflow';
-const pages:Record<View,{title:string;icon:IconName;description:string}>={calls:{title:'通话记录',icon:'headset',description:'查询通话与原音证据，追溯每一次质检判断。'},alerts:{title:'风险预警',icon:'bell',description:'先判断，再行动。自动检测结果由主管分诊，人工复核后形成结论。'},workorders:{title:'质检工单',icon:'package',description:'从证据到结论，在同一张工单中完成复核、反馈与异议处理。'},rules:{title:'规则说明',icon:'sliders',description:'查看项目固定规则与判断依据，保持每次复核口径一致。'}};
-const stamp=(s:string)=>new Date(s).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
-const clock=(n:number)=>`${Math.floor(n/60).toString().padStart(2,'0')}:${Math.floor(n%60).toString().padStart(2,'0')}`;
-const tone=(x:Case)=>x.status==='closed'||x.status==='dismissed'?'success':x.status==='appealed'?'danger':x.status==='notified'?'info':'warning';
-export default function Home(){
- const state=useSyncExternalStore(subscribe,getSnapshot,getServerSnapshot);
- const [toast,setToast]=useState('');const [mobile,setMobile]=useState(false);const [notifications,setNotifications]=useState(false);const [resetOpen,setResetOpen]=useState(false);const [focus,setFocus]=useState<string|null>(null);
- useEffect(()=>{if(toast){const timer=setTimeout(()=>setToast(''),3500);return()=>clearTimeout(timer);}},[toast]);
- const go=(view:View,id?:string)=>{if(!nav[state.role].includes(view))return;updateState({...state,view});window.history.replaceState(null,'',`?view=${view}`);setFocus(id??null);setMobile(false);setNotifications(false);};
- const changeRole=(role:Role)=>{const view=role==='supervisor'?'alerts':'workorders';updateState({...state,role,view});window.history.replaceState(null,'',`?view=${view}`);setFocus(null);setNotifications(false);};
- const items=state.cases.filter(x=>visible(x,state.role));const tasks=items.filter(x=>owner(x)===state.role);const current=pages[state.view];
- const onAction=(id:string,action:Action,input:Parameters<typeof transition>[3])=>{const current=getSnapshot();const item=current.cases.find(x=>x.id===id);if(!item)throw new Error('记录不存在');const next=transition(item,current.role,action,input);const saved=updateState({...current,cases:current.cases.map(x=>x.id===id?next:x)});setToast(saved?`${actionNames[action]}已完成`:'操作已更新；浏览器存储不可用，刷新后可能恢复示例。');};
- return <div className="app-shell">
- {mobile&&<button className="nav-backdrop" aria-label="关闭导航" onClick={()=>setMobile(false)}/>}
- <aside className={`sidebar ${mobile?'open':''}`}><div className="brand"><span className="brand-mark"><Icon name="headset" size={23}/></span><div><b>Moss Quality</b><small>银行呼入客服质检</small></div></div><div className="project"><span className="project-icon">银</span><div><b>银行客服中心</b><small>客户生产台</small></div><Badge>P0</Badge></div><p className="nav-label">质检作业</p><nav>{nav[state.role].map(v=><button key={v} className={state.view===v?'active':''} onClick={()=>go(v)} aria-current={state.view===v?'page':undefined}><Icon name={pages[v].icon}/><span>{pages[v].title}</span>{v==='workorders'&&tasks.filter(isWorkOrder).length>0&&<em>{tasks.filter(isWorkOrder).length}</em>}{v==='alerts'&&tasks.filter(x=>!isWorkOrder(x)&&x.status!=='dismissed').length>0&&<em>{tasks.filter(x=>!isWorkOrder(x)&&x.status!=='dismissed').length}</em>}</button>)}</nav><div className="sidebar-note"><span className="mini-label">MVP · P0</span><b>让每个结论都有依据</b><p>发现风险 → 人工复核<br/>主管确认 → 坐席反馈</p></div><div className="sidebar-bottom"><span className="avatar">{rolePeople[state.role].slice(-1)}</span><div><b>{rolePeople[state.role]}</b><small>{roleNames[state.role]}</small></div><button className="icon-button" aria-label="重置演示数据" title="重置演示数据" onClick={()=>setResetOpen(true)}><Icon name="refresh" size={16}/></button></div></aside>
- <div className="main"><header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-toggle" aria-label="打开导航" onClick={()=>setMobile(true)}><Icon name="menu"/></button><span>客户生产台</span><Icon name="chevron" size={13}/><b>{current.title}</b></div><div className="top-actions"><span className="demo-badge">高保真原型 · 示例数据</span><label className="role-select"><span>演示角色</span><select aria-label="演示角色" value={state.role} onChange={e=>changeRole(e.target.value as Role)}>{Object.entries(roleNames).map(([id,n])=><option key={id} value={id}>{n}</option>)}</select></label><button className="notification-button" aria-label={`我的待办 ${tasks.length}`} onClick={()=>setNotifications(!notifications)}><Icon name="bell"/>{tasks.length>0&&<span>{tasks.length}</span>}</button></div></header>
- <main><div className="page-heading"><div><p className="eyebrow">BANKING QUALITY · MVP-P0</p><h1>{current.title}</h1><p>{current.description}</p></div><div className="heading-meta"><span className="online-dot"/>当前：{roleNames[state.role]}</div></div>
- {state.view==='calls'&&<Calls key={state.role} items={items} onOpen={id=>go(isWorkOrder(state.cases.find(x=>x.id===id)!)?'workorders':state.role==='supervisor'?'alerts':'calls',id)} focus={focus} role={state.role}/>}
- {(state.view==='alerts'||state.view==='workorders')&&<Workspace key={`${state.role}-${state.view}`} items={items} role={state.role} view={state.view} focus={focus} onAction={onAction}/>}
- {state.view==='rules'&&<Rules/>}
- <footer className="page-footer"><span>Moss Quality · 核心质检闭环</span><span>3 个核心角色 · 4 个正式页面</span></footer></main></div>
- {notifications&&<div className="notification-panel"><header><div><b>我的待办</b><small>{tasks.length} 项等待你处理</small></div><button className="icon-button" aria-label="关闭待办" onClick={()=>setNotifications(false)}><Icon name="close"/></button></header>{tasks.length?tasks.map(x=><button className="notice" key={x.id} onClick={()=>go(isWorkOrder(x)?'workorders':'alerts',x.id)}><span className={`notice-dot ${tone(x)}`}/><div><b>{x.title}</b><p>{x.taskId||x.callId} · {statusNames[x.status]}</p></div><Icon name="chevron" size={15}/></button>):<Empty text="当前没有待办" hint="后续任务会在角色交接后出现在这里。"/>}</div>}
- {toast&&<div className="toast" role="status"><Icon name="check" size={17}/>{toast}</div>}
- {resetOpen&&<Modal title="恢复标准演示数据" onClose={()=>setResetOpen(false)}><p className="modal-copy">本次浏览器内的操作记录将恢复为初始示例，方便重新演示完整流程。</p><div className="modal-actions"><Button onClick={()=>setResetOpen(false)}>取消</Button><Button primary onClick={()=>{resetState();setFocus(null);setResetOpen(false);setToast('已恢复标准演示数据');}}>确认重置</Button></div></Modal>}
- </div>;
-}
-function Workspace({items,role,view,focus,onAction}:{items:Case[];role:Role;view:'alerts'|'workorders';focus:string|null;onAction:(id:string,a:Action,input:Parameters<typeof transition>[3])=>void}){
- const [query,setQuery]=useState('');const [filter,setFilter]=useState('all');const [selected,setSelected]=useState<string|null>(focus);const [modal,setModal]=useState<{item:Case;action:Action}|null>(null);
- const base=items.filter(x=>view==='workorders'?isWorkOrder(x):!isWorkOrder(x));
- const shown=base.filter(x=>(filter==='all'||filter==='mine'&&owner(x)===role||filter==='done'&&['closed','dismissed'].includes(x.status))&&`${x.title} ${x.callId} ${x.agent}`.includes(query.trim()));
- const active=shown.find(x=>x.id===(focus??selected))??shown.find(x=>x.id===selected)??shown[0];
- const [focusConsumed,setFocusConsumed]=useState<string|null>(null);const displayed=focus!==focusConsumed?active:(shown.find(x=>x.id===selected)??shown[0]);
- const close=useCallback(()=>setModal(null),[]);
- return <><div className="stats"><Stat title={view==='alerts'?'候选风险':'复核工单'} value={base.length} note="当前可见范围"/><Stat title="待我处理" value={base.filter(x=>owner(x)===role).length} note="按当前角色分配" highlight/><Stat title={view==='alerts'?'高风险':'待坐席反馈'} value={base.filter(x=>view==='alerts'?x.severity==='high'&&!['dismissed'].includes(x.status):x.status==='notified').length} note={view==='alerts'?'优先核对原音证据':'确认知悉或提出异议'}/><Stat title="已关闭" value={base.filter(x=>['closed','dismissed'].includes(x.status)).length} note="保留结论与历史"/></div>
- <div className="workspace"><section className="queue"><header><div><h2>{view==='alerts'?'风险队列':'工单队列'} <span>{base.length}</span></h2><small>先选择记录，再查看证据</small></div><Icon name="filter" size={16}/></header><div className="tabs">{[['all','全部'],['mine','待我处理'],['done','已关闭']].map(([id,name])=><button key={id} onClick={()=>{setFilter(id);setSelected(null);setFocusConsumed(focus);}} className={filter===id?'selected':''}>{name}</button>)}</div><label className="search"><Icon name="search" size={15}/><input aria-label="搜索队列" placeholder="搜索风险、编号或坐席" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button aria-label="清空搜索" onClick={()=>setQuery('')}><Icon name="close" size={12}/></button>}</label><div className="queue-list">{shown.map(x=><button key={x.id} className={`queue-item ${displayed?.id===x.id?'selected':''}`} onClick={()=>{setSelected(x.id);setFocusConsumed(focus);}}><div><span className={`severity-text ${x.severity}`}>{x.severity==='high'?'高风险':'中风险'}</span><small>{x.date.slice(-5)}</small></div><h3>{x.title}</h3><p>{x.agent} · {x.business}</p><div><Badge tone={tone(x)}>{statusNames[x.status]}</Badge><small className="mono">{x.id}</small></div></button>)}{!shown.length&&<Empty/>}</div><div className="queue-count">显示 {shown.length} / {base.length} 条</div></section>
- {displayed?<section className="case-detail" key={displayed.id}><header className="detail-heading"><div><div className="detail-id"><span className="mono">{displayed.taskId||displayed.callId}</span><Badge tone={displayed.live?'danger':'neutral'}>{displayed.live?'通话中':'通话已结束'}</Badge></div><h2>{displayed.title}</h2><p>{displayed.agent} · {displayed.agentId} <span>／</span> {displayed.business} <span>／</span> {displayed.customer}</p></div><Badge tone={tone(displayed)}>{statusNames[displayed.status]}</Badge></header><div className="detail-columns"><div className="evidence-column"><Evidence item={displayed}/><section className="card rules-evidence"><div className="section-title"><h3><Icon name="sliders" size={16}/>判断依据</h3><Badge>固定规则</Badge></div><h4>{rules.find(r=>r.id===displayed.ruleId)?.name}</h4><p>{rules.find(r=>r.id===displayed.ruleId)?.boundary}</p><div className="reference"><span>{displayed.ruleId} · v{rules.find(r=>r.id===displayed.ruleId)?.version}</span><b>{officialIndicators.find(i=>i.id===displayed.indicatorId)?.name}</b></div></section></div><aside className="action-column"><section className="card responsibility"><span className="mini-label">当前责任</span><div className="person"><span className="avatar">{owner(displayed)?rolePeople[owner(displayed)!].slice(-1):'✓'}</span><div><b>{owner(displayed)?rolePeople[owner(displayed)!]:'已完成'}</b><small>{owner(displayed)?roleNames[owner(displayed)!]:'记录只读保留'}</small></div></div>{displayed.dueAt&&displayed.status==='reviewing'&&<div className="due"><Icon name="clock" size={14}/>{stamp(displayed.dueAt)} 前完成复核</div>}<hr/><h3>下一步操作</h3><p>{owner(displayed)===role?'根据原音与业务依据完成当前处理。':owner(displayed)?`正在等待${roleNames[owner(displayed)!]}处理，你可以继续查看记录。`:'当前记录已关闭，原始证据与处理结果保留。'}</p><div className="action-buttons">{allowedActions(displayed,role).filter(a=>a!=='end_call').map((a,i)=><Button key={a} primary={i===0} onClick={()=>setModal({item:displayed,action:a})}>{actionNames[a]}</Button>)}{allowedActions(displayed,role).includes('end_call')&&<button className="text-button" onClick={()=>{try{onAction(displayed.id,'end_call',{note:''});}catch(e){window.dispatchEvent(new CustomEvent('noop'));console.error(e);}}}>模拟通话结束 <Icon name="arrow" size={13}/></button>}</div></section>
- {displayed.reviewNote&&<section className="card result"><span className="mini-label">{displayed.status==='decision'?'复核意见':'结论与说明'}</span><h3>{displayed.conclusion?conclusionNames[displayed.conclusion]:'待判断'}</h3><p>{displayed.reviewNote}</p></section>}
- <section className="card timeline"><div className="section-title"><h3>处理记录</h3><small>{displayed.events.length+1} 条</small></div><div className="timeline-item seed"><i/><b>初始示例快照</b><p>{displayed.source} · 自动结果作为候选风险，等待人工判断。</p><small>预置场景，不代表本次实际操作</small></div>{[...displayed.events].reverse().map(e=><div className="timeline-item" key={e.id}><i/><b>{e.action}</b><p>{e.note}</p><small>{e.actor} · {stamp(e.at)}</small></div>)}</section></aside></div></section>:<div className="detail-empty"><Empty text="没有可展示的记录" hint="切换分类后可继续查看其他记录。"/></div>}</div>
- {modal&&<ActionModal item={modal.item} action={modal.action} role={role} onClose={close} onSubmit={input=>{onAction(modal.item.id,modal.action,input);setModal(null);}}/>}</>;
-}
-function Stat({title,value,note,highlight=false}:{title:string;value:number;note:string;highlight?:boolean}){return <div className={`stat ${highlight?'highlight':''}`}><span>{title}</span><strong>{value.toString().padStart(2,'0')}</strong><small>{note}</small></div>;}
-function Evidence({item}:{item:Case}){
- const [playing,setPlaying]=useState(false);const [position,setPosition]=useState(item.transcript.find(x=>x.hit)?.at??0);
- useEffect(()=>{if(!playing)return;const timer=setInterval(()=>setPosition(p=>{if(p>=item.duration)return 0;return p+1;}),1000);return()=>clearInterval(timer);},[playing,item.duration]);
- const current=item.transcript.reduce((acc,s)=>position>=s.at?s.at:acc,0);
- return <section className="card evidence"><div className="section-title"><h3><Icon name="headset" size={17}/>通话证据</h3><small>双声道转写 · 示例</small></div><div className="player"><button aria-label={playing?'暂停转写演示':'播放转写演示'} onClick={()=>setPlaying(!playing)}><Icon name={playing?'pause':'play'} size={18}/></button><div className="player-main"><div className="waveform" aria-hidden="true">{Array.from({length:62},(_,i)=><i key={i} style={{height:`${12+(i*17%31)}px`,background:i/62<position/item.duration?'var(--accent)':undefined}}/>)}</div><input type="range" aria-label="证据时间定位" min="0" max={item.duration} value={position} onChange={e=>setPosition(Number(e.target.value))}/></div><span className="mono">{clock(position)}<small> / {clock(item.duration)}</small></span></div><div className="player-caption">点击话轮定位证据 · 播放为转写时间轴演示</div><div className="transcript">{item.transcript.map(s=><button key={s.at} className={`utterance ${s.hit?'hit':''} ${current===s.at?'current':''}`} onClick={()=>setPosition(s.at)}><span className={`speaker ${s.speaker}`}>{s.speaker==='agent'?'坐':'客'}</span><div><header><b>{s.speaker==='agent'?item.agent:'客户'}</b><time>{clock(s.at)}</time>{s.hit&&<em>命中片段</em>}</header><p>{s.text}</p></div></button>)}</div></section>;
-}
-function ActionModal({item,action,role,onClose,onSubmit}:{item:Case;action:Action;role:Role;onClose:()=>void;onSubmit:(input:Parameters<typeof transition>[3])=>void}){
- const [note,setNote]=useState('');const [conclusion,setConclusion]=useState<Conclusion>('risk');const [reason,setReason]=useState<'false_positive'|'insufficient'>('false_positive');const [due,setDue]=useState(()=>{const d=new Date(Date.now()+86400000);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);});const [error,setError]=useState('');
- const submit=(e:FormEvent)=>{e.preventDefault();try{onSubmit({note,conclusion,dueAt:due,closeReason:reason});}catch(err){setError(err instanceof Error?err.message:'操作失败');}};
- return <Modal title={actionNames[action]} onClose={onClose}><form onSubmit={submit} noValidate><div className="modal-context"><b>{item.title}</b><span>{item.taskId||item.callId} · {roleNames[role]}</span></div>{action==='assign'&&<div className="form-grid"><label>复核人员<input value="赵宁 · 质检员" readOnly/></label><label>复核期限<input type="datetime-local" value={due} onChange={e=>setDue(e.target.value)}/></label></div>}{action==='submit'&&<label className="field">复核结论<select aria-label="复核结论" value={conclusion} onChange={e=>setConclusion(e.target.value as Conclusion)}>{Object.entries(conclusionNames).map(([v,n])=><option key={v} value={v}>{n}</option>)}</select></label>}{action==='dismiss'&&<label className="field">关闭原因<select aria-label="关闭原因" value={reason} onChange={e=>setReason(e.target.value as typeof reason)}><option value="false_positive">已核实为误报</option><option value="insufficient">证据不足，结束当前预警</option></select></label>}{(action==='publish'||action==='maintain')&&<div className="form-notice">将保留“{item.conclusion?conclusionNames[item.conclusion]:'待确认'}”结论并通知坐席。P0 仅完成结果反馈，不自动下发处罚或复杂整改。</div>}{action==='remind'&&<div className="form-notice">提醒仅用于当前通话。通话结束后按默认质检员赵宁自动派发复核，不直接认定违规。</div>}<label className="field">{action==='appeal'?'异议理由与补充依据':'处理说明'}<textarea aria-label="处理说明" rows={4} value={note} onChange={e=>setNote(e.target.value)} placeholder="说明事实、原音时间点或下一步要求，至少 4 个字。"/></label>{error&&<p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><Button onClick={onClose}>取消</Button><Button primary type="submit">确认{actionNames[action]}</Button></div></form></Modal>;
-}
-function Calls({items,onOpen,focus,role}:{items:Case[];onOpen:(id:string)=>void;focus:string|null;role:Role}){
- const [query,setQuery]=useState('');const [business,setBusiness]=useState('all');const [page,setPage]=useState(1);const [size,setSize]=useState(5);const [detail,setDetail]=useState<string|null>(focus);const selected=items.find(x=>x.id===detail);const filtered=items.filter(x=>`${x.callId} ${x.agent} ${x.title}`.includes(query.trim())&&(business==='all'||x.business===business));const count=Math.max(1,Math.ceil(filtered.length/size));const current=Math.min(page,count);const shown=filtered.slice((current-1)*size,current*size);
- const close=useCallback(()=>setDetail(null),[]);
- const download=()=>{const a=document.createElement('a');const url=URL.createObjectURL(new Blob([toCsv(filtered)],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='质检通话记录.csv';a.click();URL.revokeObjectURL(url);};
- return <><section className="card call-panel"><div className="table-heading"><div><h2>通话清单 <span>{items.length}</span></h2><p>{role==='agent'?'仅展示本人通话':'通话、风险与人工结论可以相互追溯'}</p></div><Button icon="download" onClick={download}>导出当前筛选</Button></div><div className="toolbar"><label className="search"><Icon name="search" size={16}/><input aria-label="搜索通话" value={query} placeholder="搜索通话编号、坐席或风险" onChange={e=>{setQuery(e.target.value);setPage(1);}}/></label><select aria-label="业务筛选" value={business} onChange={e=>{setBusiness(e.target.value);setPage(1);}}><option value="all">全部业务</option>{[...new Set(items.map(x=>x.business))].map(x=><option key={x}>{x}</option>)}</select>{(query||business!=='all')&&<button className="text-button" onClick={()=>{setQuery('');setBusiness('all');setPage(1);}}>重置筛选</button>}</div><div className="table-scroll"><table><thead><tr><th>通话编号 / 时间</th><th>坐席 / 业务</th><th>质检发现</th><th>处理状态</th><th>通话时长</th><th>操作</th></tr></thead><tbody>{shown.map(x=><tr key={x.id}><td><b className="mono">{x.callId}</b><small>{x.date}</small></td><td><b>{x.agent}</b><small>{x.business}</small></td><td><span className={`severity-text ${x.severity}`}>{x.severity==='high'?'高风险':'中风险'}</span><p>{x.title}</p></td><td><Badge tone={tone(x)}>{statusNames[x.status]}</Badge></td><td className="mono">{clock(x.duration)}</td><td><button className="text-button" onClick={()=>setDetail(x.id)}>查看 <Icon name="chevron" size={13}/></button></td></tr>)}</tbody></table>{!shown.length&&<Empty/>}</div><div className="pagination"><span>共 {filtered.length} 条 · 第 {current} / {count} 页</span><div><select aria-label="每页条数" value={size} onChange={e=>{setSize(Number(e.target.value));setPage(1);}}>{[5,10,20].map(n=><option key={n} value={n}>{n} 条 / 页</option>)}</select><Button disabled={current===1} onClick={()=>setPage(current-1)}>上一页</Button><Button disabled={current===count} onClick={()=>setPage(current+1)}>下一页</Button></div></div></section>{selected&&<Modal title="通话详情" onClose={close}><div className="modal-call"><p>{selected.callId} · {selected.agent} · {selected.business}</p><Evidence item={selected}/><div className="modal-actions"><Button onClick={close}>关闭</Button>{(isWorkOrder(selected)||role==='supervisor')&&<Button primary onClick={()=>{close();onOpen(selected.id);}}>查看{isWorkOrder(selected)?'关联工单':'风险预警'}</Button>}</div></div></Modal>}</>;
-}
-function Rules(){
- const [id,setId]=useState(rules[0].id);const [catalog,setCatalog]=useState(false);const selected=rules.find(x=>x.id===id)!;
- return <><div className="rule-banner"><div><span className="mini-label">固定项目规则</span><h2>清楚边界，才能做出一致判断</h2><p>本版呈现 5 条代表规则。完整指标体系保持 16 项，其中 10 类适合配置规则。</p></div><Button icon="grid" onClick={()=>setCatalog(!catalog)}>{catalog?'收起指标目录':'查看 16 项指标'}</Button></div>{catalog&&<section className="card catalog"><div className="section-title"><h3>完整指标目录</h3><Badge>16 项 · 10 类规则</Badge></div><div className="indicator-grid">{officialIndicators.map(i=><div key={i.id}><b>{i.name}</b><span>{ruleCategories.includes(i.id)?'可配置规则':i.ruleRole==='底层能力'?'能力服务':'平台验收'}</span></div>)}</div><p>指标目录与本轮页面范围分开管理，未展示工程页面不代表删除对应指标。</p></section>}<div className="rules-layout"><section className="card rule-list"><div className="section-title"><h3>已交付规则</h3><small>5 条</small></div>{rules.map(r=><button className={r.id===id?'selected':''} key={r.id} onClick={()=>setId(r.id)}><div><b>{r.name}</b><span>{r.id} · v{r.version}</span></div><Icon name="chevron" size={16}/></button>)}</section><section className="card rule-detail"><div className="detail-id"><span className="mono">{selected.id}</span><Badge tone="success">已交付</Badge></div><h2>{selected.name}</h2><p className="rule-lead">{selected.boundary}</p><dl><div><dt>主指标</dt><dd>{officialIndicators.find(i=>i.id===selected.indicatorId)?.name}</dd></div><div><dt>适用业务</dt><dd>{selected.scope}</dd></div><div><dt>检测方式</dt><dd>{selected.method}</dd></div><div><dt>当前版本</dt><dd>v{selected.version}</dd></div></dl><div className="rule-evidence-note"><Icon name="file" size={19}/><div><b>复核时需要核对的证据</b><p>{selected.evidence}</p></div></div><p className="muted">P0 提供只读规则说明；参数审批、资源维护与新规则配置留待后续版本。</p></section></div></>;
+"use client";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { Icon, type IconName } from "../components/icon";
+import { Badge, Button, Empty, Modal } from "../components/ui";
+import { ActionForm } from "../components/action-form";
+import { Workspace, label, stateLabel, viewFor } from "../components/workspace";
+import { Strategy } from "../components/strategy";
+import { ReportPage } from "../components/report-page";
+import {
+  getSnapshot,
+  getServerSnapshot,
+  subscribe,
+  updateState,
+  resetState,
+} from "../lib/store";
+import {
+  apply,
+  canSee,
+  nav,
+  notices,
+  people,
+  person,
+  roleNames,
+  roleOf,
+  type Command,
+  type View,
+} from "../lib/workflow";
+const pages: Record<
+  View,
+  { title: string; icon: IconName; description: string; group: string }
+> = {
+  alerts: {
+    title: "风险预警",
+    icon: "bell",
+    description: "从自动候选到人工判断，优先处理真正需要关注的风险。",
+    group: "质检作业",
+  },
+  workorders: {
+    title: "质检工单",
+    icon: "package",
+    description: "围绕证据逐项核查，让每个结论都有依据。",
+    group: "质检作业",
+  },
+  improvement: {
+    title: "申诉与整改",
+    icon: "shield",
+    description: "回应结论争议，跟进整改效果，完成质量改进闭环。",
+    group: "质检作业",
+  },
+  calls: {
+    title: "通话记录",
+    icon: "headset",
+    description: "查询通话、回听原音，追溯检测结果与后续处理。",
+    group: "质检作业",
+  },
+  rules: {
+    title: "质检规则",
+    icon: "sliders",
+    description: "核对判断口径，维护开放参数与规则引用版本。",
+    group: "策略与资源",
+  },
+  resources: {
+    title: "业务资源",
+    icon: "database",
+    description: "维护词库、业务知识与 SOP，为人工判断提供统一依据。",
+    group: "策略与资源",
+  },
+  reports: {
+    title: "质量报表",
+    icon: "chart",
+    description: "从通话、问题与改进结果，了解当前服务质量。",
+    group: "分析",
+  },
+};
+const subscribeReady = () => () => {};
+export default function Home() {
+  const ready = useSyncExternalStore(
+    subscribeReady,
+    () => true,
+    () => false,
+  );
+  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot),
+    role = roleOf(state),
+    personNow = person(state.identity),
+    allowedNav = nav[role];
+  const [mobile, setMobile] = useState(false),
+    [noticeOpen, setNoticeOpen] = useState(false),
+    [noticeTab, setNoticeTab] = useState("todo"),
+    [resetOpen, setResetOpen] = useState(false),
+    [toast, setToast] = useState(""),
+    [focus, setFocus] = useState<string>(),
+    [form, setForm] = useState<{ id: string; action: string }>();
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(""), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+  const go = (view: View, id?: string) => {
+    const s = getSnapshot();
+    if (!nav[roleOf(s)].includes(view) || (id && !canSee(s, id))) {
+      setToast("该记录不在当前身份授权范围内");
+      return;
+    }
+    updateState({ ...s, view });
+    setFocus(id);
+    setMobile(false);
+    setNoticeOpen(false);
+    window.history.replaceState(
+      null,
+      "",
+      `?view=${view}${id ? `&id=${encodeURIComponent(id)}` : ""}`,
+    );
+  };
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search),
+      id = params.get("id");
+    if (id && canSee(getSnapshot(), id)) {
+      queueMicrotask(() => setFocus(id));
+    }
+    const pop = () => {
+      const p = new URLSearchParams(location.search),
+        s = getSnapshot(),
+        view = p.get("view") as View;
+      const valid = nav[roleOf(s)].includes(view) ? view : nav[roleOf(s)][0];
+      updateState({ ...s, view: valid });
+      setFocus(
+        p.get("id") && canSee(s, p.get("id")!) ? p.get("id")! : undefined,
+      );
+    };
+    window.addEventListener("popstate", pop);
+    return () => window.removeEventListener("popstate", pop);
+  }, []);
+  const open = (id: string) => {
+    if (!id) {
+      setFocus(undefined);
+      history.replaceState(null, "", `?view=${state.view}`);
+      return;
+    }
+    go(viewFor(state, id), id);
+  };
+  const changeIdentity = (identity: string) => {
+    const s = getSnapshot(),
+      view = nav[person(identity).role][0];
+    updateState({ ...s, identity, view });
+    setForm(undefined);
+    setFocus(undefined);
+    setNoticeOpen(false);
+    history.replaceState(null, "", `?view=${view}`);
+  };
+  const submit = (command: Command) => {
+    const result = apply(getSnapshot(), command);
+    const saved = updateState(result);
+    setToast(
+      saved
+        ? "已保存，相关事项与待办已同步"
+        : "本次已更新，但浏览器存储不可用，刷新可能恢复示例",
+    );
+  };
+  const tasks = notices(state),
+    current = pages[state.view],
+    events = state.logs
+      .filter((l) => canSee(state, l.target))
+      .slice()
+      .reverse(),
+    readEvents = state.readEvents?.[state.identity] ?? [];
+  const readEvent = (id: string) => {
+    const s = getSnapshot();
+    updateState({
+      ...s,
+      readEvents: {
+        ...s.readEvents,
+        [s.identity]: [...new Set([...(s.readEvents?.[s.identity] ?? []), id])],
+      },
+    });
+  };
+  if (!ready)
+    return (
+      <div className="loading-state" role="status">
+        <span className="brand-mark">
+          <Icon name="headset" />
+        </span>
+        <b>Moss Quality</b>
+        <p>正在恢复当前身份与演示进度…</p>
+      </div>
+    );
+  return (
+    <div className="app-shell">
+      {mobile && (
+        <button
+          className="nav-backdrop"
+          aria-label="关闭导航"
+          onClick={() => setMobile(false)}
+        />
+      )}
+      <aside className={`sidebar ${mobile ? "open" : ""}`}>
+        <div className="brand">
+          <span className="brand-mark">
+            <Icon name="headset" size={23} />
+          </span>
+          <div>
+            <b>Moss Quality</b>
+            <small>银行呼入客服质检</small>
+          </div>
+        </div>
+        <div className="project">
+          <span className="project-icon">银</span>
+          <div>
+            <b>银行客服中心</b>
+            <small>客户生产台</small>
+          </div>
+          <Badge>P0</Badge>
+        </div>
+        <nav aria-label="主导航">
+          {["质检作业", "策略与资源", "分析"].map(
+            (group) =>
+              allowedNav.some((v) => pages[v].group === group) && (
+                <div key={group}>
+                  <p className="nav-label">{group}</p>
+                  {allowedNav
+                    .filter((v) => pages[v].group === group)
+                    .map((v) => (
+                      <button
+                        key={v}
+                        className={state.view === v ? "active" : ""}
+                        onClick={() => go(v)}
+                        aria-current={state.view === v ? "page" : undefined}
+                      >
+                        <Icon name={pages[v].icon} />
+                        <span>{pages[v].title}</span>
+                        {["alerts", "workorders", "improvement"].includes(v) &&
+                          tasks.filter((x) => viewFor(state, x.id) === v)
+                            .length > 0 && (
+                            <em>
+                              {
+                                tasks.filter((x) => viewFor(state, x.id) === v)
+                                  .length
+                              }
+                            </em>
+                          )}
+                      </button>
+                    ))}
+                </div>
+              ),
+          )}
+        </nav>
+        <div className="sidebar-note">
+          <span className="mini-label">MVP · P0</span>
+          <b>让每个结论都有依据</b>
+          <p>
+            发现风险 → 人工复核
+            <br />
+            申诉反馈 → 整改验收
+          </p>
+        </div>
+        <div className="sidebar-bottom">
+          <span className="avatar">{personNow.name.slice(-1)}</span>
+          <div>
+            <b>{personNow.name}</b>
+            <small>{roleNames[role]}</small>
+          </div>
+          <button
+            className="icon-button"
+            aria-label="重置演示数据"
+            onClick={() => setResetOpen(true)}
+          >
+            <Icon name="refresh" size={16} />
+          </button>
+        </div>
+      </aside>
+      <div className="main">
+        <header className="topbar">
+          <div className="breadcrumb">
+            <button
+              className="icon-button mobile-toggle"
+              aria-label="打开导航"
+              onClick={() => setMobile(true)}
+            >
+              <Icon name="menu" />
+            </button>
+            <span>客户生产台</span>
+            <Icon name="chevron" size={13} />
+            <b>{current.title}</b>
+          </div>
+          <div className="top-actions">
+            <span className="demo-badge">高保真原型 · 示例数据</span>
+            <label className="role-select">
+              <span>演示身份</span>
+              <select
+                aria-label="演示身份"
+                value={state.identity}
+                onChange={(e) => changeIdentity(e.target.value)}
+              >
+                {people.map((p) => (
+                  <option value={p.id} key={p.id}>
+                    {p.name} · {roleNames[p.role]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="notification-button"
+              aria-label={`我的待办 ${tasks.length}`}
+              onClick={() => setNoticeOpen(!noticeOpen)}
+            >
+              <Icon name="bell" />
+              {tasks.length > 0 && <span>{tasks.length}</span>}
+            </button>
+          </div>
+        </header>
+        <main>
+          <div className="page-heading">
+            <div>
+              <p className="eyebrow">BANKING QUALITY · MVP-P0</p>
+              <h1>{current.title}</h1>
+              <p>{current.description}</p>
+            </div>
+            <div className="heading-meta">
+              <span className="online-dot" />
+              当前：{roleNames[role]}
+            </div>
+          </div>
+          {allowedNav.map((v) => (
+            <div key={`${state.identity}-${v}`} hidden={state.view !== v}>
+              {["alerts", "workorders", "improvement", "calls"].includes(v) ? (
+                <Workspace
+                  state={state}
+                  view={v}
+                  focus={state.view === v ? focus : undefined}
+                  onOpen={open}
+                  onAction={(id, action) => setForm({ id, action })}
+                />
+              ) : v === "rules" || v === "resources" ? (
+                <Strategy
+                  state={state}
+                  view={v}
+                  focus={state.view === v ? focus : undefined}
+                  onAction={(id, action) => setForm({ id, action })}
+                />
+              ) : (
+                <ReportPage state={state} onOpen={open} />
+              )}
+            </div>
+          ))}
+          <footer className="page-footer">
+            <span>Moss Quality · 核心质检闭环</span>
+            <span>3 个核心角色 · 7 个业务模块 · v0.1.0</span>
+          </footer>
+        </main>
+      </div>
+      {noticeOpen && (
+        <>
+          <button
+            className="notice-backdrop"
+            aria-label="关闭待办浮层"
+            onClick={() => setNoticeOpen(false)}
+          />
+          <div className="notification-panel">
+            <header>
+              <div>
+                <b>我的待办</b>
+                <small>{tasks.length} 项等待你处理</small>
+              </div>
+              <button
+                className="icon-button"
+                aria-label="关闭待办"
+                onClick={() => setNoticeOpen(false)}
+              >
+                <Icon name="close" />
+              </button>
+            </header>
+            <div className="tabs">
+              <button
+                className={noticeTab === "todo" ? "active" : ""}
+                onClick={() => setNoticeTab("todo")}
+              >
+                我的待办
+              </button>
+              <button
+                className={noticeTab === "events" ? "active" : ""}
+                onClick={() => setNoticeTab("events")}
+              >
+                事件通知{" "}
+                {events.filter((e) => !readEvents.includes(e.id)).length}
+              </button>
+            </div>
+            {noticeTab === "events" ? (
+              events.length ? (
+                events.map((e) => (
+                  <div className="event-notice" key={e.id}>
+                    <button
+                      className="notice"
+                      onClick={() => {
+                        readEvent(e.id);
+                        open(e.target);
+                      }}
+                    >
+                      <span
+                        className={
+                          readEvents.includes(e.id)
+                            ? "notice-read"
+                            : "notice-dot"
+                        }
+                      />
+                      <div>
+                        <b>{e.action}</b>
+                        <p>{e.note}</p>
+                        <small>
+                          {new Date(e.at).toLocaleString("zh-CN")} · {e.target}
+                        </small>
+                      </div>
+                    </button>
+                    {!readEvents.includes(e.id) && (
+                      <button
+                        className="event-read text-button"
+                        onClick={() => readEvent(e.id)}
+                      >
+                        标记已读
+                      </button>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <Empty text="暂无事件通知" />
+              )
+            ) : tasks.length ? (
+              tasks.map((x) => (
+                <button
+                  className="notice"
+                  key={x.id}
+                  onClick={() => open(x.id)}
+                >
+                  <span className="notice-dot" />
+                  <div>
+                    <b>{label(x)}</b>
+                    <p>
+                      {x.id} · {stateLabel(x)}
+                    </p>
+                  </div>
+                  <Icon name="chevron" size={15} />
+                </button>
+              ))
+            ) : (
+              <Empty
+                text="当前没有待办"
+                hint="角色交接后的新任务会出现在这里。"
+              />
+            )}
+          </div>
+        </>
+      )}
+      {toast && (
+        <div className="toast" role="status">
+          <Icon name="check" size={17} />
+          {toast}
+        </div>
+      )}
+      {form && (
+        <ActionForm
+          key={`${form.id}-${form.action}`}
+          state={state}
+          id={form.id}
+          action={form.action}
+          onClose={() => setForm(undefined)}
+          onSubmit={submit}
+        />
+      )}
+      {resetOpen && (
+        <Modal title="恢复标准演示数据" onClose={() => setResetOpen(false)}>
+          <p className="modal-copy">
+            将清除本浏览器中的本轮演示进度，并按当前时间恢复标准示例。此操作可用于重新演示完整流程。
+          </p>
+          <div className="modal-actions">
+            <Button onClick={() => setResetOpen(false)}>取消</Button>
+            <Button
+              primary
+              onClick={() => {
+                resetState();
+                setFocus(undefined);
+                setResetOpen(false);
+                setToast("已恢复标准演示数据");
+              }}
+            >
+              确认重置
+            </Button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
 }

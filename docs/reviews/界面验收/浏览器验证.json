@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-12",
+  "mode": "next start production",
+  "port": 5001,
+  "pages": [
+    "风险预警",
+    "质检工单",
+    "申诉与整改",
+    "通话记录",
+    "质检规则",
+    "业务资源",
+    "质量报表"
+  ],
+  "pageErrors": [],
+  "audioEvidencePositionSeconds": 10.061,
+  "mobileWidth": 390,
+  "mobileOverflow": 0,
+  "devToolsVisible": false,
+  "source": "本轮 Playwright 实际 UI 操作与截图"
+}
