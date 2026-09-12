@@ -1,0 +1,32 @@
+{
+  "name": "bank-qc-mvp-p0",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "next dev --webpack -p 5001",
+    "build": "next build --webpack",
+    "start": "next start -p 5001",
+    "lint": "eslint . --ignore-pattern .next",
+    "typecheck": "tsc --noEmit",
+    "test:workflow": "node --experimental-strip-types --test scripts/workflow.test.mjs",
+    "verify:mvp": "node scripts/verify-mvp.cjs"
+  },
+  "dependencies": {
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "typescript": "5.9.3"
+  },
+  "type": "module"
+}
