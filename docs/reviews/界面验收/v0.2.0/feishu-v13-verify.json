@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "identity": "user",
+  "data": {
+    "document": {
+      "content": "<fragment mode=\"keyword\" keyword=\"V1.3|当前七模块|38 项工作流|申诉核查补证\"><p id=\"doxcnhy20EeOjrYQreo036JQ9qd\">版本：方案 V1.3｜日期：2026-09-13｜状态：D01—D05 延续；按用户“按照清单执行修改”落实 R01—R16，C01—C03 采用清单推荐方案。代码版本 v0.2.0，验证见 reviews/版本迭代与验收-v0.2.0.md。</p><h2 id=\"doxcnWshI2wzpiXocC2iarCQ6Nc\">V1.3 流程与交互增补（2026-09-13 现行要求）</h2><p id=\"doxcnUSbsP4TcXftRLe5IMbdb5c\">缺证据时质检员直接申请补证并保留草稿，主管协调后回原复核；申诉核查补证由本人坐席执行，先回主管，再回原质检员。通话中可保存草稿，结束后才正式提交与送达结论。</p><pre id=\"doxcnPB1xLNfU0hCiSYUNVuiqzb\" caption=\"&#xA;\" lang=\"text\"><code>质检-mvp-p0/<br/>├─ app/                         页面入口、布局、正式样式<br/>├─ components/                  队列证据、动作表单、规则资源、报表与共享 UI<br/>├─ lib/<br/>│  ├─ workflow.ts               对象、权限、状态迁移、历史与通知<br/>│  ├─ fixtures.ts               通话、风险、规则、资源和场景种子<br/>│  ├─ store.ts                  浏览器持久化、身份恢复和统一时钟<br/>│  ├─ reports.ts                统计口径、下钻和 CSV<br/>│  └─ official-indicators.ts    完整 16 项目录<br/>├─ public/audio/                本地合成演示录音<br/>├─ scripts/                     38 项工作流回归与 MVP 验证<br/>└─ docs/reviews/<br/>   ├─ README.md                 唯一核心阅读入口<br/>   ├─ PRD-银行语音质检-MVP-P0.md<br/>   ├─ 实现与验收记录-MVP-P0.md<br/>   ├─ 方案交付记录.md<br/>   ├─ 合成音频说明.md<br/>   ├─ 流程图/                    三份当前图源及飞书预览<br/>   ├─ 界面验收/                  桌面、手机、报表截图<br/>   └─ sources/                  核心来源快照<br/></code></pre><p id=\"doxcn2o0OCeVxOOfXYXy9rxh1Jc\">当前七模块原型运行于 5001，本轮发布分支 codex/mvp-p0-v0.2.0，目标标签 v0.2.0-mvp-p0；旧标签保留。验证包括类型检查、lint、生产构建、38 项业务回归与浏览器走查，发布结果见版本迭代与验收-v0.2.0.md。原项目与历史测试记录不作为本轮通过依据。</p></fragment>",
+      "document_id": "JJiCdLFFbotAvgxXr7rcsdmDnwe",
+      "revision_id": 95
+    }
+  },
+  "_notice": {
+    "update": {
+      "command": "lark-cli update",
+      "current": "1.0.94",
+      "latest": "1.0.95",
+      "message": "lark-cli 1.0.95 available, current 1.0.94, run: lark-cli update"
+    }
+  }
+}

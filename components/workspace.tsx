@@ -1,10 +1,16 @@
 "use client";
 import { useRef, useState } from "react";
+import { localDate } from "../lib/reports";
 import { useDemoClock } from "../lib/store";
 import { Badge, Button, Empty } from "./ui";
 import { Icon } from "./icon";
 import {
   actions,
+  isTodo,
+  primaryAction,
+  people,
+  activeAppeal,
+  type Conclusion,
   actionNames,
   canSee,
   canSeeCall,
@@ -27,6 +33,7 @@ import {
 export const stamp = (s?: string) =>
   s
     ? new Date(s).toLocaleString("zh-CN", {
+        timeZone: "Asia/Shanghai",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
@@ -55,6 +62,9 @@ export const label = (e: Entity) =>
               ? e.business
               : "申诉核查";
 export const stateLabel = (e: Entity) =>
+  "executor" in e ? ({pending:"待补充",submitted:"待核对补件",done:"补件已完成"}[e.status]) :
+  "standardVersion" in e && e.status === "pending" ? "待坐席接收" :
+  "findingIds" in e && e.evidenceRequest ? "待主管协调补证" :
   "batches" in e
     ? detection(e)
     : "status" in e
@@ -106,7 +116,10 @@ export function Workspace({
   onOpen: (id: string) => void;
   onAction: (id: string, action: string) => void;
 }) {
-  const [tab, setTab] = useState("all"),
+  const [tab, setTab] = useState(view === "calls" ? "all" : "mine"),
+    [kind,setKind] = useState(state.appeals.some(a=>isTodo(state,a)) ? "appeal" : "remedy"),
+    [startDate,setStartDate] = useState(""), [endDate,setEndDate] = useState(""),
+    [agent,setAgent] = useState(""), [group,setGroup] = useState(""), [execution,setExecution] = useState(""),
     [search, setSearch] = useState(""),
     [business, setBusiness] = useState(""),
     [page, setPage] = useState(1),
@@ -122,73 +135,33 @@ export function Workspace({
         : view === "workorders"
           ? role === "agent"
             ? state.findings.filter((f) => !!latest(f))
-            : state.reviews
-          : [...state.appeals, ...state.remedies, ...state.supplements]
+            : [...state.reviews,...state.findings.filter(f=>isTodo(state,f) && f.status!=="review")]
+          : [...state.appeals, ...state.remedies]
   ).filter((e) => canSee(state, e.id));
-  const tabs =
-    view === "alerts"
-      ? [
-          ["all", "全部候选"],
-          ["candidate", "待分诊"],
-          ["reminded", "通话中提醒"],
-          ["supplement", "待补材料"],
-          ["review", "复核中"],
-          ["closed", "已关闭"],
-        ]
-      : view === "improvement"
-        ? [
-            ["all", "全部事项"],
-            ["mine", "我的待办"],
-            ["appeal", "申诉"],
-            ["remedy", "整改"],
-            ["material", "补件"],
-          ]
-        : view === "workorders"
-          ? [
-              ["all", role === "agent" ? "已送达结果" : "全部工单"],
-              ["mine", "我的待办"],
-              ["pending", "待处理"],
-              ["supervisor", "待主管"],
-              ["done", "已办结"],
-            ]
-          : [
-              ["all", "全部通话"],
-              ["live", "通话中"],
-              ["failed", "处理异常"],
-              ["sample", "授权样例"],
-            ];
-  const match = (e: Entity, key: string) =>
-    key === "all"
-      ? true
-      : key === "mine"
-        ? currentOwner(state, e) === state.identity
-        : key === "appeal"
-          ? state.appeals.some((x) => x.id === e.id)
-          : key === "remedy"
-            ? "standardVersion" in e
-            : key === "material"
-              ? "executor" in e
-              : key === "live"
-                ? "batches" in e && !e.endedAt
-                : key === "failed"
-                  ? "batches" in e &&
-                    ["部分失败", "失败"].includes(detection(e))
-                  : key === "sample"
-                    ? "batches" in e && e.sample
-                    : "status" in e &&
-                      (e.status === key ||
-                        (key === "closed" && e.status === "delivered") ||
-                        (key === "pending" && e.status === "working"));
-  const searched = all.filter((e) => {
+  const category = all.filter(e=>view!=="improvement" || (kind === "appeal" ? state.appeals.some(a=>a.id===e.id) : "standardVersion" in e));
+  const tabs = view === "alerts" ? [["mine","待分诊 / 待我跟进"],["all","全部候选"],["review","已转复核"],["closed","已关闭"]]
+    : view === "improvement" ? [["mine","需我处理"],["active","进行中"],["done","已结束"],["all","全部"]]
+    : view === "workorders" ? role === "agent" ? [["mine","待知悉"],["all","全部结果"]] : [["mine","我的待办"],["active","进行中"],["done","已完成"],["all","全部工单"]]
+    : [["all","全部通话"],["live","通话中"],["failed","处理异常"],["sample","授权样例"]];
+  const done = (e:Entity) => "status" in e && ["done","cancelled","withdrawn","rejected","terminated","closed","delivered"].includes(e.status);
+  const match = (e:Entity,key:string) => key === "all" ? true : key === "mine" ? isTodo(state,e) : key === "active" ? !done(e) : key === "done" ? done(e) : key === "live" ? "batches" in e && !e.endedAt : key === "failed" ? "batches" in e && detection(e).includes("失败") : key === "sample" ? "batches" in e && e.sample : "status" in e && (e.status===key || key === "closed" && e.status === "delivered");
+  const searched = category.filter((e) => {
     const c = callFor(state, e.id);
     return (
       (!business || c?.business === business) &&
-      `${e.id} ${label(e)} ${c ? person(c.agentId)?.name : ""}`
+      (!agent || c?.agentId===agent) && (!group || c?.group===group) &&
+      (!execution || c && detection(c)===execution) &&
+      (!startDate || !!c && localDate(c.endedAt ?? c.startedAt)>=startDate) &&
+      (!endDate || !!c && localDate(c.endedAt ?? c.startedAt)<=endDate) &&
+      `${e.id} ${label(e)} ${c?.id ?? ""} ${c ? person(c.agentId)?.name : ""} ${state.findings.filter(f=>f.callId===c?.id && canSee(state,f.id)).map(f=>f.id).join(" ")} ${state.reviews.filter(r=>r.callId===c?.id && canSee(state,r.id)).map(r=>r.id).join(" ")}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
   });
-  const filtered = searched.filter((e) => match(e, tab)),
+  const filtered = searched.filter((e) => match(e, tab)).sort((a,b)=>{
+    const rank=(e:Entity)=> isTodo(state,e) ? ("dueAt" in e && Date.parse(e.dueAt)<now ? 0 : "severity" in e && e.severity==="high" ? 1 : 2) : 3;
+    return rank(a)-rank(b) || ("dueAt" in a && "dueAt" in b ? Date.parse(a.dueAt)-Date.parse(b.dueAt) : 0);
+  }),
     currentPage = Math.min(
       page,
       Math.max(1, Math.ceil(filtered.length / size)),
@@ -226,10 +199,10 @@ export function Workspace({
           </strong>
         </div>
         <div>
-          <span>等待我处理</span>
+          <span>{role === "agent" && view === "workorders" ? "待知悉" : "需我处理"}</span>
           <strong>
             {
-              all.filter((e) => currentOwner(state, e) === state.identity)
+              all.filter((e) => isTodo(state,e))
                 .length
             }
             <small> 项</small>
@@ -261,6 +234,7 @@ export function Workspace({
         </div>
       </div>
       <div className="panel work-panel">
+        {view === "improvement" && <div className="tabs business-tabs" role="tablist" aria-label="业务类型">{[["appeal","申诉"],["remedy","整改"]].map(([key,name])=><button key={key} role="tab" aria-selected={kind===key} className={kind===key?"active":""} onClick={()=>{setKind(key);setPage(1);onOpen("");}}>{name}<span>{all.filter(e=>(key==="appeal" ? state.appeals.some(a=>a.id===e.id):"standardVersion" in e) && isTodo(state,e)).length} 待办</span></button>)}</div>}
         <div className="tabs" role="tablist" aria-label="记录分类">
           {tabs.map(([key, name]) => (
             <button
@@ -307,6 +281,13 @@ export function Workspace({
               <option key={x}>{x}</option>
             ))}
           </select>
+          {view === "calls" && <>
+            <label>开始日期<input aria-label="通话开始日期" type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setPage(1);onOpen("");}}/></label>
+            <label>结束日期<input aria-label="通话结束日期" type="date" value={endDate} onChange={e=>{setEndDate(e.target.value);setPage(1);onOpen("");}}/></label>
+            <select aria-label="通话坐席" value={agent} onChange={e=>{setAgent(e.target.value);setPage(1);onOpen("");}}><option value="">全部坐席</option>{people.filter(p=>p.role==="agent" && (role!=="agent" || p.id===state.identity)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+            <details className="advanced-filters"><summary>更多筛选{group || execution ? "（已生效）":""}</summary><select aria-label="通话班组" value={group} onChange={e=>{setGroup(e.target.value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</select><select aria-label="检测状态" value={execution} onChange={e=>{setExecution(e.target.value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</select></details>
+          </>}
+          {(search || business || startDate || endDate || agent || group || execution) && <Button onClick={()=>{setSearch("");setBusiness("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>清除筛选</Button>}
           <span className="filter-total">共 {filtered.length} 条</span>
           <Button
             icon="download"
@@ -321,7 +302,8 @@ export function Workspace({
                     "坐席",
                     "阶段",
                     "责任人",
-                    "有效期限",
+                    "有效期限（北京时间）",
+                    "期限变更记录",
                   ],
                   ...filtered.map((e) => {
                     const c = callFor(state, e.id);
@@ -333,7 +315,8 @@ export function Workspace({
                       c ? person(c.agentId)?.name : "",
                       stateLabel(e),
                       person(currentOwner(state, e))?.name ?? "",
-                      "dueAt" in e ? e.dueAt : "",
+                      "dueAt" in e ? stamp(e.dueAt) : "",
+                      e.deadlineChanges?.map(h=>`${stamp(h.at)} ${stamp(h.from)} → ${stamp(h.to)} ${h.reason}`).join("；") ?? "",
                     ];
                   }),
                 ]),
@@ -435,6 +418,7 @@ export function Workspace({
             {selected && (
               <div className="call-detail">
                 <Detail
+                  key={selected.id}
                   state={state}
                   item={selected}
                   onOpen={onOpen}
@@ -509,6 +493,7 @@ export function Workspace({
               <section className="detail">
                 {selected ? (
                   <Detail
+                    key={selected.id}
                     state={state}
                     item={selected}
                     onOpen={onOpen}
@@ -599,7 +584,9 @@ export function Detail({
 }) {
   const [tab, setTab] = useState("evidence");
   const call = callFor(state, item.id),
-    allowed = actions(state, item.id).filter((a) => a !== "sample_calls");
+    allowed = actions(state, item.id).filter((a) => !["sample_calls","accept_appeal","save_review"].includes(a));
+  const mainAction = primaryAction(state,item.id);
+  const supplements = state.supplements.filter(sp=>sp.target===item.id && canSee(state,sp.id));
   const owner = person(currentOwner(state, item));
   const associated = call
     ? state.findings.filter((f) => f.callId === call.id && canSee(state, f.id))
@@ -711,6 +698,10 @@ export function Detail({
           {item.pause.wasOverdue ? "暂停前已逾期，历史标记保留。" : ""}
         </div>
       )}
+      {"findingIds" in item && item.evidenceRequest && <div className="callout"><b>补证申请 · 待主管协调</b><p>{item.evidenceRequest.note}</p></div>}
+      {primary && activeAppeal(state,primary.id) && <div className="case-links"><span>本问题申诉处理中，新证据回当前申诉。</span><Button onClick={()=>onOpen(activeAppeal(state,primary.id)!.id)}>查看当前申诉</Button></div>}
+      <div className="case-links"><span>本问题关联</span>{related.filter(r=>!("executor" in r) && ("findingId" in r ? r.findingId===primary?.id : "findingIds" in r && r.findingIds.includes(primary?.id??""))).map(r=><Button key={r.id} onClick={()=>onOpen(r.id)}>{"standardVersion" in r ? "整改" : "findingIds" in r ? "复核" : "申诉"} · {stateLabel(r)}</Button>)}</div>
+      {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{sp.status === "done" ? "补件记录" : "待补材料"} <Badge>{stateLabel(sp)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} · 下一接收人：{"standardVersion" in item ? person(item.inspector)?.name : "主管"}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{actions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionNames[a]}</Button>)}</div>)}
       <div className="detail-body">
         <div className="evidence-main">
           <div className="subtabs">
@@ -756,9 +747,11 @@ export function Detail({
                         材料 {n + 1} · {stamp(m.at)}
                       </b>
                       <p>{m.text}</p>
-                      <small>{m.samples.join("、") || m.attachment}</small>
+                      <div className="sample-links">{m.samples.map(id=><Button key={id} onClick={()=>onOpen(id)}>查看样例 {id}</Button>)}{m.attachment && <small>{m.attachment}</small>}</div>
                     </div>
                   ))}
+                  <p>本轮已提交 {new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount} 通样例</p>
+                  {item.rounds?.map(round=><details key={round.round} className="round-history"><summary>第 {round.round} 轮材料与验收 · 标准 V{round.standardVersion}</summary><p>目标：{round.goal}；标准：{round.standard}；要求：{round.sampleCount} 通 / {round.observation}</p>{round.materials.map((m,n)=><div key={n}><p>{m.text}</p>{m.samples.map(id=><Button key={id} onClick={()=>onOpen(id)}>查看样例 {id}</Button>)}{m.attachment && <p>{m.attachment}</p>}</div>)}<p>验收：{round.acceptance?.result === "fail" ? "不通过" : round.acceptance?.result === "pass" ? "通过" : "材料不足"} · {round.acceptance?.note}</p></details>)}
                   {item.acceptance && (
                     <div className="material-card">
                       <b>
@@ -873,8 +866,10 @@ export function Detail({
                 <Evidence
                   state={state}
                   call={call}
-                  findings={associated}
+                  key={item.id}
+                  findings={"batches" in item || "findingIds" in item ? associated : primary ? [primary] : []}
                   primary={primary}
+                  pinnedVersion={"conclusionVersion" in item ? item.conclusionVersion : undefined}
                 />
               )}
             </>
@@ -900,6 +895,7 @@ export function Detail({
                   hint="该示例从当前阶段开始，后续操作会按时间追加。"
                 />
               )}
+              {item.deadlineChanges?.map((h,n)=><article key={`deadline${n}`}><span/><div><b>期限调整（北京时间）</b><p>{stamp(h.from)} → {stamp(h.to)}</p><small>{stamp(h.at)} · {h.reason}</small></div></article>)}
               {primary?.conclusions.map((c) => (
                 <article key={`v${c.version}`}>
                   <span />
@@ -939,8 +935,9 @@ export function Detail({
           )}
           {tab === "related" && (
             <div className="related-list">
+              <h3>同通话其他问题</h3>
               {associated
-                .filter((x) => x.id !== item.id)
+                .filter((x) => x.id !== item.id && x.id !== primary?.id)
                 .map((f) => (
                   <button key={f.id} onClick={() => onOpen(f.id)}>
                     <Icon name="shield" />
@@ -953,6 +950,7 @@ export function Detail({
                     <Icon name="chevron" />
                   </button>
                 ))}
+              <h3>关联处理记录</h3>
               {related.map((r) => (
                 <button key={r.id} onClick={() => onOpen(r.id)}>
                   <Icon name="file" />
@@ -981,20 +979,12 @@ export function Detail({
             </div>
           </div>
           {allowed.length ? (
-            allowed.map((a, n) => (
-              <Button
-                key={a}
-                primary={
-                  n === 0 &&
-                  !["end_call", "start_detection", "finish_detection"].includes(
-                    a,
-                  )
-                }
-                onClick={() => onAction(item.id, a)}
-              >
-                {actionNames[a]}
-              </Button>
-            ))
+            <>
+            {allowed.filter(a=>a===mainAction || ["accept_decide","request_evidence","appeal","link_finding","add_finding"].includes(a)).map(a=><Button key={a} primary={a===mainAction} onClick={()=>onAction(item.id,a)}>{actionNames[a]}</Button>)}
+            {actions(state,item.id).includes("save_review") && !allowed.includes("submit_review") && <Button onClick={()=>onAction(item.id,"save_review")}>编辑复核草稿</Button>}
+            {allowed.some(a=>a!==mainAction && !["accept_decide","request_evidence","appeal","link_finding","add_finding"].includes(a)) && <details className="more-actions"><summary>更多操作</summary>{allowed.filter(a=>a!==mainAction && !["accept_decide","request_evidence","appeal","link_finding","add_finding"].includes(a)).map(a=><Button key={a} onClick={()=>onAction(item.id,a)}>{actionNames[a]}</Button>)}</details>}
+            {!mainAction && <p className="subtle">当前等待{owner?.name ?? "后续处理"}，无需重复提交。</p>}
+            </>
           ) : (
             <p className="subtle">
               当前身份无需处理此阶段，相关结果与记录可继续查看。
@@ -1038,19 +1028,24 @@ function Evidence({
   call,
   findings,
   primary,
+  pinnedVersion,
 }: {
   state: State;
   call: Call;
   findings: Finding[];
   primary?: Finding;
+  pinnedVersion?: number;
 }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [current, setCurrent] = useState(0),
     [corrected, setCorrected] = useState(false);
   const [chosen, setChosen] = useState<string>();
+  const [basis,setBasis]=useState(pinnedVersion ? String(pinnedVersion):"latest");
   const f = findings.find((x) => x.id === chosen) ?? primary ?? findings[0];
+  const conclusion: Conclusion | undefined = f ? basis === "original" ? undefined : basis === "latest" ? latest(f) : f.conclusions.find(c=>c.version===Number(basis)) : undefined;
+  const evidence = conclusion?.evidence ?? f?.evidence ?? [];
   const rule = f && state.rules.find((x) => x.id === f.ruleId),
-    version = rule?.versions.find((v) => v.version === f?.ruleVersion);
+    version = rule?.versions.find((v) => v.version === (conclusion?.ruleVersion ?? f?.ruleVersion));
   return (
     <div className="evidence-block">
       <div className="section-title">
@@ -1080,7 +1075,7 @@ function Evidence({
       {findings.length > 1 && (
         <label className="finding-switch">
           查看问题证据
-          <select value={f?.id} onChange={(e) => setChosen(e.target.value)}>
+          <select value={f?.id} onChange={(e) => {setChosen(e.target.value);setBasis("latest");}}>
             {findings.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.title}
@@ -1089,6 +1084,8 @@ function Evidence({
           </select>
         </label>
       )}
+      {!!f?.conclusions.length && <label className="finding-switch">判断依据版本<select aria-label="判断依据版本" value={basis} onChange={e=>setBasis(e.target.value)}><option value="latest">当前正式结论</option>{f.conclusions.map(c=><option key={c.version} value={String(c.version)}>结论 V{c.version} · {verdictNames[c.value]}</option>)}<option value="original">原始候选命中</option></select></label>}
+      {conclusion && <div className="result-banner"><b>{verdictNames[conclusion.value]} · V{conclusion.version}</b><p>{conclusion.note}</p>{!conclusion.evidence && <small>旧版记录未保存独立证据，以下显示原始命中供参考。</small>}</div>}
       {f && (
         <div className="evidence-caption">
           <Icon name="spark" size={16} />
@@ -1107,7 +1104,7 @@ function Evidence({
         {call.transcript.map((seg, n) => (
           <div
             key={n}
-            className={`utterance ${f?.evidence.includes(n) ? "hit" : ""} ${call.audio && current >= seg.at && current < (call.transcript[n + 1]?.at ?? Infinity) ? "playing" : ""}`}
+            className={`utterance ${evidence.includes(n) ? "hit" : ""} ${call.audio && current >= seg.at && current < (call.transcript[n + 1]?.at ?? Infinity) ? "playing" : ""}`}
           >
             <button
               className="timecode"
@@ -1138,12 +1135,12 @@ function Evidence({
                 </small>
               )}
             </p>
-            {f?.evidence.includes(n) && <span className="hit-label">证据</span>}
+            {evidence.includes(n) && <span className="hit-label">证据</span>}
           </div>
         ))}
       </div>
       {rule && version && (
-        <details className="basis" open>
+        <details className="basis">
           <summary>
             判断依据 · {rule.id} / V{version.version}
           </summary>
@@ -1152,7 +1149,7 @@ function Evidence({
           </p>
           <div className="basis-params">
             <span>业务：{version.scope}</span>
-            <span>静默阈值：{version.threshold} 秒</span>
+            {rule.editable === "threshold" && <span>静默阈值：{version.threshold} 秒</span>}{rule.editable === "trigger" && <span>提醒触发：{version.trigger}</span>}
           </div>
           {Object.entries(version.resources).map(([id, v]) => {
             const r = state.resources.find((r) => r.id === id),

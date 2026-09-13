@@ -15,6 +15,7 @@ import {
 } from "../lib/store";
 import {
   apply,
+  entity,
   canSee,
   nav,
   notices,
@@ -102,12 +103,13 @@ export default function Home() {
       setToast("该记录不在当前身份授权范围内");
       return;
     }
+    history.replaceState({...history.state,qc:true,identity:s.identity,scrollY:window.scrollY}, "", location.href);
     updateState({ ...s, view });
     setFocus(id);
     setMobile(false);
     setNoticeOpen(false);
-    window.history.replaceState(
-      null,
+    window.history.pushState(
+      {qc:true,identity:s.identity,scrollY:0},
       "",
       `?view=${view}${id ? `&id=${encodeURIComponent(id)}` : ""}`,
     );
@@ -127,6 +129,7 @@ export default function Home() {
       setFocus(
         p.get("id") && canSee(s, p.get("id")!) ? p.get("id")! : undefined,
       );
+      requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,history.state?.scrollY ?? 0)));
     };
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
@@ -137,7 +140,9 @@ export default function Home() {
       history.replaceState(null, "", `?view=${state.view}`);
       return;
     }
-    go(viewFor(state, id), id);
+    const item=entity(state,id);
+    const target=item && "executor" in item ? item.target : id;
+    go(item && ("batches" in item || "versions" in item) ? viewFor(state,target) : state.view, target);
   };
   const changeIdentity = (identity: string) => {
     const s = getSnapshot(),
@@ -156,6 +161,11 @@ export default function Home() {
         ? "已保存，相关事项与待办已同步"
         : "本次已更新，但浏览器存储不可用，刷新可能恢复示例",
     );
+  };
+  const handleAction = (id:string, action:string) => {
+    if(["ack","read_reminder","accept_remedy"].includes(action)) {
+      try {submit({id,action,rev:entity(getSnapshot(),id)!.rev,requestId:crypto.randomUUID(),input:{}});} catch(e) {setToast(e instanceof Error ? e.message : "操作失败");}
+    } else setForm({id,action});
   };
   const tasks = notices(state),
     current = pages[state.view],
@@ -320,6 +330,7 @@ export default function Home() {
               当前：{roleNames[role]}
             </div>
           </div>
+          {focus && <div className="context-back"><Button onClick={()=>{if(history.state?.qc)history.back();else open("");}}>返回上一位置</Button><span>查看关联事项，原队列条件保留</span></div>}
           {allowedNav.map((v) => (
             <div key={`${state.identity}-${v}`} hidden={state.view !== v}>
               {["alerts", "workorders", "improvement", "calls"].includes(v) ? (
@@ -328,14 +339,14 @@ export default function Home() {
                   view={v}
                   focus={state.view === v ? focus : undefined}
                   onOpen={open}
-                  onAction={(id, action) => setForm({ id, action })}
+                  onAction={handleAction}
                 />
               ) : v === "rules" || v === "resources" ? (
                 <Strategy
                   state={state}
                   view={v}
                   focus={state.view === v ? focus : undefined}
-                  onAction={(id, action) => setForm({ id, action })}
+                  onAction={handleAction}
                 />
               ) : (
                 <ReportPage state={state} onOpen={open} />
@@ -344,7 +355,7 @@ export default function Home() {
           ))}
           <footer className="page-footer">
             <span>Moss Quality · 核心质检闭环</span>
-            <span>3 个核心角色 · 7 个业务模块 · v0.1.0</span>
+            <span>3 个核心角色 · 7 个业务模块 · v0.2.0</span>
           </footer>
         </main>
       </div>
@@ -392,7 +403,9 @@ export default function Home() {
                       className="notice"
                       onClick={() => {
                         readEvent(e.id);
-                        open(e.target);
+                        const target=entity(state,e.target);
+                        const id=target && "executor" in target ? target.target : e.target;
+                        go(viewFor(state,id),id);
                       }}
                     >
                       <span
@@ -428,7 +441,7 @@ export default function Home() {
                 <button
                   className="notice"
                   key={x.id}
-                  onClick={() => open(x.id)}
+                  onClick={() => go(viewFor(state,x.id),x.id)}
                 >
                   <span className="notice-dot" />
                   <div>

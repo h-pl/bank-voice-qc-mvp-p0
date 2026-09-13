@@ -1,0 +1,111 @@
+{
+  "version": "v0.1.0-mvp-p0",
+  "commit": "6f89f5a",
+  "testedAt": "2026-09-13",
+  "note": "2026-09-13 rerun of the original nine known-gap cases against isolated in-memory fixtures. Assertions establish that gaps remain; this is not a passing acceptance suite. No application source or user browser data changed.",
+  "cases": [
+    {
+      "id": "E01",
+      "title": "补件可以指派给无法查看该通话的另一坐席",
+      "reproduced": true,
+      "supplement": "SUP-2-2",
+      "executor": "A1186",
+      "visible": false,
+      "actions": [],
+      "inTodo": false
+    },
+    {
+      "id": "E02",
+      "title": "整改待补样例只能回复文字，无法追加样例关联",
+      "reproduced": true,
+      "agentActions": [
+        "sample_calls"
+      ],
+      "sampleCreated": "SAMPLE-7-7",
+      "storedSamples": [
+        "SAMPLE-4-4"
+      ],
+      "passError": "样例不足或尚有补件，不能通过"
+    },
+    {
+      "id": "E03",
+      "title": "主管确认时新选择的证据没有进入结论版本",
+      "reproduced": true,
+      "selectedEvidence": [
+        3
+      ],
+      "displayedEvidence": [
+        2
+      ],
+      "conclusion": {
+        "version": 1,
+        "value": "false_positive",
+        "note": "基于新的第四个片段改判",
+        "at": "2026-09-12T02:00:00.000Z",
+        "by": "S01",
+        "reviewer": "Q01"
+      },
+      "originalOpinionEvidence": [
+        2
+      ]
+    },
+    {
+      "id": "E04",
+      "title": "整改失败退回下一轮时删除上一轮材料",
+      "reproduced": true,
+      "previousMaterialCount": 1,
+      "currentMaterialCount": 0,
+      "round": 2,
+      "acceptanceHistory": 1
+    },
+    {
+      "id": "E05",
+      "title": "进行中的申诉被补证入口新结论卡住",
+      "reproduced": true,
+      "latestVersion": 2,
+      "appealVersion": 1,
+      "appealStatus": "submitted",
+      "withdrawError": "结论版本已变化，请查看最新结果",
+      "remedyStillPaused": true
+    },
+    {
+      "id": "E06",
+      "title": "同事实报错要求关联已有问题，但没有关联动作",
+      "reproduced": true,
+      "error": "同一事实已存在，请关联已有问题。",
+      "allowedActions": [
+        "save_review",
+        "submit_review",
+        "add_finding"
+      ]
+    },
+    {
+      "id": "E07",
+      "title": "复核退回修改期限未保留已经发生的逾期",
+      "reproduced": true,
+      "oldDue": "2026-09-12T14:00:00.000Z",
+      "newDue": "2026-09-15T10:00:00+08:00",
+      "operatedAt": "2026-09-12T14:01:00.000Z",
+      "firstOverdueAt": null
+    },
+    {
+      "id": "E08",
+      "title": "质检员当前复核没有补证申请动作",
+      "reproduced": true,
+      "allowedActions": [
+        "save_review",
+        "submit_review"
+      ]
+    },
+    {
+      "id": "E09",
+      "title": "通话未结束仍可发布正式结论",
+      "reproduced": true,
+      "callEnded": false,
+      "reviewStatus": "done",
+      "formalConclusion": "risk"
+    }
+  ],
+  "fixtureClock": "2026-09-12T10:00:00+08:00",
+  "checkedAt": "2026-09-13T00:24:51.268469+08:00"
+}

@@ -125,7 +125,7 @@ export function Strategy({
           <div className="panel">
             <div className="panel-title">
               <h3>{resources ? "资源列表" : "规则列表"}</h3>
-              <span>共 {list.length} 项</span>
+              <span>共 {list.length} 项</span>{resources && roleOf(state)==="supervisor" && <Button primary onClick={()=>onAction(state.resources[0].id,"create_resource")}>新增资源条目</Button>}
             </div>
             <div className="table-scroll">
               <table>
@@ -253,17 +253,17 @@ export function Strategy({
                           <span>适用业务</span>
                           <b>{snapshot.scope}</b>
                         </div>
-                        <div>
+                        {(current as Rule).editable === "threshold" && <div>
                           <span>静默阈值</span>
                           <b>
                             {"threshold" in snapshot ? snapshot.threshold : ""}{" "}
                             秒
                           </b>
-                        </div>
-                        <div>
+                        </div>}
+                        {(current as Rule).editable === "trigger" && <div>
                           <span>提醒触发</span>
                           <b>{"trigger" in snapshot ? snapshot.trigger : ""}</b>
-                        </div>
+                        </div>}
                       </div>
                       <h3>引用资源快照</h3>
                       {"resources" in snapshot &&
@@ -305,13 +305,13 @@ export function Strategy({
                     该版本更新于 {stamp(snapshot.at)}
                   </small>
                   <div className="strategy-actions">
-                    {actions(state, current.id).map((a) => (
+                    {version && version !== versions.at(-1)?.version ? <><p>历史版本只读</p><Button onClick={()=>setVersion(undefined)}>返回当前版本维护</Button></> : actions(state, current.id).filter(a=>a!=="create_resource").map((a) => (
                       <Button
                         key={a}
                         primary={a.startsWith("save_")}
                         onClick={() => onAction(current.id, a)}
                       >
-                        {actionNames[a]}
+                        {a === "save_rule" ? "编辑参数" : a === "save_resource" ? "编辑资源" : actionNames[a]}
                       </Button>
                     ))}
                   </div>
@@ -349,43 +349,9 @@ export function Strategy({
                       {current.checked ? "预设检查通过" : "待检查 / 需修正"}
                     </Badge>
                   </div>
-                  <div className="diff-grid">
-                    <div>
-                      <b>当前生效</b>
-                      <pre>
-                        {resources
-                          ? ((current as Resource).versions.at(-1)?.content ??
-                            "尚未发布")
-                          : JSON.stringify(
-                              {
-                                静默秒数: (current as Rule).versions.at(-1)!
-                                  .threshold,
-                                业务: (current as Rule).versions.at(-1)!.scope,
-                                提醒: (current as Rule).versions.at(-1)!
-                                  .trigger,
-                              },
-                              null,
-                              2,
-                            )}
-                      </pre>
-                    </div>
-                    <div>
-                      <b>草稿内容</b>
-                      <pre>
-                        {"content" in current.draft
-                          ? current.draft.content
-                          : JSON.stringify(
-                              {
-                                静默秒数: current.draft.threshold,
-                                业务: current.draft.scope,
-                                提醒: current.draft.trigger,
-                              },
-                              null,
-                              2,
-                            )}
-                      </pre>
-                    </div>
-                  </div>
+                  <table className="diff-table"><thead><tr><th>字段</th><th>当前生效</th><th>待发布</th></tr></thead><tbody>
+                    {(resources ? ["content","scope","role","exception"] : [(current as Rule).editable!]).map(key=>{const old=(current.versions.at(-1) ?? {}) as unknown as Record<string,unknown>;const next=current.draft as unknown as Record<string,unknown>;return <tr key={key}><th>{{content:"内容",scope:"业务范围",role:"适用角色",exception:"例外说明",threshold:"静默阈值（秒）",trigger:"提醒触发"}[key]}</th><td>{String(old[key] ?? "—")}</td><td>{String(next[key] ?? "—")}{old[key]===next[key] && <small>（未变化）</small>}</td></tr>;})}
+                  </tbody></table>
                   <p>
                     影响范围：仅新启动的示例检测；在途任务与既有结论保持原引用。资源发布同时新增引用它的规则版本。
                   </p>

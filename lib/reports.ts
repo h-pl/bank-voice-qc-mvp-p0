@@ -1,5 +1,8 @@
 import {
   latest,
+  statusNames,
+  verdictNames,
+  entity,
   terminalRemedy,
   terminalAppeal,
   detection,
@@ -64,7 +67,7 @@ export function report(s: State, f: ReportFilter, asOf = new Date()): Metric[] {
     title: string,
     status: string,
     date: string,
-  ): Row => ({ id, callId: callFor(s, id)?.id ?? "", title, status, date });
+  ): Row => ({ id, callId: callFor(s, id)?.id ?? "", title, status: status === "pending" && s.remedies.some(r=>r.id===id) ? "待坐席接收" : status === "supervisor" && s.reviews.some(r=>r.id===id && r.evidenceRequest) ? "待主管协调补证" : ({...statusNames,...verdictNames,maintain:"维持原结论",adjust:"调整成立范围"} as Record<string,string>)[status] ?? status, date });
   const callRows = (arr: Call[]) =>
     arr.map((c) =>
       row(c.id, c.business, detection(c), c.endedAt ?? c.startedAt),
@@ -235,7 +238,7 @@ export function report(s: State, f: ReportFilter, asOf = new Date()): Metric[] {
         key: `${prefix}-backlog`,
         label: `当前${label}积压`,
         value: String(active.length),
-        note: `截至当前时刻全部未完成，独立于日期范围；最早有效期限 ${active.length ? active.map((x) => x.dueAt).sort()[0] : "—"}`,
+        note: `截至当前时刻全部未完成，独立于日期范围；最早有效期限 ${active.length ? new Date(Math.min(...active.map(x=>Date.parse(x.dueAt)))).toLocaleString("zh-CN",{timeZone:"Asia/Shanghai",hour12:false}) + "（北京时间）" : "—"}`,
         rows: taskRows(active),
       },
       {
@@ -299,7 +302,7 @@ export function report(s: State, f: ReportFilter, asOf = new Date()): Metric[] {
     ),
     extended = remedies.filter((r) => r.dueAt !== r.originalDueAt),
     ever = remedies.filter((r) => !!r.firstOverdueAt),
-    changedSource = remedies.filter((r) => r.sourceChanged);
+    changedSource = remedies.filter((r) => r.sourceChanged && r.status === "done");
   for (const [key, label, rows, note] of [
     ["paused", "暂停整改", paused, "暂停为附加标记，不再累加到基础状态总数"],
     ["terminated", "终止整改", terminated, "按终止日期归属；不计入整改完成"],
@@ -357,6 +360,7 @@ export function reportCsv(
       "首次逾期",
       "暂停起点",
       "暂停历史",
+      "期限变更记录",
       `指标说明；筛选=${JSON.stringify(filter ?? {})}`,
     ],
     ...metric.rows.map((r) => {
@@ -376,6 +380,7 @@ export function reportCsv(
         t?.firstOverdueAt,
         t && "pause" in t ? t.pause?.startedAt : "",
         t && "pauseHistory" in t ? JSON.stringify(t.pauseHistory) : "",
+        entity(s,r.id)?.deadlineChanges?.map(h=>`${h.at} ${h.from} → ${h.to} ${h.reason}`).join("；") ?? "",
         metric.note,
       ];
     }),

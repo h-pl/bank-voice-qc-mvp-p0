@@ -39,7 +39,7 @@ export const verdictNames: Record<Verdict, string> = {
   false_positive: "误报 / 不成立",
   insufficient: "证据不足",
 };
-export type Base = { id: string; rev: number };
+export type Base = { id: string; rev: number; deadlineChanges?: { from: string; to: string; at: string; reason: string }[] };
 export type Segment = {
   at: number;
   speaker: "agent" | "customer";
@@ -78,6 +78,9 @@ export type Conclusion = {
   by: string;
   reviewer?: string;
   noRemedy?: string;
+  evidence?: number[];
+  ruleVersion?: number;
+  batchId?: string;
 };
 export type Finding = Base & {
   callId: string;
@@ -121,6 +124,7 @@ export type Review = Base & {
   opinions: Record<string, Opinion>;
   summary?: string;
   scopeResult?: "clear" | "insufficient";
+  evidenceRequest?: { note: string; at: string };
   appealId?: string;
   finishedAt?: string;
   firstOverdueAt?: string;
@@ -184,6 +188,7 @@ export type Remedy = Base & {
   originalDueAt: string;
   createdAt: string;
   round: number;
+  rounds?: { round: number; standard: string; standardVersion: number; goal: string; sampleCount: number; observation: string; materials: Remedy["materials"]; acceptance?: Remedy["acceptance"]; at: string }[];
   materials: {
     at: string;
     text: string;
@@ -394,6 +399,10 @@ export const statusNames: Record<string, string> = {
   terminated: "已终止",
 };
 export const actionNames: Record<string, string> = {
+  request_evidence: "申请补证",
+  link_finding: "关联已有问题",
+  accept_assign: "受理并分派核查",
+  accept_decide: "受理并直接裁定",
   create_resource: "新增资源条目",
   resource_feedback: "提出依据补充意见",
   reassign: "转派任务",
@@ -458,14 +467,15 @@ export function actions(s: State, id: string): string[] {
     return out;
   }
   if ("conclusions" in e) {
-    if (role === "supervisor") {
+    if (role === "supervisor" && !activeAppeal(s, e.id)) {
       if (["candidate", "reminded", "supplement"].includes(e.status)) {
         out.push("dismiss", "assign");
         if (!s.supplements.some((x) => x.target === id && x.status !== "done"))
           out.push("supplement");
         if (!callFor(s, id)!.endedAt && !e.reminder) out.unshift("remind");
       }
-      if (latest(e) && e.status !== "review") out.push("followup");
+      if (latest(e) && e.status === "delivered") out.push("followup");
+      if (latest(e) && e.status === "closed") out.push("followup");
     }
     if (role === "agent") {
       if (e.reminder) {
@@ -500,14 +510,16 @@ export function actions(s: State, id: string): string[] {
     if (
       role === "inspector" &&
       e.owner === s.identity &&
-      ["pending", "working"].includes(e.status)
+      ["pending", "working"].includes(e.status) && !awaiting && !e.evidenceRequest
     ) {
-      out.push("save_review", "submit_review");
-      if (e.type === "spotcheck") out.push("add_finding");
+      out.push("save_review");
+      if (callFor(s, id)?.endedAt) out.push("submit_review");
+      out.push("request_evidence");
+      if (e.type === "spotcheck") out.push("add_finding", "link_finding");
     }
     if (role === "supervisor" && e.status === "supervisor" && !awaiting)
       out.push(
-        ...(e.type === "appeal" ? [] : ["publish"]),
+        ...(e.type === "appeal" || e.evidenceRequest || !callFor(s,id)?.endedAt ? [] : ["publish"]),
         "return_review",
         "supplement",
       );
@@ -521,7 +533,7 @@ export function actions(s: State, id: string): string[] {
     const a = e as Appeal;
     if (role === "agent" && !terminalAppeal(a)) out.push("withdraw");
     if (role === "supervisor" && !terminalAppeal(a)) {
-      if (a.status === "submitted") out.push("accept_appeal", "reject_appeal");
+      if (a.status === "submitted") out.push("accept_assign", "accept_decide", "accept_appeal", "reject_appeal");
       if (["accepted", "decision"].includes(a.status)) out.push("decide");
       if (a.status === "accepted" && !a.reviewId) out.push("assign_appeal");
       if (a.status !== "supplement") out.push("supplement");
@@ -542,7 +554,7 @@ export function actions(s: State, id: string): string[] {
       e.status === "verification"
     ) {
       out.push("save_acceptance");
-      if (!e.pause) out.push("verify");
+      if (!e.pause && !s.supplements.some(x => x.target === id && x.status !== "done")) out.push("verify");
     }
     if (role === "supervisor") {
       out.push("change_standard", "extend", "reassign");
@@ -562,8 +574,9 @@ export function actions(s: State, id: string): string[] {
     if (e.executor === s.identity && e.status === "pending") out.push("reply");
     if (
       e.status === "submitted" &&
-      (role === "supervisor" ||
-        s.remedies.some((r) => r.id === e.target && r.inspector === s.identity))
+      (s.remedies.some((r) => r.id === e.target)
+        ? s.remedies.some((r) => r.id === e.target && r.inspector === s.identity)
+        : role === "supervisor")
     )
       out.push("receive_supplement");
   }
@@ -593,6 +606,8 @@ export function actions(s: State, id: string): string[] {
   return [...new Set(out)];
 }
 export type Input = {
+  findingId?: string;
+  dispositions?: Record<string, { remedy: boolean; noRemedy?: string; goal?: string; standard?: string; owner?: string; dueAt?: string; sampleCount?: number; observation?: string }>;
   refs?: string[];
   resourceType?: Resource["type"];
   note?: string;
@@ -653,7 +668,7 @@ export const currentOwner = (s: State, e: Entity): string => {
   if ("findingIds" in e)
     return ["done", "cancelled"].includes(e.status)
       ? ""
-      : e.status === "supervisor"
+      : e.status === "supervisor" || e.evidenceRequest
         ? "S01"
         : e.owner;
   if ("standardVersion" in e)
@@ -709,7 +724,9 @@ export function resumeRemedy(r: Remedy, reason: string, now: Date) {
   r.pause.reasons = r.pause.reasons.filter((x) => x !== reason);
   if (r.pause.reasons.length) return;
   const elapsed = Math.max(0, now.getTime() - Date.parse(r.pause.startedAt));
+  const previousDue = r.dueAt;
   r.dueAt = new Date(Date.parse(r.dueAt) + elapsed).toISOString();
+  if(r.dueAt !== previousDue) (r.deadlineChanges ??= []).push({from:previousDue,to:r.dueAt,at:now.toISOString(),reason:"申诉暂停恢复，顺延实际暂停时长"});
   r.pauseHistory.push({
     start: r.pause.startedAt,
     end: now.toISOString(),
@@ -752,6 +769,12 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     actions(state, cmd.id).includes(cmd.action),
     "当前身份或状态不允许此操作。",
   );
+  if (["accept_assign", "accept_decide"].includes(cmd.action)) {
+    let next = apply(state, {...cmd, action: "accept_appeal", requestId: cmd.requestId + ":accept"}, now);
+    next = apply(next, {...cmd, action: cmd.action === "accept_assign" ? "assign_appeal" : "decide", rev: entity(next,cmd.id)!.rev, requestId: cmd.requestId + ":next"}, now);
+    next.requests.push(cmd.requestId);
+    return next;
+  }
   const s = structuredClone(state),
     e = entity(s, cmd.id)!,
     i = cmd.input,
@@ -759,6 +782,9 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     at = now.toISOString(),
     role = roleOf(s);
   const free = [
+    "save_review",
+    "submit_review",
+    "publish",
     "sample_calls",
     "end_call",
     "read_reminder",
@@ -773,6 +799,9 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   ];
   if (!free.includes(a))
     must((i.note ?? "").trim().length >= 4, "请填写至少 4 个字的处理说明。");
+  for (const task of [...s.reviews, ...s.appeals, ...s.remedies]) {
+    if (Date.parse(task.dueAt) < now.getTime() && !["done","cancelled","terminated","withdrawn","rejected"].includes(task.status) && !("pause" in task && task.pause)) task.firstOverdueAt ??= task.dueAt;
+  }
   const due = () => {
     must(future(i.dueAt, now), "请选择晚于当前时间的期限。");
     return i.dueAt!;
@@ -835,7 +864,23 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     note: string,
     reviewer?: string,
     noRemedy?: string,
+    selectedEvidence: number[] = i.evidence ?? f.evidence,
   ) => {
+    must(!activeAppeal(s,f.id) || a === "decide", "请在进行中的申诉内处理新证据和结论");
+    must(selectedEvidence.length && selectedEvidence.every(n => s.calls.find(c => c.id === f.callId)!.transcript[n]), "结论必须引用有效证据");
+    if (a !== "decide" && latest(f)) {
+      for (const r of s.remedies.filter(r => r.findingId === f.id)) {
+        r.sourceChanged = true;
+        if (!terminalRemedy(r)) {
+          if(r.pause) for(const reason of [...r.pause.reasons]) resumeRemedy(r,reason,now);
+          r.status = "terminated";
+          r.terminationReason = value === "insufficient" ? "新证据不足，旧整改依据不充分" : value === "false_positive" ? "补充核查改判为误报" : "来源结论更新，按新结论另行处置";
+          r.finishedAt = at;
+          for (const sp of s.supplements.filter(x=>x.target === r.id && x.status !== "done")) {sp.status="done";sp.rev++;}
+        }
+        r.rev++;
+      }
+    }
     f.conclusions.push({
       version: (latest(f)?.version ?? 0) + 1,
       value,
@@ -844,6 +889,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       by: s.identity,
       reviewer,
       noRemedy,
+      evidence: [...selectedEvidence], ruleVersion: f.ruleVersion, batchId: f.batchId,
     });
     f.status = "delivered";
     f.rev++;
@@ -853,7 +899,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       !s.supplements.some((x) => x.target === target && x.status !== "done"),
       "已有补件在处理中。",
     );
-    must(person(executor), "请选择有效补件人。");
+    must(supplementExecutors(s,target).some(p=>p.id === executor), "补件执行人无此通话范围，请重新选择");
     s.supplements.push({
       id: uid("SUP"),
       rev: 0,
@@ -934,6 +980,19 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     f.status = "supplement";
     addSupplement(f.id, i.owner || "S01", "followup");
   }
+  if (a === "request_evidence") {
+    const r = e as Review;
+    r.evidenceRequest = {note: i.note!, at};
+    r.status = "supervisor";
+  }
+  if (a === "link_finding") {
+    const r = e as Review, f = s.findings.find(f=>f.id === i.findingId);
+    must(f && f.callId === r.callId && canSee(s,f.id), "请选择同通话的已有问题");
+    must(!r.findingIds.includes(f.id), "该问题已经关联");
+    must(!activeAppeal(s,f.id), "该问题申诉处理中，请在申诉内补充证据");
+    must(!s.reviews.some(x=>x.id!==r.id && x.findingIds.includes(f.id) && !["done","cancelled"].includes(x.status)), "已有复核在处理中，请进入原工单");
+    r.findingIds.push(f.id); f.status="review"; f.rev++;
+  }
   if (a === "spotcheck") {
     const c = e as Call;
     must(i.scope?.trim(), "请填写抽查范围");
@@ -987,6 +1046,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     const r = e as Review;
     const opinions = i.opinions ?? {};
     if (a === "submit_review") {
+      must(callFor(s,r.id)?.endedAt, "通话结束后才能提交正式复核");
       for (const id of r.findingIds) {
         const op = opinions[id];
         must(
@@ -1029,6 +1089,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "return_review") {
     const r = e as Review;
     r.status = "working";
+    r.evidenceRequest = undefined;
     r.dueAt = due();
     if (r.appealId) {
       const ap = s.appeals.find((x) => x.id === r.appealId)!;
@@ -1039,7 +1100,9 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "publish") {
     const r = e as Review;
     must(r.type !== "appeal", "申诉核查须在申诉案件裁定");
+    must(callFor(s,r.id)?.endedAt, "通话结束后才能确认正式结论");
     for (const id of r.findingIds) {
+      const disposition = i.dispositions?.[id] ?? i;
       const f = s.findings.find((f) => f.id === id)!,
         op = i.opinions?.[id] ?? r.opinions[id];
       must(
@@ -1056,45 +1119,46 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
         "结论无效",
       );
       if (op.value === "risk") {
-        if (i.remedy) {
+        if (disposition.remedy) {
           must(
-            i.goal?.trim() && i.standard?.trim() && i.observation?.trim(),
+            disposition.goal?.trim() && disposition.standard?.trim() && disposition.observation?.trim(),
             "请补齐整改目标、标准与观察要求",
           );
           must(
-            Number.isInteger(i.sampleCount) &&
-              i.sampleCount! > 0 &&
-              i.sampleCount! <= 20,
+            Number.isInteger(disposition.sampleCount) &&
+              disposition.sampleCount! > 0 &&
+              disposition.sampleCount! <= 20,
             "演示样例数须为 1–20",
           );
-          inspector();
-          due();
+          must(validInspector(disposition.owner), "请选择有效质检员");
+          must(future(disposition.dueAt,now), "请选择晚于当前时间的整改期限");
         } else
-          must((i.noRemedy ?? "").trim().length >= 4, "无需整改须说明原因");
+          must((disposition.noRemedy ?? "").trim().length >= 4, "无需整改须说明原因");
       }
       conclude(
         f,
         op.value,
         op.note || i.note!,
         r.owner,
-        op.value === "risk" && !i.remedy ? i.noRemedy : undefined,
+        op.value === "risk" && !disposition.remedy ? disposition.noRemedy : undefined,
+        op.evidence,
       );
-      if (op.value === "risk" && i.remedy) {
+      if (op.value === "risk" && disposition.remedy) {
         s.remedies.push({
           id: `${uid("REC")}-${id}`,
           rev: 0,
           findingId: id,
           conclusionVersion: latest(f)!.version,
           agentId: callFor(s, f.id)!.agentId,
-          inspector: i.owner!,
+          inspector: disposition.owner!,
           status: "pending",
-          goal: i.goal!,
-          standard: i.standard!,
+          goal: disposition.goal!,
+          standard: disposition.standard!,
           standardVersion: 1,
-          sampleCount: i.sampleCount!,
-          observation: i.observation!,
-          dueAt: i.dueAt!,
-          originalDueAt: i.dueAt!,
+          sampleCount: disposition.sampleCount!,
+          observation: disposition.observation!,
+          dueAt: disposition.dueAt!,
+          originalDueAt: disposition.dueAt!,
           createdAt: at,
           round: 1,
           materials: [],
@@ -1103,8 +1167,8 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
           standards: [
             {
               version: 1,
-              goal: i.goal!,
-              standard: i.standard!,
+              goal: disposition.goal!,
+              standard: disposition.standard!,
               note: i.note!,
               at,
             },
@@ -1243,7 +1307,12 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "supplement") {
     if ("standardVersion" in e) throw new Error("请通过验收样例不足提出补件");
     const origin = "status" in e ? e.status : "";
-    let executor = i.owner || callFor(s, e.id)!.agentId;
+    if ("findingIds" in e && e.appealId) {
+      const ap = s.appeals.find(x=>x.id === e.appealId)!;
+      ap.supplementOrigin = ap.status; ap.status = "supplement"; ap.rev++;
+    }
+    if ("findingIds" in e) e.evidenceRequest = undefined;
+    let executor = "findingIds" in e && e.appealId ? s.appeals.find(ap=>ap.id===e.appealId)!.agentId : i.owner || callFor(s, e.id)!.agentId;
     if (s.appeals.includes(e as Appeal)) {
       const ap = e as Appeal;
       ap.supplementOrigin = ap.status;
@@ -1256,10 +1325,18 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       }
     }
     if ("conclusions" in e) e.status = "supplement";
-    addSupplement(e.id, executor, origin);
+    addSupplement("findingIds" in e && e.appealId ? e.appealId : e.id, executor, origin);
   }
   if (a === "reply") {
     const sp = e as Supplement;
+    const r = s.remedies.find(r=>r.id===sp.target);
+    if(r) {
+      must(!terminalRemedy(r), "整改已结束");
+      const selected = i.samples ?? [];
+      must(selected.length || i.attachment, "请追加整改样例或附件材料");
+      must(selected.every(id=>s.calls.some(c=>c.id===id && c.sample && c.agentId===r.agentId && c.business===callFor(s,r.id)!.business && Date.parse(c.endedAt??"")>=Date.parse(r.createdAt))), "请选择整改后的本人授权通话样例");
+      r.materials.push({at,text:i.note!,samples:[...new Set(selected)],attachment:i.attachment}); r.rev++;
+    }
     sp.reply = i.note;
     sp.status = "submitted";
   }
@@ -1278,11 +1355,12 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       const r = s.reviews.find((r) => r.id === ap.reviewId);
       if (r) {
         r.status = "working";
+        r.evidenceRequest = undefined;
         r.rev++;
       }
     }
     if ("conclusions" in target) target.status = "candidate";
-    if ("findingIds" in target) target.status = "working";
+    if ("findingIds" in target) {target.status = "working"; target.evidenceRequest = undefined;}
   }
   if (a === "sample_calls") {
     const r = e as Remedy,
@@ -1399,6 +1477,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "return_remedy") {
     const r = e as Remedy;
     if (r.supervisorReason === "return") {
+      (r.rounds ??= []).push({round:r.round,standard:r.standard,standardVersion:r.standardVersion,goal:r.goal,sampleCount:r.sampleCount,observation:r.observation,materials:structuredClone(r.materials),acceptance:structuredClone(r.acceptance),at});
       r.round++;
       r.status = "executing";
       r.materials = [];
@@ -1662,37 +1741,47 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     )
       task.firstOverdueAt ??= task.dueAt;
   }
+  for (const task of [...s.reviews,...s.appeals,...s.remedies,...s.supplements]) {
+    const before = entity(state,task.id);
+    if(before && "dueAt" in before && before.dueAt !== task.dueAt) {
+      const last = task.deadlineChanges?.at(-1);
+      if(!last || last.from !== before.dueAt || last.to !== task.dueAt || last.at !== at)
+        (task.deadlineChanges ??= []).push({from:before.dueAt,to:task.dueAt,at,reason:i.note || actionNames[a]});
+    }
+  }
   // All mutations pass through the same authorization, version and business guards.
   must(role === roleOf(s), "身份不可在业务动作内变更");
   return s;
 }
+export function activeAppeal(s: State, findingId: string) {
+  return s.appeals.find(a=>a.findingId===findingId && !terminalAppeal(a));
+}
+export function supplementExecutors(s: State, target: string) {
+  const call = callFor(s,target);
+  return people.filter(p=>call && (p.role !== "agent" || p.id===call.agentId));
+}
+export function needsRead(s: State, e: Entity) {
+  return canSee(s,e.id) && "conclusions" in e && roleOf(s)==="agent" && ((!!e.reminder && !e.reminder.readAt) || (!!latest(e) && e.seenVersion !== latest(e)!.version));
+}
+export function needsWork(s: State, e: Entity): boolean {
+  if(!canSee(s,e.id)) return false;
+  if(s.supplements.some(x=>x.target===e.id && x.status!=="done" && currentOwner(s,x)===s.identity)) return true;
+  if("conclusions" in e && e.status === "review") return false;
+  if("pause" in e && e.pause) return false;
+  if("findingIds" in e && s.supplements.some(x=>x.target===e.id && x.status!=="done")) return false;
+  if("findingId" in e && !("standardVersion" in e) && (e.status === "reviewing" || e.status === "supplement")) return false;
+  if("standardVersion" in e && s.supplements.some(x=>x.target===e.id && x.status!=="done")) return false;
+  return currentOwner(s,e)===s.identity;
+}
+export function isTodo(s:State,e:Entity) { return needsRead(s,e) || needsWork(s,e); }
 export function notices(s: State) {
-  const candidates: Entity[] = [
-    ...s.findings.filter(
-      (f) =>
-        ["candidate", "reminded", "supplement"].includes(f.status) ||
-        (roleOf(s) === "agent" && (!!latest(f) || !!f.reminder)),
-    ),
-    ...s.reviews,
-    ...s.appeals,
-    ...s.remedies,
-    ...s.supplements,
-  ];
-  const ids = new Set<string>();
-  return candidates.filter((e) => {
-    if (!canSee(s, e.id) || ids.has(e.id)) return false;
-    const active = currentOwner(s, e) === s.identity;
-    const special =
-      "conclusions" in e &&
-      roleOf(s) === "agent" &&
-      ((!!e.reminder && !e.reminder.readAt) ||
-        (!!latest(e) && e.seenVersion !== latest(e)!.version));
-    if (active || special) {
-      ids.add(e.id);
-      return true;
-    }
-    return false;
-  });
+  const candidates: Entity[] = [...s.findings,...s.reviews,...s.appeals,...s.remedies];
+  return candidates.filter(e=>isTodo(s,e));
+}
+export function primaryAction(s:State,id:string) {
+  const allowed=actions(s,id);
+  const order=["reply","receive_supplement","remind","assign","submit_review","publish","accept_assign","decide","accept_remedy","material","verify","close_remedy","return_remedy","ack","read_reminder","feedback_reminder","supplement","request_evidence"];
+  return order.find(a=>allowed.includes(a));
 }
 export const csv = (rows: unknown[][]) =>
   "\ufeff" +

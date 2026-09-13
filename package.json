@@ -1,6 +1,6 @@
 {
   "name": "bank-qc-mvp-p0",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "engines": {
@@ -12,7 +12,7 @@
     "start": "next start -p 5001",
     "lint": "eslint . --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
-    "test:workflow": "node --experimental-strip-types --test scripts/workflow.test.mjs",
+    "test:workflow": "node --experimental-strip-types --test scripts/*.test.mjs",
     "verify:mvp": "node scripts/verify-mvp.mjs"
   },
   "dependencies": {

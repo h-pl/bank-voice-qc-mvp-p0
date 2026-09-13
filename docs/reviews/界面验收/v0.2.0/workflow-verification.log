@@ -1,0 +1,47 @@
+✔ R01: supplement adds second sample to original round and reaches supervisor closure (6.451792ms)
+✔ R02: executor options and command reject a different agent, inspectors get scoped access on assignment (1.559333ms)
+✔ R03: active appeal cannot be overwritten from finding or another review and can still withdraw (0.50625ms)
+✔ R03: ordinary follow-up conclusion change terminates old personnel remedy and its supplements (0.602791ms)
+✔ R04: supervisor selected evidence is immutable per conclusion version (1.413958ms)
+✔ R05: failed round retains material, samples and standards while new round starts empty (1.633875ms)
+✔ R06: returning an overdue review retains first overdue and deadline change in CSV (12.676209ms)
+✔ R07: two confirmed problems may have different dispositions, creating only one remedy (0.55275ms)
+✔ R07: completed existing fact can be linked without a new Finding or changing its source (1.079417ms)
+✔ R08: live call allows draft, rejects formal submission, and reuses the task after ending (1.242541ms)
+✔ R09: inspector requests evidence before verdict, supervisor assigns, supplement returns to same draft (1.339833ms)
+✔ R10/R12: pending reads are tasks, paused remedies are not, next business action is primary (0.179916ms)
+✔ C03: compound acceptance is atomic, records both events, and request retry is idempotent (1.477042ms)
+✔ R09: appeal review evidence request returns via supervisor to the same inspector (2.091125ms)
+✔ T01: real-time ending reuses valid assignment; missing assignment returns supervisor; duplicate request id is idempotent (3.141917ms)
+✔ T02: false positive closes only candidate and never creates remediation (0.76275ms)
+✔ T03: insufficient evidence has owned and dated supplement loop and is excluded from false positives (11.753709ms)
+✔ T04: confirmed risk without remedy is delivered, remains risk, can appeal; ack cannot close or alter verdict (0.771416ms)
+✔ T05: issue once, agent accepts/materials, assigned inspector passes, supervisor closes (1.792417ms)
+✔ T06: insufficient samples retain inspector ownership; agent supplements; failed acceptance waits for supervisor return (3.592666ms)
+✔ T07: preacceptance and in-review appeal supplements both return through supervisor, preserving reviewer (2.928584ms)
+✔ T08: withdraw, reject, maintain restore phase and elapsed pause; old overdue retained (3.251417ms)
+✔ T09: false positive / insufficient terminate separately; risk adjustment invalidates old acceptance (4.458958ms)
+✔ T10: rule bounds, resource duplicate/SOP validation, failed checks keep draft, publish creates immutable versions (2.389584ms)
+✔ T11: multi-risk counts separate from calls, zero denominators show dash, CSV uses drilldown rows and protects formulas (1.157875ms)
+✔ T12: 3 roles, 7 routes, identity-scoped objects and actions, stale version rejected (0.538208ms)
+✔ T13: normal spot check creates no fake false positive; multi findings retained independently (1.370083ms)
+✔ T14: human-added finding never enters automatic-candidate precision denominator (1.792667ms)
+✔ T15: withdrawal cancels open appeal review and invalidates captured form, retains draft opinions (1.790333ms)
+✔ T16: changing a completion standard invalidates prior approval; supplement executor cannot close (1.615042ms)
+✔ T17: resource publish during running detection preserves in-flight rule/resource snapshot and re-detection appends a batch (1.269875ms)
+✔ T18: overlapping pauses count their union, first overdue and original deadline never disappear (0.155ms)
+✔ D01: withdrawn or unaccepted can resubmit, substantive decision cannot repeat same version, changed adverse version can appeal (1.935584ms)
+✔ D03: preferred alternate reviewer exists; same reviewer needs a recorded reason (1.232125ms)
+✔ Detection failures are execution states and do not become successful after human review (0.106583ms)
+✔ Resources: creating an item requires references; draft/publish updates future rule snapshot only (0.975458ms)
+✔ Reassignment: old inspector loses submit permission and original draft remains (0.619083ms)
+✔ Appeal submitted review becomes completed after substantive adjudication; new adverse version can appeal (1.365834ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 127.971208
+MVP-P0 verification passed: port, indicator catalog, core artifacts and workflow invariants.

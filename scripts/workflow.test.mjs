@@ -145,11 +145,15 @@ test("T06: insufficient samples retain inspector ownership; agent supplements; f
   s = run(as(s, "Q01"), id, "verify", { value: "insufficient" });
   const sp = s.supplements.at(-1);
   assert.equal(entity(s, id).status, "verification");
-  assert.ok(notices(s).some((x) => x.id === id));
+  assert.ok(!notices(s).some((x) => x.id === id), "质检员等待补样，不重复生成待办");
+  assert.ok(notices(as(s,"A1048")).some(x=>x.id===id), "补样任务在坐席原整改内");
   assert.ok(actions(as(s, "A1048"), sp.id).includes("reply"));
-  assert.throws(() => run(s, id, "verify", { value: "pass" }), /补件/);
-  s = run(as(s, "A1048"), sp.id, "reply");
+  assert.throws(() => run(s, id, "verify", { value: "pass" }), /补件|不允许/);
+  s = run(as(s,"A1048"),id,"sample_calls");
+  s = run(s, sp.id, "reply", {samples:[s.calls.at(-1).id]});
   s = run(as(s, "Q01"), sp.id, "receive_supplement");
+  const passed=run(s,id,"verify",{value:"pass"});
+  assert.equal(entity(run(as(passed,"S01"),id,"close_remedy"),id).status,"done");
   s = run(s, id, "verify", { value: "fail" });
   assert.equal(entity(s, id).supervisorReason, "return");
   assert.ok(!actions(as(s, "S01"), id).includes("close_remedy"));

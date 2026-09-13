@@ -101,6 +101,7 @@ export function ReportPage({
               key={v}
               onClick={() => {
                 setTab(v);
+                setSelected(v === "improvement" ? "review-backlog" : "calls");
                 setPage(1);
               }}
             >
@@ -173,25 +174,19 @@ export function ReportPage({
         <p className="form-error">开始日期不能晚于结束日期。</p>
       ) : (
         <>
-          <div className="report-cards">
-            {cards.map((m) => (
-              <button
-                key={m.key}
-                className={`report-card ${metric?.key === m.key ? "selected" : ""}`}
-                onClick={() => {
-                  setSelected(m.key);
-                  setPage(1);
-                }}
-              >
-                <span>
-                  {m.label}
-                  <em>↗</em>
-                </span>
-                <strong>{m.value}</strong>
-                <small>{m.note}</small>
-              </button>
-            ))}
-          </div>
+          {(tab === "overview" ? [
+            {title:"所选期间 · 核心结果",keys:["calls","coverage","risk","fp"],collapsed:false},
+            {title:"检测状态与更多明细",keys:keys.filter(k=>!["calls","coverage","risk","fp"].includes(k)),collapsed:true}
+          ] : tab === "improvement" ? [
+            {title:"当前待处理 · 不受日期范围影响",keys:["review-backlog","appeal-backlog","remedy-backlog"],collapsed:false},
+            {title:"所选期间结果 · 受日期范围影响",keys:["appealchange","review-ontime","appeal-ontime","ontime"],collapsed:false},
+            {title:"当前状态、暂停与历史标记",keys:keys.filter(k=>!k.endsWith("-due") && !["review-backlog","appeal-backlog","remedy-backlog","appealchange","review-ontime","appeal-ontime","ontime","terminated"].includes(k)),collapsed:true},
+            {title:"期间到期任务与终止明细",keys:["review-due","appeal-due","remedy-due","terminated"],collapsed:true}
+          ] : [{title:"所选期间结果",keys,collapsed:false}]).map(group=>{
+            const list=group.keys.flatMap(key=>{const m=cards.find(x=>x.key===key);return m?[m]:[];});
+            const content=group.collapsed ? <table className="metric-details"><thead><tr><th>指标</th><th>数量 / 占比</th><th>口径</th></tr></thead><tbody>{list.map(m=><tr key={m.key}><td><button className="text-button" onClick={()=>{setSelected(m.key);setPage(1);}}>{m.label}</button></td><td>{m.value}</td><td>{m.note}</td></tr>)}</tbody></table> : <div className="report-cards">{list.map(m=><button key={m.key} className={`report-card ${metric?.key===m.key ? "selected":""}`} onClick={()=>{setSelected(m.key);setPage(1);}}><span>{m.label}<em>↗</em></span><strong>{m.value}<small>{m.value.includes("%") || m.value === "—" ? "" : m.key==="calls" ? " 通":" 项"}</small></strong><small>{m.note}</small></button>)}</div>;
+            return group.collapsed ? <details className="panel report-section" key={group.title}><summary>{group.title}</summary><div className="table-scroll">{content}</div></details> : <section className="report-section" key={group.title}><h2>{group.title}</h2>{content}</section>;
+          })}
           {tab === "teams" && (
             <div className="panel team-report">
               <div className="panel-title">
