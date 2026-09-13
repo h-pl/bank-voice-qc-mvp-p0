@@ -1,0 +1,34 @@
+[
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "### Result\n{\"id\":\"N03\",\"url\":\"http://localhost:5001/?view=workorders\",\"main\":\"质检工单\\n\\n围绕证据逐项核查，让每个结论都有依据。\\n\\n当前：客服坐席\\n当前范围事项\\n3 项\\n待知悉\\n3 项\\n当前逾期\\n0 项\\n每个判断都能回到证据\\n\\n按当前身份呈现授权范围内的记录\\n\\n待知悉\\n3\\n全部结果\\n3\\n全部业务\\n账户查询\\n信用卡\\n转账汇款\\n共 3 条\\n导出\\nF-1035\\n高风险\\n提醒语被误识别为索取验证码\\n\\n周敏 · 转账汇款\\n\\n结论已送达\\n09/12 16:23\\nF-1033\\n高风险\\n身份核验存在争议\\n\\n周敏 · 信用卡\\n\\n结论已送达\\n09/12 10:23\\nF-1032\\n待关注\\n重复打断客户表达\\n\\n周敏 · 转账汇款\\n\\n结论已送达\\n09/12 07:23\\nF-1035 / CALL-1035\\n提醒语被误识别为索取验证码\\n结论已送达\\n自动候选 · 6.3.8\\n坐席 周敏\\n业务 转账汇款\\n当前责任 已办结\\n误报 / 不成立 第 1 版\\n\\n原话是提醒客户勿泄露验证码，属于否定语境\\n\\n本问题关联\\n复核 · 已办结\\n通话证据\\n处理记录\\n关联事项 1\\n原音与转写\\n证据已封存\\n本示例未附录音\\n可阅读预设转写；CALL-1041 提供可回听的合成录音。\\n判断依据版本\\n当前正式结论\\n结论 V1 · 误报 / 不成立\\n原始候选命中\\n误报 / 不成立 · V1\\n\\n原话是提醒客户勿泄露验证码，属于否定语境\\n\\n旧版记录未保存独立证据，以下显示原始命中供参考。\\n定位片段仅作判断依据，需结合前后文确认。\\n00:00\\n坐席\\n\\n您好，银行客服中心，很高兴为您服务。\\n\\n00:08\\n客户\\n\\n我想查询账户和相关业务办理进度。\\n\\n00:16\\n坐席\\n\\n请您不要向任何人提供验证码。\\n\\n证据\\n00:24\\n客户\\n\\n好的，请您帮忙确认一下。\\n\\n00:32\\n坐席\\n\\n已经为您查询，后续处理方式我向您说明。\\n\\n判断依据 · R-COM-012 / V1\\n检测批次与执行状态（1）\\n处理此事项\\n✓\\n已完成当前阶段\\n后续仍可追溯\\n确认知悉\\n更多操作\\n共 3 条\\n5 条 / 页\\n10 条 / 页\\n20 条 / 页\\n‹\\n1\\n/ 1\\n›\\nMoss Quality · 核心质检闭环\\n3 个核心角色 · 7 个业务模块 · v0.2.0\",\"remedies\":[{\"id\":\"REC-1034\",\"status\":\"executing\",\"agent\":\"A1186\",\"inspector\":\"Q01\"},{\"id\":\"REC-1033\",\"status\":\"executing\",\"agent\":\"A1048\",\"inspector\":\"Q02\"}]}\n### Ran Playwright code\n```js\nawait (async(page)=>{const p=page.context().browser().contexts()[2].pages()[0];await p.getByRole('dialog').getByLabel('处理说明').fill('请立即停止询问完整验证码并使用安全核验');await p.getByRole('dialog').getByRole('button',{name:'提醒坐席',exact:true}).click();await p.getByLabel('演示身份').selectOption('A1048');await p.getByRole('navigation',{name:'主导航'}).getByRole('button',{name:/质检工单/}).click();const before=await p.locator('main').innerText();const local=await p.evaluate(()=>JSON.parse(localStorage.getItem('moss-qc-mvp-p0-v2')));await p.screenshot({path:'/tmp/qc-v02-audit-agent-reminder.png',fullPage:true});return {id:'N03',url:p.url(),main:before,remedies:local.remedies.map(r=>({id:r.id,status:r.status,agent:r.agentId,inspector:r.inspector}))};})(page);\n```"
+      }
+    ]
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "### Result\n{\"id\":\"N04\",\"savedReopen\":\"\",\"submitReopen\":\"\",\"persisted\":\"已核对第一段说明，待继续检查第二个样例\"}\n### Ran Playwright code\n```js\nawait (async(page)=>{const p=page.context().browser().contexts()[2].pages()[0];const note='已核对第一段说明，待继续检查第二个样例';await p.getByRole('dialog').getByLabel('处理说明').fill(note);await p.getByRole('dialog').getByRole('button',{name:'保存验收草稿',exact:true}).click();await p.getByRole('button',{name:'保存验收草稿',exact:true}).click();const savedReopen=await p.getByRole('dialog').getByLabel('处理说明').inputValue();await p.keyboard.press('Escape');await p.getByRole('button',{name:'提交验收意见',exact:true}).click();const submitReopen=await p.getByRole('dialog').getByLabel('处理说明').inputValue();const persisted=await p.evaluate(()=>JSON.parse(localStorage.getItem('moss-qc-mvp-p0-v2')).remedies.find(r=>r.id==='REC-1034').draft);await p.screenshot({path:'/tmp/qc-v02-audit-draft.png',fullPage:true});await p.keyboard.press('Escape');return {id:'N04',savedReopen,submitReopen,persisted};})(page);\n```"
+      }
+    ]
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "### Result\n{\"id\":\"N05\",\"firstId\":\"http://localhost:5001/?view=alerts&id=F-1041\",\"before\":\"疑似索取完整短信验证码\",\"after\":\"疑似索取完整短信验证码\",\"rows\":[\"F-1040高风险身份核验依据待核对周敏 · 账户查询人工复核中09/13 07:23\",\"F-1039待关注出现消极服务表达周敏 · 信用卡人工复核中09/13 04:23\",\"F-1038待关注结束语缺失陈佳 · 转账汇款结论已送达09/13 01:23\",\"F-1035高风险提醒语被误识别为索取验证码周敏 · 转账汇款结论已送达09/12 16:23\",\"F-1034高风险业务解释不完整陈佳 · 账户查询结论已送达09/12 13:23\"],\"selectedCards\":0}\n### Ran Playwright code\n```js\nawait (async(page)=>{const p=page.context().browser().contexts()[2].pages()[0];await p.getByLabel('演示身份').selectOption('S01');await p.getByRole('tab',{name:/全部候选/}).click();await p.locator('.queue:visible .queue-card').first().click();const firstId=p.url();const before=await p.locator('.detail:visible h2').innerText();await p.getByRole('button',{name:'下一页',exact:true}).click();const after=await p.locator('.detail:visible h2').innerText();const rows=await p.locator('.queue:visible .queue-card').allTextContents();await p.screenshot({path:'/tmp/qc-v02-audit-pagination.png',fullPage:true});return {id:'N05',firstId,before,after,rows,selectedCards:await p.locator('.queue:visible .queue-card.selected').count()};})(page);\n```"
+      }
+    ]
+  },
+  {
+    "content": [
+      {
+        "type": "text",
+        "text": "### Result\n{\"id\":\"N06\",\"main\":\"通话记录\\n\\n查询通话、回听原音，追溯检测结果与后续处理。\\n\\n当前：质检主管\\n可见通话\\n24 项\\n需我处理\\n0 项\\n当前逾期\\n0 项\\n每个判断都能回到证据\\n\\n按当前身份呈现授权范围内的记录\\n\\n全部通话\\n0\\n通话中\\n0\\n处理异常\\n0\\n授权样例\\n0\\n全部业务\\n账户查询\\n信用卡\\n转账汇款\\n开始日期\\n结束日期\\n全部坐席\\n周敏\\n陈佳\\n更多筛选\\n清除筛选\\n共 0 条\\n导出\\n通话 / 客户\\t业务 / 班组\\t坐席\\t结束时间\\t检测状态\\t候选 / 成立\\t\\n没有符合条件的记录\\n\\n试试调整搜索或筛选条件。\\n\\n共 0 条\\n5 条 / 页\\n10 条 / 页\\n20 条 / 页\\n‹\\n1\\n/ 1\\n›\\nMoss Quality · 核心质检闭环\\n3 个核心角色 · 7 个业务模块 · v0.2.0\",\"invalidControls\":0,\"exportEnabled\":true}\n### Ran Playwright code\n```js\nawait (async(page)=>{const p=page.context().browser().contexts()[2].pages()[0];await p.getByRole('navigation',{name:'主导航'}).getByRole('button',{name:'通话记录',exact:true}).click();await p.getByLabel('通话开始日期').fill('2026-09-20');await p.getByLabel('通话结束日期').fill('2026-09-01');const main=await p.locator('main').innerText();await p.screenshot({path:'/tmp/qc-v02-audit-dates.png',fullPage:true});return {id:'N06',main,invalidControls:await p.locator('main input:invalid').count(),exportEnabled:await p.getByRole('button',{name:'导出',exact:true}).isEnabled()};})(page);\n```"
+      }
+    ]
+  }
+]

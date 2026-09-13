@@ -1,0 +1,34 @@
+{
+  "baseline": "v0.2.0-mvp-p0",
+  "commit": "7bd90b26ab9ac0053c3dd95e472bdd45b9a4b5e9",
+  "note": "已知问题复现，不是发布验收测试",
+  "results": [
+    {
+      "id": "N01",
+      "remedy": "terminated",
+      "supplement": "pending",
+      "agentTodo": true,
+      "replyButton": [
+        "reply"
+      ],
+      "error": "整改已结束"
+    },
+    {
+      "id": "N02",
+      "review": "WO-3-3",
+      "supervisorTodo": true,
+      "availableActions": [],
+      "appealStatus": "supplement"
+    },
+    {
+      "id": "N03",
+      "reminderInNotice": true,
+      "reminderInDefaultResults": false,
+      "actions": [
+        "read_reminder",
+        "feedback_reminder",
+        "dissent_reminder"
+      ]
+    }
+  ]
+}
