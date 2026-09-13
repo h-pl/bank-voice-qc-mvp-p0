@@ -30,7 +30,7 @@ export function TrendChart({ points, stride, metric, onInspect }: { points: Tren
       {points.map((p, i) => <button key={p.start} ref={el => { buttons.current[i] = el; }} className={`qa-point ${active === i ? 'selected' : ''}`} style={{ left: `${x(i) / width * 100}%`, top: `${y(p.value ?? 0) / height * 100}%` }} tabIndex={active === i ? 0 : -1} aria-label={`${p.start}${stride > 1 ? `至${p.end}` : ''}，${valueText(p)}，查看明细`} onMouseEnter={() => setCursor(i)} onFocus={() => setCursor(i)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? points.length - 1 : Math.max(0, Math.min(points.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1))); buttons.current[next]?.focus(); } }} onClick={() => onInspect(p)}><span className={p.value === null ? 'missing' : ''}/></button>)}
     </div></div>
     <div className="qa-chart-readout" aria-live="polite"><span>{point?.start}{stride > 1 && ` — ${point?.end}`}{ratio && point?.denominator !== undefined && <small>样本 {point.count} / {point.denominator}</small>}</span><strong>{point ? valueText(point) : '暂无数据'}</strong><button type="button" className="text-button" onClick={() => point && onInspect(point)}>查看该{stride > 1 ? '段' : '日'}明细</button></div>
-    <p className="qa-chart-hint">方向键切换日期，Enter 查看明细。{ratio ? '无分母日期留空，不连接为 0%。' : '数量为当前样例记录汇总。'}</p>
+    <p className="qa-chart-hint sr-only">方向键切换日期，Enter 查看明细。{ratio ? '无分母日期留空，不连接为 0%。' : '数量为当前样例记录汇总。'}</p>
   </section>;
 }
 

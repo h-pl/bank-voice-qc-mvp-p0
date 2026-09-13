@@ -1,7 +1,7 @@
 "use client";
 import { Activity, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "../components/icon";
-import { Badge, Button, Empty, Modal } from "../components/ui";
+import { Button, Empty, Modal } from "../components/ui";
 import dynamic from "next/dynamic";
 import { allowNavigation } from "../components/rule-editor";
 const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
@@ -31,48 +31,41 @@ import {
 } from "../lib/workflow";
 const pages: Record<
   View,
-  { title: string; icon: IconName; description: string; group: string }
+  { title: string; icon: IconName; group: string }
 > = {
   alerts: {
     title: "风险预警",
     icon: "bell",
-    description: "从自动候选到人工判断，优先处理真正需要关注的风险。",
     group: "质检作业",
   },
   workorders: {
     title: "质检工单",
     icon: "package",
-    description: "围绕证据逐项核查，让每个结论都有依据。",
     group: "质检作业",
   },
   improvement: {
     title: "申诉与整改",
     icon: "shield",
-    description: "回应结论争议，跟进整改效果，完成质量改进闭环。",
     group: "质检作业",
   },
   calls: {
     title: "通话记录",
     icon: "headset",
-    description: "查询通话、回听原音，追溯检测结果与后续处理。",
     group: "质检作业",
   },
   rules: {
     title: "质检规则",
     icon: "sliders",
-    description: "核对判断口径，维护开放参数与规则引用版本。",
     group: "策略与资源",
   },
   resources: {
     title: "业务资源",
     icon: "database",
-    description: "维护词库、业务知识与 SOP，为人工判断提供统一依据。",
     group: "策略与资源",
   },
   reports: {
     title: "质量报表",
     icon: "chart",
-    description: "从通话、问题与改进结果，了解当前服务质量。",
     group: "分析",
   },
 };
@@ -85,7 +78,6 @@ export default function Home() {
   );
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot),
     role = roleOf(state),
-    personNow = person(state.identity),
     allowedNav = nav[role];
   const routeRef = useRef("");
   const [visited, setVisited] = useState<Set<View>>(() => new Set());
@@ -244,14 +236,7 @@ export default function Home() {
             <small>银行呼入客服质检</small>
           </div>
         </div>
-        <div className="project">
-          <span className="project-icon">银</span>
-          <div>
-            <b>银行客服中心</b>
-            <small>客户生产台</small>
-          </div>
-          <Badge>P0</Badge>
-        </div>
+        <div className="workspace-name">银行客服中心</div>
         <nav aria-label="主导航">
           {["质检作业", "策略与资源", "分析"].map(
             (group) =>
@@ -273,7 +258,7 @@ export default function Home() {
                         {["alerts", "workorders", "improvement"].includes(v) &&
                           tasks.filter((x) => viewFor(state, x.id) === v)
                             .length > 0 && (
-                            <em>
+                            <em title="此模块全部业务待办，不随列表筛选变化">
                               {
                                 tasks.filter((x) => viewFor(state, x.id) === v)
                                   .length
@@ -286,28 +271,9 @@ export default function Home() {
               ),
           )}
         </nav>
-        <div className="sidebar-note">
-          <span className="mini-label">MVP · P0</span>
-          <b>让每个结论都有依据</b>
-          <p>
-            发现风险 → 人工复核
-            <br />
-            申诉反馈 → 整改验收
-          </p>
-        </div>
-        <div className="sidebar-bottom">
-          <span className="avatar">{personNow.name.slice(-1)}</span>
-          <div>
-            <b>{personNow.name}</b>
-            <small>{roleNames[role]}</small>
-          </div>
-          <button
-            className="icon-button"
-            aria-label="重置演示数据"
-            onClick={() => setResetOpen(true)}
-          >
-            <Icon name="refresh" size={16} />
-          </button>
+        <div className="sidebar-utilities">
+          <button onClick={() => setResetOpen(true)} aria-label="重置演示数据"><Icon name="refresh" size={14} /><span>重置演示</span></button>
+          <small>v0.2.4</small>
         </div>
       </aside>
       <div className="main">
@@ -320,12 +286,12 @@ export default function Home() {
             >
               <Icon name="menu" />
             </button>
-            <span>客户生产台</span>
+            <span>{current.group}</span>
             <Icon name="chevron" size={13} />
-            <b>{current.title}</b>
+            <h1 id="page-title">{current.title}</h1>
           </div>
           <div className="top-actions">
-            <span className="demo-badge">高保真原型 · 示例数据</span>
+            <span className="demo-badge">演示</span>
             <label className="role-select">
               <span>演示身份</span>
               <select
@@ -350,19 +316,8 @@ export default function Home() {
             </button>
           </div>
         </header>
-        <main id="main-content" tabIndex={-1}>
-          <div className="page-heading">
-            <div>
-              <p className="eyebrow">BANKING QUALITY · MVP-P0</p>
-              <h1>{current.title}</h1>
-              <p>{current.description}</p>
-            </div>
-            <div className="heading-meta">
-              <span className="online-dot" />
-              当前：{roleNames[role]}
-            </div>
-          </div>
-          {focus && !["rules","resources"].includes(state.view) && history.state?.fromView && history.state.fromView !== state.view && <div className="context-back"><Button onClick={()=>{if(history.state?.qc)history.back();else open("");}}>返回来源页面</Button><span>查看关联事项，原队列条件保留</span></div>}
+        <main id="main-content" tabIndex={-1} aria-labelledby="page-title">
+          {focus && !["rules","resources"].includes(state.view) && history.state?.fromView && history.state.fromView !== state.view && <div className="context-back"><Button onClick={()=>{if(history.state?.qc)history.back();else open("");}}>返回来源页面</Button></div>}
           {allowedNav.filter(v => visited.has(v) || state.view === v).map((v) => (
             <Activity key={`${state.identity}-${v}`} mode={state.view === v ? "visible" : "hidden"}><div>
               {["alerts", "workorders", "improvement", "calls"].includes(v) ? (
@@ -387,10 +342,6 @@ export default function Home() {
               )}
             </div></Activity>
           ))}
-          <footer className="page-footer">
-            <span>Moss Quality · 核心质检闭环</span>
-            <span>3 个核心角色 · 7 个业务模块 · v0.2.3</span>
-          </footer>
         </main>
       </div>
       {noticeOpen && (

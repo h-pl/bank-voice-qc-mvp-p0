@@ -33,12 +33,9 @@ export function Strategy({ state, view, onAction, onSubmit, onOpen, focus }: {
   function changeCategory(value: string) { if (!allowNavigation()) return; setCategory(value); setVersion(undefined); setEditing(undefined); onOpen(""); }
   const fields: Array<[string, string]> = resources ? [["content", "内容"], ["scope", "适用业务"], ["role", "适用角色"], ["exception", "例外说明"]] : rule?.editable ? [[rule.editable, parameterNames[rule.editable]]] : [];
   return <>
-    <div className="policy-toolbar">
-      <p>{resources ? "维护词库、业务知识与 SOP，发布后供新检测引用。" : "10 类规则 · 完整保留 16 项质检指标"}</p>
-      {resources ? manager && <Button primary icon="plus" onClick={() => onAction(state.resources[0].id, "create_resource")}>新增资源</Button> : <Button icon="grid" onClick={() => setCatalog(true)}>16 项指标目录</Button>}
-    </div>
     <div className={`policy-layout ${focus ? "has-selection" : ""}`}>
       <aside className="policy-list panel" aria-label={resources ? "资源列表" : "规则列表"}>
+        <div className="policy-list-actions">{resources ? manager && <Button primary icon="plus" onClick={() => onAction(state.resources[0].id, "create_resource")}>新增资源</Button> : <Button icon="grid" onClick={() => setCatalog(true)}>16 项指标目录</Button>}</div>
         <div className="policy-list-filters">
           <label className="search-box"><Icon name="search" size={16}/><input aria-label={resources ? "搜索资源" : "搜索规则"} name="policy-search" autoComplete="off" placeholder={resources ? "搜索资源名称或编号…" : "搜索规则名称或编号…"} value={search} onChange={e => { if (!allowNavigation()) return; setSearch(e.target.value); setEditing(undefined); onOpen(""); }}/></label>
           <label className="policy-category"><span>{resources ? "资源类型" : "规则类别"}</span><select aria-label={resources ? "资源类型筛选" : "规则类别筛选"} value={category} onChange={e => changeCategory(e.target.value)}><option value="all">{resources ? "全部资源" : "全部规则"}（{all.length}）</option>{(resources ? [["词库", "词库"], ["业务知识", "业务知识"], ["SOP", "SOP"]] : ruleCategories).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>

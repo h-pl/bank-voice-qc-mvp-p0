@@ -122,7 +122,7 @@ export function Workspace({
   onAction: (id: string, action: string) => void;
 }) {
   const [tab, setTab] = useState(view === "calls" ? "all" : "mine"),
-    [kind,setKind] = useState(state.appeals.some(a=>isTodo(state,a)) ? "appeal" : "remedy"),
+    [kind,setKind] = useState(""),
     [startDate,setStartDate] = useState(""), [endDate,setEndDate] = useState(""),
     [agent,setAgent] = useState(""), [group,setGroup] = useState(""), [execution,setExecution] = useState(""),
     [search, setSearch] = useState(""),
@@ -143,7 +143,7 @@ export function Workspace({
             : [...state.reviews,...state.findings.filter(f=>isTodo(state,f) && f.status!=="review" && viewFor(state,f.id)==="workorders")]
           : [...state.appeals, ...state.remedies]
   ).filter((e) => canSee(state, e.id));
-  const category = all.filter(e=>view!=="improvement" || (kind === "appeal" ? state.appeals.some(a=>a.id===e.id) : "standardVersion" in e));
+  const category = all.filter(e=>view!=="improvement" || !kind || (kind === "appeal" ? state.appeals.some(a=>a.id===e.id) : "standardVersion" in e));
   const tabs = view === "alerts" ? [["mine","待分诊 / 待我跟进"],["all","全部候选"],["review","已转复核"],["closed","已关闭"]]
     : view === "improvement" ? [["mine","需我处理"],["active","进行中"],["done","已结束"],["all","全部"]]
     : view === "workorders" ? role === "agent" ? [["mine","需我处理"],["all","全部事项"],["reminders","通话提醒"],["results","质检结果"]] : [["mine","我的待办"],["active","进行中"],["done","已完成"],["all","全部工单"]]
@@ -183,7 +183,7 @@ export function Workspace({
     focus && canSee(state, focus) ? entity(state, focus) : undefined;
   const selected =
     focused || (selectedId && all.find((x) => x.id === selectedId));
-  const overdue = all.filter(
+  const overdue = filtered.filter(
     (e) =>
       "dueAt" in e &&
       Date.parse(e.dueAt) < now &&
@@ -203,51 +203,7 @@ export function Workspace({
   }
   return (
     <>
-      <div className="stats-strip">
-        <div>
-          <span>{view === "calls" ? "可见通话" : "当前范围事项"}</span>
-          <strong>
-            {all.length}
-            <small> 项</small>
-          </strong>
-        </div>
-        <div>
-          <span>{view === "calls" ? "通话中" : "需我处理"}</span>
-          <strong>
-            {
-              all.filter((e) => view === "calls" ? "batches" in e && !e.endedAt : isTodo(state,e))
-                .length
-            }
-            <small> 项</small>
-          </strong>
-        </div>
-        <div>
-          <span>{view === "calls" ? "检测异常" : "当前逾期"}</span>
-          <strong className={overdue ? "red" : ""}>
-            {view === "calls" ? all.filter(e => "batches" in e && detection(e).includes("失败")).length : overdue}
-            <small> 项</small>
-          </strong>
-        </div>
-        <div className="stat-note">
-          <Icon name="shield" size={25} />
-          <div>
-            <b>
-              {view === "alerts"
-                ? "自动发现，人工确认"
-                : view === "improvement"
-                  ? "结论有回路，改进有结果"
-                  : "每个判断都能回到证据"}
-            </b>
-            <p>
-              {view === "improvement"
-                ? "申诉暂停与整改阶段分别保留"
-                : "按当前身份呈现授权范围内的记录"}
-            </p>
-          </div>
-        </div>
-      </div>
       <div className={`panel work-panel ${focus ? "has-focus" : ""}`}>
-        {view === "improvement" && <div className="tabs business-tabs" role="tablist" aria-label="业务类型">{[["appeal","申诉"],["remedy","整改"]].map(([key,name])=><button key={key} role="tab" aria-selected={kind===key} className={kind===key?"active":""} onClick={()=>{setKind(key);setPage(1);onOpen("");}}>{name}<span>{all.filter(e=>(key==="appeal" ? state.appeals.some(a=>a.id===e.id):"standardVersion" in e) && isTodo(state,e)).length} 待办</span></button>)}</div>}
         <div className="tabs" role="tablist" aria-label="记录分类">
           {tabs.map(([key, name]) => (
             <button
@@ -267,6 +223,7 @@ export function Workspace({
           ))}
         </div>
         <div className="filters">
+          {view === "improvement" && <select aria-label="事项类型" value={kind} onChange={e=>{setKind(e.target.value);setPage(1);onOpen("");}}><option value="">全部类型</option><option value="appeal">申诉</option><option value="remedy">整改</option></select>}
           <div className="search-box">
             <Icon name="search" size={16} />
             <input
@@ -301,7 +258,8 @@ export function Workspace({
             <div className="additional-filters"><select aria-label="通话班组" value={group} onChange={e=>{setGroup(e.target.value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</select><select aria-label="检测状态" value={execution} onChange={e=>{setExecution(e.target.value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</select></div>
           </>}
           <div className="filter-actions">
-          {(search || business || startDate || endDate || agent || group || execution) && <Button onClick={()=>{setSearch("");setBusiness("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>清除筛选</Button>}
+          {view !== "calls" && <span className={`queue-overdue ${overdue ? "has-overdue" : ""}`}>当前结果逾期 <b>{overdue}</b></span>}
+          {(search || business || startDate || endDate || agent || group || execution || view === "improvement" && kind) && <Button onClick={()=>{setSearch("");setBusiness("");setKind("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>重置筛选</Button>}
           <span className="filter-total">共 {filtered.length} 条</span>
           <Button
             disabled={invalidDates}
@@ -668,7 +626,7 @@ export function Detail({
         <span>
           业务 <b>{call?.business}</b>
         </span>
-        {"batches" in item ? <><span>通话状态 <b>{item.endedAt ? "已结束" : "通话中"}</b></span><span>时长 <b>{clock(item.duration)}</b></span><span>班组 <b>{item.group}</b></span></> : <span>当前责任 <b>{owner?.name ?? "当前无待办"}</b></span>}
+        {"batches" in item ? <><span>通话状态 <b>{item.endedAt ? "已结束" : "通话中"}</b></span><span>时长 <b>{clock(item.duration)}</b></span><span>班组 <b>{item.group}</b></span></> : null}
         {"dueAt" in item && (
           <span>
             期限 <b>{stamp(item.dueAt)}</b>
@@ -699,7 +657,7 @@ export function Detail({
         </div>
       )}
       {"findingIds" in item && item.evidenceRequest && <div className="callout"><b>补证申请 · 待主管协调</b><p>{item.evidenceRequest.note}</p></div>}
-      {primary && activeAppeal(state,primary.id) && <div className="case-links"><span>本问题申诉处理中，新证据回当前申诉。</span><Button onClick={()=>onOpen(activeAppeal(state,primary.id)!.id)}>查看当前申诉</Button></div>}
+      {primary && activeAppeal(state,primary.id) && activeAppeal(state,primary.id)!.id !== item.id && <div className="case-links"><span>本问题申诉处理中，新证据回当前申诉。</span><Button onClick={()=>onOpen(activeAppeal(state,primary.id)!.id)}>查看当前申诉</Button></div>}
       <div className="case-links"><span>本问题关联</span>{related.filter(r=>!("executor" in r) && ("findingId" in r ? r.findingId===primary?.id : "findingIds" in r && r.findingIds.includes(primary?.id??""))).map(r=><Button key={r.id} onClick={()=>onOpen(r.id)}>{"standardVersion" in r ? "整改" : "findingIds" in r ? "复核" : "申诉"} · {stateLabel(r, state)}</Button>)}</div>
       {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{openSupplement(sp) ? "待补材料" : "补件记录"} <Badge>{stateLabel(sp, state)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} {openSupplement(sp) ? ` · 下一接收人：${"standardVersion" in item ? person(item.inspector)?.name : "主管"}` : ""}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason} · {stamp(sp.cancelledAt)}</p>}{actions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionNames[a]}</Button>)}</div>)}
       <div className="detail-body">
@@ -971,14 +929,8 @@ export function Detail({
           )}
         </div>
         <aside className="action-rail">
-          <h3>{"batches" in item ? "通话操作" : "处理此事项"}</h3>
-          {!("batches" in item) && <div className="owner-card">
-            <span className="avatar">{owner?.name.slice(-1) ?? "✓"}</span>
-            <div>
-              <b>{owner?.name ?? "已完成当前阶段"}</b>
-              <small>{owner ? "当前责任人" : "后续仍可追溯"}</small>
-            </div>
-          </div>}
+          <h3>{"batches" in item ? "通话操作" : "处理"}</h3>
+          {!("batches" in item) && <div className="case-owner"><span>当前处理人</span><b>{owner?.name ?? "当前无待办"}</b></div>}
           {allowed.length || actions(state,item.id).includes("save_acceptance") ? (
             <>
             {[...allowed.filter(a => a === mainAction), ...allowed.filter(a => a !== mainAction)].map(a => (

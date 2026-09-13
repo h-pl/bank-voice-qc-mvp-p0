@@ -31,7 +31,7 @@ export const nav: Record<Role, View[]> = {
     "reports",
   ],
   inspector: ["workorders", "improvement", "calls", "rules", "resources"],
-  agent: ["improvement", "workorders", "calls"],
+  agent: ["workorders", "improvement", "calls"],
 };
 export type Verdict = "risk" | "false_positive" | "insufficient";
 export const verdictNames: Record<Verdict, string> = {
