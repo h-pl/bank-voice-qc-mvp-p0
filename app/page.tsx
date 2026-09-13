@@ -389,7 +389,7 @@ export default function Home() {
           ))}
           <footer className="page-footer">
             <span>Moss Quality · 核心质检闭环</span>
-            <span>3 个核心角色 · 7 个业务模块 · v0.2.2</span>
+            <span>3 个核心角色 · 7 个业务模块 · v0.2.3</span>
           </footer>
         </main>
       </div>

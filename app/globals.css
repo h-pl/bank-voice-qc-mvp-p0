@@ -1,5 +1,5 @@
 :root {
-  --canvas: #f7f7f7;
+  --canvas: #f6f7f8;
   --ink: #171717;
   --muted: #858585;
   --line: #e5e5e5;
@@ -85,8 +85,8 @@ p {
   margin: 0;
 }
 h1 {
-  font-size: 26px;
-  font-weight: 650;
+  font-size: 27px;
+  font-weight: 700;
   letter-spacing: -0.6px;
   line-height: 1.45;
 }
@@ -396,7 +396,7 @@ main {
 .panel {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 10px;
   min-width: 0;
 }
 .stats-strip {
