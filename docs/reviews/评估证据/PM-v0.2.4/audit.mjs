@@ -1,0 +1,22 @@
+// Diagnosis for v0.2.4: assertions reproduce existing issues; not a fix acceptance suite.
+import {createInitial} from '../../../../lib/fixtures.ts';
+import {apply,entity,currentOwner,isTodo,actions,callFor} from '../../../../lib/workflow.ts';
+import {writeFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const now=new Date();
+const run=(s,id,action,input={})=>apply(s,{id,action,rev:entity(s,id).rev,requestId:crypto.randomUUID(),input:{note:'PM评估专用虚拟场景记录',dueAt:new Date(now.getTime()+86400000*3).toISOString(),...input}},now);
+let s=createInitial(now);
+s=run(s,'F-1037','supplement',{owner:'Q01'});s.identity='Q01';s.view='workorders';
+assert.equal(isTodo(s,entity(s,'F-1037')),true);assert.equal(currentOwner(s,entity(s,'F-1037')),'S01');assert.equal(s.supplements.at(-1).executor,'Q01');
+writeFileSync('/tmp/qc-pm-v024/supplement.json',JSON.stringify(s));
+const ownership={parent:'F-1037',currentIdentity:s.identity,parentOwner:currentOwner(s,entity(s,'F-1037')),executor:s.supplements.at(-1).executor,inMyTodo:isTodo(s,entity(s,'F-1037')),supplementActions:actions(s,s.supplements.at(-1).id)};
+s=createInitial(now);const r=entity(s,'RES-WORD');const old=r.versions.at(-1);
+s=run(s,r.id,'save_resource',{content:old.content+'\n评估新增词条',scope:old.scope,resourceRole:old.role,exception:old.exception});s=run(s,r.id,'check_resource');s=run(s,r.id,'publish_resource');
+assert.equal(entity(s,'RES-WORD').versions.at(-1).version,2);assert.equal(entity(s,'R-KW-018').versions[0].resources['RES-WORD'],1);
+writeFileSync('/tmp/qc-pm-v024/resource.json',JSON.stringify(s));
+const reference={rule:'R-KW-018',historicalRule:1,pinnedResourceVersion:entity(s,'R-KW-018').versions[0].resources['RES-WORD'],latestResourceVersion:entity(s,'RES-WORD').versions.at(-1).version};
+s=createInitial(now);const ap=entity(s,'AP-1033');const remedy=s.remedies.find(x=>x.findingId===ap.findingId);assert.ok(remedy);
+s=run(s,ap.id,'extend',{note:'仅调整本次申诉的处理期限'});const exposed=actions(s,remedy.id).includes('extend');let blocked='';try{run(s,remedy.id,'extend');}catch(e){blocked=e.message;}assert.ok(exposed);assert.match(blocked,/暂停期间/);
+assert.equal(callFor(s,ap.id).id,callFor(s,remedy.id).id);writeFileSync('/tmp/qc-pm-v024/history.json',JSON.stringify(s));
+const history={appeal:ap.id,remedy:remedy.id,exposed,blocked,logs:s.logs.slice(-2).map(l=>({target:l.target,action:l.action,note:l.note}))};
+writeFileSync('/tmp/qc-pm-v024/results.json',JSON.stringify({ownership,reference,history},null,2));console.log(JSON.stringify({ownership,reference,history},null,2));

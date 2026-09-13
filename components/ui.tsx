@@ -8,6 +8,8 @@ export function Button({
   primary = false,
   disabled = false,
   type = "button",
+  intent = "neutral",
+  busy = false,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -15,15 +17,19 @@ export function Button({
   primary?: boolean;
   disabled?: boolean;
   type?: "button" | "submit";
+  intent?: "neutral" | "danger";
+  busy?: boolean;
 }) {
   return (
     <button
       type={type}
-      className={`btn ${primary ? "primary" : ""}`}
+      className={`btn ${primary ? "primary" : ""} ${intent === "danger" ? "danger" : ""}`}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
     >
-      {icon && <Icon name={icon} size={15} />}
+      {busy && <span className="button-spinner" aria-hidden="true" />}
+      {icon && !busy && <Icon name={icon} size={15} />}
       <span>{children}</span>
     </button>
   );
@@ -45,15 +51,18 @@ export function Badge({
 export function Empty({
   text = "没有符合条件的记录",
   hint = "试试调整搜索或筛选条件。",
+  action,
 }: {
   text?: string;
   hint?: string;
+  action?: ReactNode;
 }) {
   return (
     <div className="empty">
       <Icon name="file" size={30} />
       <b>{text}</b>
       <p>{hint}</p>
+      {action}
     </div>
   );
 }
@@ -61,10 +70,14 @@ export function Modal({
   title,
   children,
   onClose,
+  variant = "default",
+  description,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  variant?: "default" | "notification" | "navigation";
+  description?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const close = useEffectEvent(onClose);
@@ -83,8 +96,49 @@ export function Modal({
       prior?.focus();
     };
   }, []);
-  return <dialog ref={ref} className="modal" aria-label={title}>
-    <header><h2>{title}</h2><button type="button" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></button></header>
+  return <dialog ref={ref} className={`modal ${variant}-dialog`} aria-label={title} onClick={event => { if (event.target === event.currentTarget) { const box = event.currentTarget.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) onClose(); } }}>
+    <header><div><h2>{title}</h2>{description && <p className="modal-description">{description}</p>}</div><button type="button" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></button></header>
     {children}
   </dialog>;
+}
+
+
+/** Local filtering stays synchronous; an IME candidate is committed only at compositionend. */
+export function SearchField({ value, onValueChange, label, placeholder, name }: {
+  value: string; onValueChange: (value: string) => void | boolean;
+  label: string; placeholder: string; name: string;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const composing = useRef(false);
+  useEffect(() => { if (input.current && !composing.current) input.current.value = value; }, [value]);
+  const commit = (next: string) => {
+    if (onValueChange(next) === false && input.current) input.current.value = value;
+  };
+  return <div className="search-box">
+    <Icon name="search" size={17}/>
+    <input ref={input} type="search" name={name} aria-label={label} autoComplete="off" placeholder={placeholder} defaultValue={value}
+      onCompositionStart={() => { composing.current = true; }}
+      onCompositionEnd={e => { composing.current = false; commit(e.currentTarget.value); }}
+      onChange={e => { if (!composing.current) commit(e.currentTarget.value); }}
+      onKeyDown={e => { if (e.key === "Escape" && !e.nativeEvent.isComposing && !composing.current) { e.preventDefault(); commit(""); } }}/>
+    <button className="search-clear" type="button" aria-label={`清除${label}`} title={`清除${label}`} disabled={!value} style={{visibility:value ? "visible" : "hidden"}} onClick={() => { composing.current = false; commit(""); input.current?.focus(); }}><Icon name="close" size={15}/></button>
+  </div>;
+}
+
+export function Tabs<T extends string>({ value, options, onChange, label, panelId, className = "tabs" }: {
+  value: T; options: ReadonlyArray<{value:T; label:ReactNode; count?:number}>;
+  onChange:(value:T) => void; label:string; panelId:string; className?:string;
+}) {
+  return <div className={className} role="tablist" aria-label={label}>
+    {options.map((option, index) => <button type="button" role="tab" key={option.value}
+      id={`${panelId}-tab-${option.value}`} aria-controls={panelId} aria-selected={value === option.value}
+      tabIndex={value === option.value ? 0 : -1} className={value === option.value ? "active" : ""}
+      onClick={() => onChange(option.value)} onKeyDown={e => {
+        if (e.nativeEvent.isComposing || !["ArrowLeft","ArrowRight","Home","End"].includes(e.key)) return;
+        e.preventDefault();
+        const next = e.key === "Home" ? 0 : e.key === "End" ? options.length - 1 : (index + (e.key === "ArrowRight" ? 1 : -1) + options.length) % options.length;
+        onChange(options[next].value);
+        (e.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus();
+      }}>{option.label}{option.count !== undefined && <span>{option.count}</span>}</button>)}
+  </div>;
 }

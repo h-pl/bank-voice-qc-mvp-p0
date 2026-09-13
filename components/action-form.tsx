@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Modal, Button } from "./ui";
 import {
   actionNames,
@@ -194,7 +194,9 @@ export function ActionForm({
     "start_detection",
     "finish_detection",
   ].includes(action);
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const execute = (override?: string) => {
+    if (busy) return;
     setBusy(true);
     setError("");
     try {
@@ -207,6 +209,7 @@ export function ActionForm({
     } catch (e) {
       setError(e instanceof Error ? e.message : "操作失败");
       setBusy(false);
+      requestAnimationFrame(() => errorRef.current?.focus());
     }
   };
   const evidenceSelector = (
@@ -240,7 +243,22 @@ export function ActionForm({
   );
   return (
     <Modal title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={onClose}>
-      <form onSubmit={(e:FormEvent)=>{e.preventDefault();execute();}}>
+      <form noValidate onSubmit={(e:FormEvent<HTMLFormElement>)=>{
+        e.preventDefault();
+        const invalid = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select")).find(field => !field.disabled && !field.validity.valid);
+        if (invalid) {
+          setError(invalid.validity.valueMissing ? "请完成此必填项后再提交。" : invalid.validity.tooShort ? "填写内容过短，请补充完整说明。" : "此项格式或数值范围不正确，请检查后重新提交。");
+          invalid.setAttribute("aria-invalid", "true");
+          invalid.setAttribute("aria-describedby", "action-error");
+          invalid.dataset.formInvalid = "true";
+          requestAnimationFrame(() => invalid.focus());
+          return;
+        }
+        execute();
+      }} onChangeCapture={event => {
+        const field = event.target as HTMLElement;
+        if (field.dataset.formInvalid) { field.removeAttribute("aria-invalid"); field.removeAttribute("aria-describedby"); delete field.dataset.formInvalid; setError(""); }
+      }}>
         <div className="form-context">
           <b>
             {action === "create_resource" ? "新资源草稿" : "title" in target
@@ -475,7 +493,7 @@ export function ActionForm({
                       </label>
                       <label>
                         判断依据
-                        <textarea
+                        <textarea className="resize-none"
                           value={op.note}
                           onChange={(e) => update({ note: e.target.value })}
                           placeholder="说明结论与证据的关系"
@@ -509,7 +527,7 @@ export function ActionForm({
           <>
             <label>
               整改目标
-              <textarea
+              <textarea className="resize-none"
                 required
                 value={input.goal ?? ""}
                 onChange={(e) => set("goal", e.target.value)}
@@ -518,7 +536,7 @@ export function ActionForm({
             </label>
             <label>
               完成标准
-              <textarea
+              <textarea className="resize-none"
                 required
                 value={input.standard ?? ""}
                 onChange={(e) => set("standard", e.target.value)}
@@ -704,7 +722,7 @@ export function ActionForm({
                   : resourceType === "词库"
                     ? "词条（每行一个）"
                     : "知识内容"}
-                <textarea
+                <textarea className="resize-none"
                   rows={6}
                   required
                   value={input.content ?? ""}
@@ -737,7 +755,7 @@ export function ActionForm({
               </div>
               <label>
                 例外说明
-                <textarea
+                <textarea className="resize-none"
                   value={input.exception ?? ""}
                   onChange={(e) => set("exception", e.target.value)}
                 />
@@ -791,7 +809,7 @@ export function ActionForm({
               : action === "assign_appeal" && input.owner === originalReviewer
                 ? "同人核查原因与要求"
                 : "处理说明"}
-            <textarea
+            <textarea className="resize-none"
               aria-label={["reply", "material"].includes(action) ? "材料说明" : action === "assign_appeal" && input.owner === originalReviewer ? "同人核查原因与要求" : "处理说明"}
               name="action-note"
               autoComplete="off"
@@ -805,7 +823,7 @@ export function ActionForm({
           </label>
         )}
         {error && (
-          <p className="form-error" role="alert">
+          <p className="form-error" id="action-error" ref={errorRef} tabIndex={-1} role="alert">
             {error}
           </p>
         )}
@@ -827,9 +845,9 @@ function DispositionFields({value,onChange,previous}:{value:NonNullable<Input["d
   return <div className="disposition-fields">
     <label>本问题后续处置<select value={value.remedy ? "yes":"no"} onChange={e=>onChange({remedy:e.target.value==="yes"})}><option value="no">无需整改</option><option value="yes">下发整改</option></select></label>
     {previous && <Button onClick={()=>onChange({...previous})}>沿用上一项要求</Button>}
-    {!value.remedy ? <label>无需整改原因<textarea required minLength={4} value={value.noRemedy ?? ""} onChange={e=>onChange({noRemedy:e.target.value})}/></label> : <>
-    <label>整改目标<textarea required value={value.goal ?? ""} onChange={e=>onChange({goal:e.target.value})}/></label>
-    <label>完成标准<textarea required value={value.standard ?? ""} onChange={e=>onChange({standard:e.target.value})}/></label>
+    {!value.remedy ? <label>无需整改原因<textarea className="resize-none" required minLength={4} value={value.noRemedy ?? ""} onChange={e=>onChange({noRemedy:e.target.value})}/></label> : <>
+    <label>整改目标<textarea className="resize-none" required value={value.goal ?? ""} onChange={e=>onChange({goal:e.target.value})}/></label>
+    <label>完成标准<textarea className="resize-none" required value={value.standard ?? ""} onChange={e=>onChange({standard:e.target.value})}/></label>
     <div className="form-grid"><label>验收质检员<select value={value.owner ?? "Q01"} onChange={e=>onChange({owner:e.target.value})}>{people.filter(p=>p.role==="inspector").map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
     <label>整改期限（北京时间）<input required type="datetime-local" value={value.dueAt ? localInput(new Date(value.dueAt)):""} onChange={e=>onChange({dueAt:e.target.value ? new Date(e.target.value).toISOString():""})}/></label>
     <label>所需样例数<input required type="number" min={1} max={20} value={value.sampleCount ?? 1} onChange={e=>onChange({sampleCount:Number(e.target.value)})}/></label>

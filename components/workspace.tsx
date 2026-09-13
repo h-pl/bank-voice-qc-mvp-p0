@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { localDate } from "../lib/reports";
 import { useDemoClock } from "../lib/store";
-import { Badge, Button, Empty } from "./ui";
+import { Badge, Button, Empty, SearchField, Tabs } from "./ui";
 import { Icon } from "./icon";
 import {
   actions,
@@ -204,39 +204,11 @@ export function Workspace({
   return (
     <>
       <div className={`panel work-panel ${focus ? "has-focus" : ""}`}>
-        <div className="tabs" role="tablist" aria-label="记录分类">
-          {tabs.map(([key, name]) => (
-            <button
-              role="tab"
-              aria-selected={tab === key}
-              key={key}
-              className={tab === key ? "active" : ""}
-              onClick={() => {
-                setTab(key);
-                setPage(1);
-                onOpen("");
-              }}
-            >
-              {name}
-              <span>{searched.filter((x) => match(x, key)).length}</span>
-            </button>
-          ))}
-        </div>
+        <Tabs value={tab} label="记录分类" panelId={`workspace-${view}`} options={tabs.map(([value,label]) => ({value,label,count:searched.filter(x => match(x,value)).length}))} onChange={value => { setTab(value); setPage(1); onOpen(""); }}/>
+        <div role="tabpanel" id={`workspace-${view}`} aria-labelledby={`workspace-${view}-tab-${tab}`}>
         <div className="filters">
           {view === "improvement" && <select aria-label="事项类型" value={kind} onChange={e=>{setKind(e.target.value);setPage(1);onOpen("");}}><option value="">全部类型</option><option value="appeal">申诉</option><option value="remedy">整改</option></select>}
-          <div className="search-box">
-            <Icon name="search" size={16} />
-            <input
-              aria-label="搜索记录"
-              name="record-search" autoComplete="off" placeholder="搜索编号、问题或坐席…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-                onOpen("");
-              }}
-            />
-          </div>
+          <SearchField label="搜索记录" name="record-search" placeholder="搜索编号、问题或坐席…" value={search} onValueChange={value => { setSearch(value); setPage(1); onOpen(""); }}/>
           <select
             aria-label="业务筛选"
             value={business}
@@ -252,15 +224,15 @@ export function Workspace({
             ))}
           </select>
           {view === "calls" && <>
-            <label>开始日期<input aria-label="通话开始日期" type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setPage(1);onOpen("");}}/></label>
-            <label>结束日期<input aria-label="通话结束日期" type="date" value={endDate} onChange={e=>{setEndDate(e.target.value);setPage(1);onOpen("");}}/></label>
+            <label>开始日期<input aria-label="通话开始日期" type="date" aria-invalid={invalidDates} aria-describedby={invalidDates ? "call-date-error" : undefined} value={startDate} onChange={e=>{setStartDate(e.target.value);setPage(1);onOpen("");}}/></label>
+            <label>结束日期<input aria-label="通话结束日期" type="date" aria-invalid={invalidDates} aria-describedby={invalidDates ? "call-date-error" : undefined} value={endDate} onChange={e=>{setEndDate(e.target.value);setPage(1);onOpen("");}}/></label>
             <select aria-label="通话坐席" value={agent} onChange={e=>{setAgent(e.target.value);setPage(1);onOpen("");}}><option value="">全部坐席</option>{people.filter(p=>p.role==="agent" && (role!=="agent" || p.id===state.identity)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
             <div className="additional-filters"><select aria-label="通话班组" value={group} onChange={e=>{setGroup(e.target.value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</select><select aria-label="检测状态" value={execution} onChange={e=>{setExecution(e.target.value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</select></div>
           </>}
           <div className="filter-actions">
           {view !== "calls" && <span className={`queue-overdue ${overdue ? "has-overdue" : ""}`}>当前结果逾期 <b>{overdue}</b></span>}
           {(search || business || startDate || endDate || agent || group || execution || view === "improvement" && kind) && <Button onClick={()=>{setSearch("");setBusiness("");setKind("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>重置筛选</Button>}
-          <span className="filter-total">共 {filtered.length} 条</span>
+          <span className="filter-total" role="status">共 {filtered.length} 条</span>
           <Button
             disabled={invalidDates}
             icon="download"
@@ -301,7 +273,7 @@ export function Workspace({
           </Button>
           </div>
         </div>
-        {invalidDates ? <p className="filter-error" role="alert">开始日期不能晚于结束日期，请调整日期范围。<button className="text-button" onClick={() => { setStartDate(endDate); setEndDate(startDate); }}>交换日期</button></p> : null}
+        {invalidDates ? <p className="filter-error" id="call-date-error" role="alert">开始日期不能晚于结束日期，请调整日期范围。<button className="text-button" onClick={() => { setStartDate(endDate); setEndDate(startDate); }}>交换日期</button></p> : null}
         {view === "calls" ? (
           <>
             <div className="table-scroll">
@@ -479,6 +451,7 @@ export function Workspace({
             />
           </>
         )}
+        </div>
       </div>
     </>
   );
@@ -499,7 +472,7 @@ export function Pagination({
   const max = Math.max(1, Math.ceil(total / size));
   return (
     <div className="pagination">
-      <span>共 {total} 条</span>
+      <span role="status">{total ? `${(page - 1) * size + 1}–${Math.min(page * size, total)} 条，共 ${total} 条` : "共 0 条"}</span>
       <select
         aria-label="每页条数"
         value={size}
@@ -662,21 +635,8 @@ export function Detail({
       {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{openSupplement(sp) ? "待补材料" : "补件记录"} <Badge>{stateLabel(sp, state)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} {openSupplement(sp) ? ` · 下一接收人：${"standardVersion" in item ? person(item.inspector)?.name : "主管"}` : ""}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason} · {stamp(sp.cancelledAt)}</p>}{actions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionNames[a]}</Button>)}</div>)}
       <div className="detail-body">
         <div className="evidence-main">
-          <div className="subtabs">
-            {[
-              ["evidence", "通话证据"],
-              ["history", "处理记录"],
-              ["related", `关联事项 ${related.length}`],
-            ].map(([v, l]) => (
-              <button
-                className={tab === v ? "active" : ""}
-                onClick={() => setTab(v)}
-                key={v}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
+          <Tabs value={tab} label="事项详情" className="subtabs" panelId={`detail-${item.id}`} options={[{value:"evidence",label:"通话证据"},{value:"history",label:"处理记录"},{value:"related",label:`关联事项 ${related.length}`}]} onChange={setTab}/>
+          <div role="tabpanel" id={`detail-${item.id}`} aria-labelledby={`detail-${item.id}-tab-${tab}`}>
           {tab === "evidence" && (
             <>
               {"standardVersion" in item && (
@@ -927,6 +887,7 @@ export function Detail({
               )}
             </div>
           )}
+          </div>
         </div>
         <aside className="action-rail">
           <h3>{"batches" in item ? "通话操作" : "处理"}</h3>
@@ -992,6 +953,8 @@ function Evidence({
   pinnedVersion?: number;
 }) {
   const audio = useRef<HTMLAudioElement>(null);
+  const [audioError, setAudioError] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0),
     [corrected, setCorrected] = useState(false);
   const [chosen, setChosen] = useState<string>();
@@ -1014,9 +977,13 @@ function Evidence({
             src={call.audio}
             controls
             preload="metadata"
+            aria-label="通话原音"
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+            onError={() => { setAudioError(true); setPlaying(false); }}
             onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
           />
-          <small>本地合成演示录音 · 点击下方时间可定位回听</small>
+          <small>本地合成演示录音 · 点击时间定位回听</small>{audioError && <div className="audio-error" role="alert"><span>录音暂时无法播放，可先查看转写。</span><Button onClick={() => { setAudioError(false); audio.current?.load(); }}>重新加载</Button></div>}
         </div>
       ) : (
         <div className="audio-missing">
@@ -1059,7 +1026,7 @@ function Evidence({
         {call.transcript.map((seg, n) => (
           <div
             key={n}
-            className={`utterance ${evidence.includes(n) ? "hit" : ""} ${call.audio && current >= seg.at && current < (call.transcript[n + 1]?.at ?? Infinity) ? "playing" : ""}`}
+            className={`utterance ${evidence.includes(n) ? "hit" : ""} ${call.audio && playing && current >= seg.at && current < (call.transcript[n + 1]?.at ?? Infinity) ? "playing" : ""}`}
           >
             <button
               className="timecode"
@@ -1067,10 +1034,10 @@ function Evidence({
               onClick={() => {
                 if (audio.current) {
                   audio.current.currentTime = seg.at;
-                  audio.current.play().catch(() => {});
+                  audio.current.play().catch(() => { setAudioError(true); });
                 }
               }}
-              disabled={!call.audio}
+              disabled={!call.audio || audioError}
             >
               {clock(seg.at)}
             </button>

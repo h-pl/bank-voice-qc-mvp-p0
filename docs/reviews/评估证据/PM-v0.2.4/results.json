@@ -1,0 +1,36 @@
+{
+  "ownership": {
+    "parent": "F-1037",
+    "currentIdentity": "Q01",
+    "parentOwner": "S01",
+    "executor": "Q01",
+    "inMyTodo": true,
+    "supplementActions": [
+      "reply"
+    ]
+  },
+  "reference": {
+    "rule": "R-KW-018",
+    "historicalRule": 1,
+    "pinnedResourceVersion": 1,
+    "latestResourceVersion": 2
+  },
+  "history": {
+    "appeal": "AP-1033",
+    "remedy": "REC-1033",
+    "exposed": true,
+    "blocked": "暂停期间先处理申诉，恢复后再调整期限",
+    "logs": [
+      {
+        "target": "F-1041",
+        "action": "示例场景已载入",
+        "note": "自动结果仅为候选；请结合证据完成分诊。"
+      },
+      {
+        "target": "AP-1033",
+        "action": "调整期限",
+        "note": "仅调整本次申诉的处理期限"
+      }
+    ]
+  }
+}

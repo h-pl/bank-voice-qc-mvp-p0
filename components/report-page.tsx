@@ -4,7 +4,7 @@ import { useDemoClock } from '../lib/store';
 import { report, reportCsv, localDate, type Metric, type ReportFilter } from '../lib/reports';
 import { reportTrend, reportVisuals, periodMetric, visualMetric, type TrendPoint } from '../lib/report-visuals';
 import { people, type State } from '../lib/workflow';
-import { Button, Empty } from './ui';
+import { Button, Empty, Tabs } from './ui';
 import { download, stamp, Pagination } from './workspace';
 import { TrendChart, RingChart, HorizontalBars, chartColors, formatNumber } from './report-charts';
 import './report-page.css';
@@ -60,7 +60,7 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
   const detailKeys = tab === 'overview' ? ['riskcalls', 'candidates', 'manual'] : tab === 'issues' ? ['riskappealing'] : tab === 'improvement' ? ['review-overdue', 'appeal-overdue', 'remedy-overdue', 'paused', 'materialpending', 'extended', 'everoverdue', 'sourcechanged', 'review-due', 'appeal-due', 'remedy-due', 'terminated'] : [];
   if (!metrics.length) return <Empty text="当前角色无质量报表权限"/>;
   return <div className="qa-analytics">
-    <div className="qa-tabs" role="tablist" aria-label="质量报表视图">{tabs.map(([key, label], i) => <button type="button" role="tab" id={`report-tab-${key}`} aria-controls="report-view-panel" aria-selected={tab === key} tabIndex={tab === key ? 0 : -1} key={key} onClick={() => changeTab(key)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault();const n = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;changeTab(tabs[n][0]);(e.currentTarget.parentElement?.children[n] as HTMLButtonElement)?.focus(); } }}>{label}</button>)}</div>
+    <Tabs value={tab} label="质量报表视图" panelId="report-view-panel" className="qa-tabs" options={tabs.map(([value,label]) => ({value,label}))} onChange={changeTab}/>
     <section className="qa-filter-panel" aria-label="报表筛选"><div className="qa-filter-fields">
       <label>开始日期<input name="report-start" aria-label="报表开始日期" type="date" value={filter.start} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('start', e.target.value)}/></label>
       <label>结束日期<input name="report-end" aria-label="报表结束日期" type="date" value={filter.end} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('end', e.target.value)}/></label>
@@ -70,7 +70,7 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
     </div><div className="qa-filter-footer"><span>北京时间</span><div className="qa-date-shortcuts">{[7, 14, 30].map(days => <button type="button" key={days} aria-pressed={filter.start === range(days).start && filter.end === today} onClick={() => { setFilter(f => ({ ...f, ...range(days) }));selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>近 {days} 天</button>)}<button type="button" onClick={() => { setFilter({ business: '', group: '', agent: '', ...range(7) });selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>重置筛选</button></div></div>
       {invalid && <p className="qa-date-error" id="report-date-error" role="alert">开始日期不能晚于结束日期。<button type="button" onClick={() => { setFilter(f => ({ ...f, start: f.end, end: f.start }));setPage(1); }}>交换日期</button></p>}
     </section>
-    {!invalid && <div role="tabpanel" id="report-view-panel" aria-labelledby={`report-tab-${tab}`}>
+    {!invalid && <div role="tabpanel" id="report-view-panel" aria-labelledby={`report-view-panel-tab-${tab}`}>
       <div className="qa-context"><span>{tab === 'improvement' ? '当前管理范围快照；期间结果单独按日期统计' : '按通话结束日期；问题使用当前有效结论'}</span><span>截至 {stamp(asOf)}</span></div>
       <section className="qa-analysis-panel">
         {tab === 'improvement' && <div className="qa-section-title"><h2>当前待处理</h2><span>截至当前时刻，不受日期范围限制</span></div>}

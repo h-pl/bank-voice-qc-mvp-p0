@@ -38,6 +38,7 @@ export function RuleEditor({ rule, onSubmit, onDone }: { rule: Rule; onSubmit: (
   }, [dirty]);
   function save(event: FormEvent) {
     event.preventDefault();
+    if (busy) return;
     if (!changed) { setError("参数与当前草稿一致。修改参数后保存，或取消修改。"); return; }
     if (field === "threshold" && (!/^\d+$/.test(value) || Number(value) < 3 || Number(value) > 60)) {
       setError("请输入 3–60 之间的整数秒数。"); formRef.current?.querySelector<HTMLInputElement>("input")?.focus(); return;
@@ -53,11 +54,11 @@ export function RuleEditor({ rule, onSubmit, onDone }: { rule: Rule; onSubmit: (
     <div className="parameter-field">
       <label htmlFor={`parameter-${rule.id}`}>{parameterNames[field]}</label>
       <p id="parameter-help">{parameterHints[field]}</p>
-      {field === "threshold" ? <div className="number-unit"><input id={`parameter-${rule.id}`} name="threshold" type="number" inputMode="numeric" min={3} max={60} step={1} value={value} aria-describedby="parameter-help parameter-range" aria-invalid={!!error} onChange={e => { setValue(e.target.value); setError(""); }} /><span>秒</span></div> : <select id={`parameter-${rule.id}`} name={field} value={value} aria-describedby="parameter-help" onChange={e => { setValue(e.target.value); setError(""); }}>{(field === "scope" ? ["全部业务", "账户查询", "信用卡", "转账汇款"] : ["高风险候选", "所有候选", "关闭提醒"]).map(value => <option key={value}>{value}</option>)}</select>}
+      {field === "threshold" ? <div className="number-unit"><input id={`parameter-${rule.id}`} name="threshold" type="number" inputMode="numeric" min={3} max={60} step={1} value={value} aria-describedby={`parameter-help parameter-range${error ? " parameter-error" : ""}`} aria-invalid={!!error} onChange={e => { setValue(e.target.value); setError(""); }} /><span>秒</span></div> : <select id={`parameter-${rule.id}`} name={field} value={value} aria-describedby={`parameter-help${error ? " parameter-error" : ""}`} onChange={e => { setValue(e.target.value); setError(""); }}>{(field === "scope" ? ["全部业务", "账户查询", "信用卡", "转账汇款"] : ["高风险候选", "所有候选", "关闭提醒"]).map(value => <option key={value}>{value}</option>)}</select>}
       <small id="parameter-range">当前生效：{String(rule.versions.at(-1)![field])}{field === "threshold" ? " 秒；允许范围 3–60 秒，默认 15 秒。" : "。"}</small>
     </div>
-    <label className="editor-reason" htmlFor="parameter-reason">修改原因<textarea id="parameter-reason" name="reason" autoComplete="off" rows={2} value={note} aria-invalid={!!error && note.trim().length < 4} placeholder="例如：结合业务等待时长调整静默阈值…" onChange={e => { setNote(e.target.value); setError(""); }} /></label>
-    {error ? <p className="form-error" role="alert">{error}</p> : null}
+    <label className="editor-reason" htmlFor="parameter-reason">修改原因<textarea className="resize-none" id="parameter-reason" name="reason" aria-describedby={error ? "parameter-error" : undefined} autoComplete="off" rows={2} value={note} aria-invalid={!!error && note.trim().length < 4} placeholder="例如：结合业务等待时长调整静默阈值…" onChange={e => { setNote(e.target.value); setError(""); }} /></label>
+    {error ? <p className="form-error" id="parameter-error" role="alert">{error}</p> : null}
     {warning ? <p className="edit-warning" role="status">{warning}</p> : null}
     <div className="editor-footer"><p>保存为草稿，检查并发布后才生效。</p><Button onClick={onDone}>取消修改</Button><Button primary type="submit" disabled={busy}>{busy ? "保存中…" : "保存草稿"}</Button></div>
   </form>;

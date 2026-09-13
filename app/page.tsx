@@ -1,7 +1,7 @@
 "use client";
 import { Activity, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "../components/icon";
-import { Button, Empty, Modal } from "../components/ui";
+import { Button, Empty, Modal, Tabs } from "../components/ui";
 import dynamic from "next/dynamic";
 import { allowNavigation } from "../components/rule-editor";
 const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
@@ -206,6 +206,7 @@ export default function Home() {
     document.addEventListener("keydown", keyboard, true);
     return () => { document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("keydown", keyboard, true); };
   }, []);
+  useEffect(() => { document.title = ready ? `${pages[state.view].title} · Moss Quality` : "正在恢复工作区 · Moss Quality"; }, [ready, state.view]);
   if (!ready)
     return (
       <div className="loading-state" role="status">
@@ -216,17 +217,8 @@ export default function Home() {
         <p>正在恢复当前身份与演示进度…</p>
       </div>
     );
-  return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main-content">跳到主要内容</a>
-      {mobile && (
-        <button
-          className="nav-backdrop"
-          aria-label="关闭导航"
-          onClick={() => setMobile(false)}
-        />
-      )}
-      <aside className={`sidebar ${mobile ? "open" : ""}`}>
+  const navigation = (
+      <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">
             <Icon name="headset" size={23} />
@@ -276,12 +268,19 @@ export default function Home() {
           <small>v0.2.4</small>
         </div>
       </aside>
+  );
+  return (
+    <div className="app-shell">
+      <a className="skip-link" href="#main-content">跳到主要内容</a>
+      {mobile ? <Modal title="导航" variant="navigation" onClose={() => setMobile(false)}>{navigation}</Modal> : navigation}
       <div className="main">
         <header className="topbar">
           <div className="breadcrumb">
             <button
               className="icon-button mobile-toggle"
               aria-label="打开导航"
+              aria-haspopup="dialog"
+              aria-expanded={mobile}
               onClick={() => setMobile(true)}
             >
               <Icon name="menu" />
@@ -293,7 +292,7 @@ export default function Home() {
           <div className="top-actions">
             <span className="demo-badge">演示</span>
             <label className="role-select">
-              <span>演示身份</span>
+              <span className="role-avatar" aria-hidden="true">{person(state.identity).name.slice(0,1)}</span>
               <select
                 aria-label="演示身份"
                 value={state.identity}
@@ -309,6 +308,8 @@ export default function Home() {
             <button
               className="notification-button"
               aria-label={`我的待办 ${tasks.length}`}
+              aria-haspopup="dialog"
+              aria-expanded={noticeOpen}
               onClick={() => setNoticeOpen(!noticeOpen)}
             >
               <Icon name="bell" />
@@ -345,41 +346,9 @@ export default function Home() {
         </main>
       </div>
       {noticeOpen && (
-        <>
-          <button
-            className="notice-backdrop"
-            aria-label="关闭待办浮层"
-            onClick={() => setNoticeOpen(false)}
-          />
-          <div className="notification-panel">
-            <header>
-              <div>
-                <b>我的待办</b>
-                <small>{tasks.length} 项等待你处理</small>
-              </div>
-              <button
-                className="icon-button"
-                aria-label="关闭待办"
-                onClick={() => setNoticeOpen(false)}
-              >
-                <Icon name="close" />
-              </button>
-            </header>
-            <div className="tabs">
-              <button
-                className={noticeTab === "todo" ? "active" : ""}
-                onClick={() => setNoticeTab("todo")}
-              >
-                我的待办
-              </button>
-              <button
-                className={noticeTab === "events" ? "active" : ""}
-                onClick={() => setNoticeTab("events")}
-              >
-                事件通知{" "}
-                {events.filter((e) => !readEvents.includes(e.id)).length}
-              </button>
-            </div>
+        <Modal title="我的待办" variant="notification" description={`${tasks.length} 项等待你处理`} onClose={() => setNoticeOpen(false)}>
+          <Tabs value={noticeTab} label="通知分类" panelId="notice-panel" options={[{value:"todo",label:"我的待办",count:tasks.length},{value:"events",label:"事件通知",count:events.filter(e => !readEvents.includes(e.id)).length}]} onChange={setNoticeTab}/>
+          <div role="tabpanel" id="notice-panel" aria-labelledby={`notice-panel-tab-${noticeTab}`}>
             {noticeTab === "events" ? (
               events.length ? (
                 events.map((e) => (
@@ -445,9 +414,9 @@ export default function Home() {
               />
             )}
           </div>
-        </>
+        </Modal>
       )}
-      <div className={`toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">{toast ? <><Icon name="check" size={17}/>{toast}</> : null}</div>
+      <div className={`toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">{toast ? <><Icon name="bell" size={17}/>{toast}</> : null}</div>
       {form && (
         <ActionForm
           key={`${form.id}-${form.action}`}
@@ -467,6 +436,7 @@ export default function Home() {
             <Button onClick={() => setResetOpen(false)}>取消</Button>
             <Button
               primary
+              intent="danger"
               onClick={() => {
                 resetState();
                 setFocus(undefined);
