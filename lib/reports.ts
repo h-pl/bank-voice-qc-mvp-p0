@@ -279,7 +279,7 @@ export function report(s: State, f: ReportFilter, asOf = new Date()): Metric[] {
   const materialPending = s.remedies.filter(
     (r) =>
       scope(callFor(s, r.id)) &&
-      s.supplements.some((x) => x.target === r.id && x.status !== "done"),
+      s.supplements.some((x) => x.target === r.id && (x.status === "pending" || x.status === "submitted")),
   );
   result.push({
     key: "materialpending",

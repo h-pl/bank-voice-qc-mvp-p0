@@ -6,6 +6,8 @@ import { Badge, Button, Empty } from "./ui";
 import { Icon } from "./icon";
 import {
   actions,
+  agentWorkItems,
+  openSupplement,
   isTodo,
   primaryAction,
   people,
@@ -61,8 +63,11 @@ export const label = (e: Entity) =>
             : "business" in e
               ? e.business
               : "申诉核查";
-export const stateLabel = (e: Entity) =>
-  "executor" in e ? ({pending:"待补充",submitted:"待核对补件",done:"补件已完成"}[e.status]) :
+export const stateLabel = (e: Entity, s?: State) =>
+  s && "conclusions" in e && roleOf(s) === "agent" && e.reminder && !latest(e) ? (e.reminder.feedback ? "已反馈执行" : e.reminder.dissent ? "已提出异议" : e.reminder.readAt ? "提醒已读" : "提醒待阅读") :
+  s && s.appeals.some(a => a.id === e.id && a.status === "supplement") ? (s.supplements.some(sp => sp.target === e.id && sp.status === "submitted") ? "待主管接收补证" : "等待坐席补证") :
+  s && "findingIds" in e && e.appealId && s.appeals.some(a => a.id === e.appealId && a.status === "supplement") ? (s.supplements.some(sp => sp.target === e.appealId && sp.status === "submitted") ? "等待主管接收补证" : "等待坐席补证") :
+  "executor" in e ? ({pending:"待补充",submitted:"待核对补件",done:"补件已完成",cancelled:"随整改结束"}[e.status]) :
   "standardVersion" in e && e.status === "pending" ? "待坐席接收" :
   "findingIds" in e && e.evidenceRequest ? "待主管协调补证" :
   "batches" in e
@@ -134,17 +139,17 @@ export function Workspace({
         ? state.calls.filter((c) => canSeeCall(state, c))
         : view === "workorders"
           ? role === "agent"
-            ? state.findings.filter((f) => !!latest(f))
-            : [...state.reviews,...state.findings.filter(f=>isTodo(state,f) && f.status!=="review")]
+            ? agentWorkItems(state)
+            : [...state.reviews,...state.findings.filter(f=>isTodo(state,f) && f.status!=="review" && viewFor(state,f.id)==="workorders")]
           : [...state.appeals, ...state.remedies]
   ).filter((e) => canSee(state, e.id));
   const category = all.filter(e=>view!=="improvement" || (kind === "appeal" ? state.appeals.some(a=>a.id===e.id) : "standardVersion" in e));
   const tabs = view === "alerts" ? [["mine","待分诊 / 待我跟进"],["all","全部候选"],["review","已转复核"],["closed","已关闭"]]
     : view === "improvement" ? [["mine","需我处理"],["active","进行中"],["done","已结束"],["all","全部"]]
-    : view === "workorders" ? role === "agent" ? [["mine","待知悉"],["all","全部结果"]] : [["mine","我的待办"],["active","进行中"],["done","已完成"],["all","全部工单"]]
+    : view === "workorders" ? role === "agent" ? [["mine","需我处理"],["all","全部事项"],["reminders","通话提醒"],["results","质检结果"]] : [["mine","我的待办"],["active","进行中"],["done","已完成"],["all","全部工单"]]
     : [["all","全部通话"],["live","通话中"],["failed","处理异常"],["sample","授权样例"]];
   const done = (e:Entity) => "status" in e && ["done","cancelled","withdrawn","rejected","terminated","closed","delivered"].includes(e.status);
-  const match = (e:Entity,key:string) => key === "all" ? true : key === "mine" ? isTodo(state,e) : key === "active" ? !done(e) : key === "done" ? done(e) : key === "live" ? "batches" in e && !e.endedAt : key === "failed" ? "batches" in e && detection(e).includes("失败") : key === "sample" ? "batches" in e && e.sample : "status" in e && (e.status===key || key === "closed" && e.status === "delivered");
+  const match = (e:Entity,key:string) => key === "all" ? true : key === "reminders" ? "conclusions" in e && !!e.reminder : key === "results" ? "conclusions" in e && !!latest(e) : key === "mine" ? isTodo(state,e) : key === "active" ? !done(e) : key === "done" ? done(e) : key === "live" ? "batches" in e && !e.endedAt : key === "failed" ? "batches" in e && detection(e).includes("失败") : key === "sample" ? "batches" in e && e.sample : "status" in e && (e.status===key || key === "closed" && e.status === "delivered");
   const invalidDates = !!startDate && !!endDate && startDate > endDate;
   const searched = category.filter((e) => {
     const c = callFor(state, e.id);
@@ -207,7 +212,7 @@ export function Workspace({
           </strong>
         </div>
         <div>
-          <span>{view === "calls" ? "通话中" : role === "agent" && view === "workorders" ? "待知悉" : "需我处理"}</span>
+          <span>{view === "calls" ? "通话中" : "需我处理"}</span>
           <strong>
             {
               all.filter((e) => view === "calls" ? "batches" in e && !e.endedAt : isTodo(state,e))
@@ -323,7 +328,7 @@ export function Workspace({
                       label(e),
                       c?.business,
                       c ? person(c.agentId)?.name : "",
-                      stateLabel(e),
+                      stateLabel(e, state),
                       person(currentOwner(state, e))?.name ?? "",
                       "dueAt" in e ? stamp(e.dueAt) : "",
                       e.deadlineChanges?.map(h=>`${stamp(h.at)} ${stamp(h.from)} → ${stamp(h.to)} ${h.reason}`).join("；") ?? "",
@@ -443,7 +448,7 @@ export function Workspace({
                                 : "neutral"
                             }
                           >
-                            {"severity" in e
+                            {role === "agent" && "conclusions" in e ? (latest(e) ? "质检结果" : "通话提醒") : "severity" in e
                               ? e.severity === "high"
                                 ? "高风险"
                                 : "待关注"
@@ -466,7 +471,7 @@ export function Workspace({
                         </p>
                         <div className="queue-bottom">
                           <span className="status-dot" />
-                          {stateLabel(e)}
+                          {stateLabel(e, state)}
                           {"pause" in e && e.pause && <em>申诉暂停</em>}
                           <span className="queue-time">
                             {"dueAt" in e
@@ -581,7 +586,7 @@ export function Detail({
 }) {
   const [tab, setTab] = useState("evidence");
   const call = callFor(state, item.id),
-    allowed = actions(state, item.id).filter((a) => !["sample_calls","accept_appeal","save_review"].includes(a));
+    allowed = actions(state, item.id).filter((a) => !["sample_calls","accept_appeal","save_review","save_acceptance"].includes(a));
   const mainAction = primaryAction(state,item.id);
   const supplements = state.supplements.filter(sp=>sp.target===item.id && canSee(state,sp.id));
   const owner = person(currentOwner(state, item));
@@ -634,7 +639,7 @@ export function Detail({
                   : "warning"
               }
             >
-              {"batches" in item ? `检测${stateLabel(item)}` : stateLabel(item)}
+              {"batches" in item ? `检测${stateLabel(item, state)}` : stateLabel(item, state)}
             </Badge>
             {"pause" in item && item.pause && (
               <Badge tone="warning">申诉暂停</Badge>
@@ -695,8 +700,8 @@ export function Detail({
       )}
       {"findingIds" in item && item.evidenceRequest && <div className="callout"><b>补证申请 · 待主管协调</b><p>{item.evidenceRequest.note}</p></div>}
       {primary && activeAppeal(state,primary.id) && <div className="case-links"><span>本问题申诉处理中，新证据回当前申诉。</span><Button onClick={()=>onOpen(activeAppeal(state,primary.id)!.id)}>查看当前申诉</Button></div>}
-      <div className="case-links"><span>本问题关联</span>{related.filter(r=>!("executor" in r) && ("findingId" in r ? r.findingId===primary?.id : "findingIds" in r && r.findingIds.includes(primary?.id??""))).map(r=><Button key={r.id} onClick={()=>onOpen(r.id)}>{"standardVersion" in r ? "整改" : "findingIds" in r ? "复核" : "申诉"} · {stateLabel(r)}</Button>)}</div>
-      {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{sp.status === "done" ? "补件记录" : "待补材料"} <Badge>{stateLabel(sp)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} · 下一接收人：{"standardVersion" in item ? person(item.inspector)?.name : "主管"}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{actions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionNames[a]}</Button>)}</div>)}
+      <div className="case-links"><span>本问题关联</span>{related.filter(r=>!("executor" in r) && ("findingId" in r ? r.findingId===primary?.id : "findingIds" in r && r.findingIds.includes(primary?.id??""))).map(r=><Button key={r.id} onClick={()=>onOpen(r.id)}>{"standardVersion" in r ? "整改" : "findingIds" in r ? "复核" : "申诉"} · {stateLabel(r, state)}</Button>)}</div>
+      {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{openSupplement(sp) ? "待补材料" : "补件记录"} <Badge>{stateLabel(sp, state)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} {openSupplement(sp) ? ` · 下一接收人：${"standardVersion" in item ? person(item.inspector)?.name : "主管"}` : ""}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason} · {stamp(sp.cancelledAt)}</p>}{actions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionNames[a]}</Button>)}</div>)}
       <div className="detail-body">
         <div className="evidence-main">
           <div className="subtabs">
@@ -747,6 +752,7 @@ export function Detail({
                   ))}
                   <p>本轮已提交 {new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount} 通样例</p>
                   {item.rounds?.map(round=><details key={round.round} className="round-history"><summary>第 {round.round} 轮材料与验收 · 标准 V{round.standardVersion}</summary><p>目标：{round.goal}；标准：{round.standard}；要求：{round.sampleCount} 通 / {round.observation}</p>{round.materials.map((m,n)=><div key={n}><p>{m.text}</p>{m.samples.map(id=><Button key={id} onClick={()=>onOpen(id)}>查看样例 {id}</Button>)}{m.attachment && <p>{m.attachment}</p>}</div>)}<p>验收：{round.acceptance?.result === "fail" ? "不通过" : round.acceptance?.result === "pass" ? "通过" : "材料不足"} · {round.acceptance?.note}</p></details>)}
+                  {(item.acceptanceDraft || item.draft) && <div className="material-card"><b>验收草稿</b><p>{item.acceptanceDraft?.note ?? item.draft}</p><small>{item.acceptanceDraft ? `第 ${item.acceptanceDraft.round} 轮 · 标准 V${item.acceptanceDraft.version} · ${person(item.acceptanceDraft.author)?.name ?? "原验收人"}保存` : "旧版草稿，继续处理前需核对当前标准"}</small></div>}
                   {item.acceptance && (
                     <div className="material-card">
                       <b>
@@ -939,7 +945,7 @@ export function Detail({
                     <div>
                       <b>{f.title}</b>
                       <small>
-                        {f.id} · {stateLabel(f)}
+                        {f.id} · {stateLabel(f, state)}
                       </small>
                     </div>
                     <Icon name="chevron" />
@@ -952,7 +958,7 @@ export function Detail({
                   <div>
                     <b>{label(r)}</b>
                     <small>
-                      {r.id} · {stateLabel(r)}
+                      {r.id} · {stateLabel(r, state)}
                     </small>
                   </div>
                   <Icon name="chevron" />
@@ -973,12 +979,13 @@ export function Detail({
               <small>{owner ? "当前责任人" : "后续仍可追溯"}</small>
             </div>
           </div>}
-          {allowed.length ? (
+          {allowed.length || actions(state,item.id).includes("save_acceptance") ? (
             <>
             {[...allowed.filter(a => a === mainAction), ...allowed.filter(a => a !== mainAction)].map(a => (
-              <Button key={a} primary={a === mainAction} onClick={() => onAction(item.id, a)}>{actionNames[a]}</Button>
+              <Button key={a} primary={a === mainAction} onClick={() => onAction(item.id, a)}>{a === "verify" ? "验收处理" : actionNames[a]}</Button>
             ))}
             {actions(state,item.id).includes("save_review") && !allowed.includes("submit_review") && <Button onClick={()=>onAction(item.id,"save_review")}>编辑复核草稿</Button>}
+            {actions(state,item.id).includes("save_acceptance") && !allowed.includes("verify") && <Button onClick={()=>onAction(item.id,"save_acceptance")}>继续验收草稿</Button>}
             {!mainAction && !("batches" in item) && <p className="subtle">当前等待{owner?.name ?? "后续处理"}，无需重复提交。</p>}
             </>
           ) : (

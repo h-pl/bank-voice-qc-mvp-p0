@@ -389,7 +389,7 @@ export default function Home() {
           ))}
           <footer className="page-footer">
             <span>Moss Quality · 核心质检闭环</span>
-            <span>3 个核心角色 · 7 个业务模块 · v0.2.1</span>
+            <span>3 个核心角色 · 7 个业务模块 · v0.2.2</span>
           </footer>
         </main>
       </div>
@@ -481,7 +481,7 @@ export default function Home() {
                   <div>
                     <b>{label(x)}</b>
                     <p>
-                      {x.id} · {stateLabel(x)}
+                      {x.id} · {stateLabel(x,state)}
                     </p>
                   </div>
                   <Icon name="chevron" size={15} />

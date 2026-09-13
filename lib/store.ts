@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { createInitial } from "./fixtures.ts";
-import { nav, person, type State } from "./workflow.ts";
+import { nav, person, restoreLifecycle, type State } from "./workflow.ts";
 export const storageKey = "moss-qc-mvp-p0-v2";
 const initial = createInitial(new Date("2026-09-12T00:00:00+08:00"));
 let cache: State | undefined;
@@ -26,7 +26,7 @@ export function getSnapshot(): State {
           "requests",
         ].every((k) => Array.isArray(d[k]))
       )
-        cache = d;
+        cache = restoreLifecycle(d);
     } catch {
       /* Corrupt local demo state is replaced with coherent seeds. */
     }

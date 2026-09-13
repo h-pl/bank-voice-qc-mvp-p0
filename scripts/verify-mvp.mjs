@@ -30,7 +30,7 @@ for (const file of fs
   assert.ok(!read("docs/reviews/流程图/" + file).includes("待确认"));
 const result = spawnSync(
   process.execPath,
-  ["--experimental-strip-types", "--test", "scripts/workflow.test.mjs", "scripts/refinement.test.mjs"],
+  ["--experimental-strip-types", "--test", "scripts/workflow.test.mjs", "scripts/refinement.test.mjs", "scripts/lifecycle.test.mjs"],
   { cwd: root, stdio: "inherit" },
 );
 assert.equal(result.status, 0, "工作流回归必须通过");

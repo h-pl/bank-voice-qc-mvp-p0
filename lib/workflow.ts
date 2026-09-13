@@ -166,6 +166,15 @@ export type Pause = {
   dueAt: string;
   wasOverdue: boolean;
 };
+export type AcceptanceDraft = {
+  note: string;
+  result: "pass" | "fail" | "insufficient";
+  version: number;
+  round: number;
+  author: string;
+  savedAt: string;
+  dueAt?: string;
+};
 export type Remedy = Base & {
   findingId: string;
   conclusionVersion: number;
@@ -221,14 +230,18 @@ export type Remedy = Base & {
     note: string;
     at: string;
   }[];
-  draft?: string;
+  draft?: string; // Legacy notes are retained as unverified reference.
+  acceptanceDraft?: AcceptanceDraft;
+  acceptanceDraftHistory?: AcceptanceDraft[];
 };
 export type Supplement = Base & {
   target: string;
   executor: string;
   dueAt: string;
   note: string;
-  status: "pending" | "submitted" | "done";
+  status: "pending" | "submitted" | "done" | "cancelled";
+  cancelledAt?: string;
+  cancellationReason?: string;
   reply?: string;
   origin: string;
   trigger: string;
@@ -470,7 +483,7 @@ export function actions(s: State, id: string): string[] {
     if (role === "supervisor" && !activeAppeal(s, e.id)) {
       if (["candidate", "reminded", "supplement"].includes(e.status)) {
         out.push("dismiss", "assign");
-        if (!s.supplements.some((x) => x.target === id && x.status !== "done"))
+        if (!s.supplements.some((x) => x.target === id && openSupplement(x)))
           out.push("supplement");
         if (!callFor(s, id)!.endedAt && !e.reminder) out.unshift("remind");
       }
@@ -505,7 +518,7 @@ export function actions(s: State, id: string): string[] {
       if (!ap || terminalAppeal(ap) || ap.status === "supplement") return [];
     }
     const awaiting = s.supplements.some(
-      (x) => x.target === e.id && x.status !== "done",
+      (x) => x.target === e.id && openSupplement(x),
     );
     if (
       role === "inspector" &&
@@ -554,7 +567,7 @@ export function actions(s: State, id: string): string[] {
       e.status === "verification"
     ) {
       out.push("save_acceptance");
-      if (!e.pause && !s.supplements.some(x => x.target === id && x.status !== "done")) out.push("verify");
+      if (!e.pause && !s.supplements.some(x => x.target === id && openSupplement(x))) out.push("verify");
     }
     if (role === "supervisor") {
       out.push("change_standard", "extend", "reassign");
@@ -563,7 +576,7 @@ export function actions(s: State, id: string): string[] {
           e.supervisorReason === "approve" &&
           e.acceptance?.result === "pass" &&
           e.acceptance.version === e.standardVersion &&
-          !s.supplements.some((x) => x.target === id && x.status !== "done")
+          !s.supplements.some((x) => x.target === id && openSupplement(x))
         )
           out.push("close_remedy");
         out.push("return_remedy");
@@ -571,6 +584,8 @@ export function actions(s: State, id: string): string[] {
     }
   }
   if ("executor" in e) {
+    const parent = s.remedies.find(r => r.id === e.target);
+    if (parent && terminalRemedy(parent)) return [];
     if (e.executor === s.identity && e.status === "pending") out.push("reply");
     if (
       e.status === "submitted" &&
@@ -634,6 +649,7 @@ export type Input = {
   resourceRole?: string;
   exception?: string;
   checkPass?: boolean;
+  draftBasisConfirmed?: boolean;
 };
 export type Command = {
   id: string;
@@ -683,12 +699,12 @@ export const currentOwner = (s: State, e: Entity): string => {
     return terminalAppeal(e)
       ? ""
       : e.status === "supplement"
-        ? e.agentId
+        ? (s.supplements.find(sp => sp.target === e.id && openSupplement(sp))?.status === "submitted" ? "S01" : e.agentId)
         : e.status === "reviewing"
           ? (s.reviews.find((r) => r.id === e.reviewId)?.owner ?? "S01")
           : "S01";
   if ("executor" in e)
-    return e.status === "pending"
+    return s.remedies.some(r => r.id === e.target && terminalRemedy(r)) ? "" : e.status === "pending"
       ? e.executor
       : e.status === "submitted"
         ? (s.remedies.find((r) => r.id === e.target)?.inspector ?? "S01")
@@ -736,6 +752,34 @@ export function resumeRemedy(r: Remedy, reason: string, now: Date) {
   r.pause = undefined;
   r.rev++;
 }
+export const openSupplement = (sp: Supplement) => sp.status === "pending" || sp.status === "submitted";
+function cancelRemedySupplements(s: State, r: Remedy, at: string) {
+  for (const sp of s.supplements.filter(x => x.target === r.id && openSupplement(x))) {
+    sp.status = "cancelled";
+    sp.cancelledAt = at;
+    sp.cancellationReason = r.terminationReason || "关联整改已结束";
+    sp.rev++;
+  }
+}
+function terminateRemedy(s: State, r: Remedy, reason: string, now: Date) {
+  if (r.pause) for (const id of [...r.pause.reasons]) resumeRemedy(r, id, now);
+  r.status = "terminated";
+  r.terminationReason = reason;
+  r.finishedAt = now.toISOString();
+  cancelRemedySupplements(s, r, r.finishedAt);
+}
+export function restoreLifecycle(s: State) {
+  for (const r of s.remedies.filter(terminalRemedy))
+    cancelRemedySupplements(s, r, r.finishedAt || s.logs.at(-1)?.at || r.createdAt);
+  return s;
+}
+export function acceptanceDraftMatches(r: Remedy, identity: string) {
+  const d = r.acceptanceDraft;
+  return !!d && d.version === r.standardVersion && d.round === r.round && d.author === identity;
+}
+export function agentWorkItems(s: State) {
+  return s.findings.filter(f => canSee(s, f.id) && (!!latest(f) || !!f.reminder));
+}
 function cancelAppealReview(s: State, a: Appeal, now: Date, completed = false) {
   const r = s.reviews.find((r) => r.id === a.reviewId);
   if (r && !["done", "cancelled"].includes(r.status)) {
@@ -754,7 +798,7 @@ function cancelAppealReview(s: State, a: Appeal, now: Date, completed = false) {
     r.rev++;
   }
   for (const x of s.supplements.filter(
-    (x) => x.target === a.id && x.status !== "done",
+    (x) => x.target === a.id && openSupplement(x),
   )) {
     x.status = "done";
     x.rev++;
@@ -872,11 +916,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       for (const r of s.remedies.filter(r => r.findingId === f.id)) {
         r.sourceChanged = true;
         if (!terminalRemedy(r)) {
-          if(r.pause) for(const reason of [...r.pause.reasons]) resumeRemedy(r,reason,now);
-          r.status = "terminated";
-          r.terminationReason = value === "insufficient" ? "新证据不足，旧整改依据不充分" : value === "false_positive" ? "补充核查改判为误报" : "来源结论更新，按新结论另行处置";
-          r.finishedAt = at;
-          for (const sp of s.supplements.filter(x=>x.target === r.id && x.status !== "done")) {sp.status="done";sp.rev++;}
+          terminateRemedy(s, r, value === "insufficient" ? "新证据不足，旧整改依据不充分" : value === "false_positive" ? "补充核查改判为误报" : "来源结论更新，按新结论另行处置", now);
         }
         r.rev++;
       }
@@ -896,7 +936,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   };
   const addSupplement = (target: string, executor: string, origin: string) => {
     must(
-      !s.supplements.some((x) => x.target === target && x.status !== "done"),
+      !s.supplements.some((x) => x.target === target && openSupplement(x)),
       "已有补件在处理中。",
     );
     must(supplementExecutors(s,target).some(p=>p.id === executor), "补件执行人无此通话范围，请重新选择");
@@ -1273,13 +1313,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
           continue;
         }
         if (i.value === "false_positive" || i.value === "insufficient") {
-          r.status = "terminated";
-          r.terminationReason =
-            i.value === "false_positive"
-              ? "来源结论改判为误报"
-              : "证据不足，原整改依据不充分";
-          r.finishedAt = at;
-          r.pause = undefined;
+          terminateRemedy(s, r, i.value === "false_positive" ? "来源结论改判为误报" : "证据不足，原整改依据不充分", now);
         }
         if (i.value === "adjust") {
           r.goal = i.goal!;
@@ -1432,7 +1466,20 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     });
     if (!r.pause) r.status = "verification";
   }
-  if (a === "save_acceptance") (e as Remedy).draft = i.note;
+  if (a === "save_acceptance" || a === "verify") {
+    const r = e as Remedy;
+    must(["pass", "fail", "insufficient"].includes(i.value ?? "pass"), "请选择验收结果");
+    if ((r.acceptanceDraft || r.draft) && !acceptanceDraftMatches(r, s.identity))
+      must(i.draftBasisConfirmed, "草稿对应的轮次、标准或验收人已变化，请核对后再保存或提交");
+    if (r.acceptanceDraft && (a === "verify" || !acceptanceDraftMatches(r, s.identity)))
+      (r.acceptanceDraftHistory ??= []).push(structuredClone(r.acceptanceDraft));
+    if (!r.acceptanceDraft && r.draft)
+      (r.acceptanceDraftHistory ??= []).push({note:r.draft,result:"pass",version:0,round:0,author:"",savedAt:""});
+    if (a === "save_acceptance") {
+      r.acceptanceDraft = {note:i.note!, result:(i.value ?? "pass") as AcceptanceDraft["result"],version:r.standardVersion,round:r.round,author:s.identity,savedAt:at,dueAt:i.dueAt};
+      r.draft = undefined;
+    }
+  }
   if (a === "verify") {
     const r = e as Remedy;
     must(!r.pause, "申诉暂停期间只能保存意见草稿");
@@ -1444,7 +1491,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     if (i.value === "pass")
       must(
         sampleIds.size >= r.sampleCount &&
-          !s.supplements.some((x) => x.target === r.id && x.status !== "done"),
+          !s.supplements.some((x) => x.target === r.id && openSupplement(x)),
         "样例不足或尚有补件，不能通过",
       );
     r.acceptance = {
@@ -1455,6 +1502,8 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       at,
     };
     r.acceptanceHistory.push({ ...r.acceptance });
+    r.acceptanceDraft = undefined;
+    r.draft = undefined;
     if (i.value === "insufficient") {
       addSupplement(r.id, r.agentId, "verification");
     } else {
@@ -1765,12 +1814,17 @@ export function needsRead(s: State, e: Entity) {
 }
 export function needsWork(s: State, e: Entity): boolean {
   if(!canSee(s,e.id)) return false;
-  if(s.supplements.some(x=>x.target===e.id && x.status!=="done" && currentOwner(s,x)===s.identity)) return true;
+  if ("standardVersion" in e && terminalRemedy(e)) return false;
+  if ("findingIds" in e && e.appealId) {
+    const parent = s.appeals.find(a => a.id === e.appealId);
+    if (!parent || terminalAppeal(parent) || parent.status === "supplement") return false;
+  }
+  if(s.supplements.some(x=>x.target===e.id && openSupplement(x) && currentOwner(s,x)===s.identity)) return true;
   if("conclusions" in e && e.status === "review") return false;
   if("pause" in e && e.pause) return false;
-  if("findingIds" in e && s.supplements.some(x=>x.target===e.id && x.status!=="done")) return false;
+  if("findingIds" in e && s.supplements.some(x=>x.target===e.id && openSupplement(x))) return false;
   if("findingId" in e && !("standardVersion" in e) && (e.status === "reviewing" || e.status === "supplement")) return false;
-  if("standardVersion" in e && s.supplements.some(x=>x.target===e.id && x.status!=="done")) return false;
+  if("standardVersion" in e && s.supplements.some(x=>x.target===e.id && openSupplement(x))) return false;
   return currentOwner(s,e)===s.identity;
 }
 export function isTodo(s:State,e:Entity) { return needsRead(s,e) || needsWork(s,e); }

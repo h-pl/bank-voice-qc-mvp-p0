@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Modal, Button } from "./ui";
 import {
   actionNames,
+  actions,
+  acceptanceDraftMatches,
   supplementExecutors,
   type Review,
   callFor,
@@ -36,13 +38,15 @@ export function ActionForm({
   onSubmit: (command: Command) => void;
 }) {
   const actionTitle = ({check_rule:"检查草稿",check_resource:"检查草稿",publish_rule:"发布新版本",publish_resource:"发布新版本",save_resource:"编辑资源",create_resource:"新增资源"} as Record<string,string>)[requestedAction] ?? actionNames[requestedAction];
-  const action = requestedAction === "accept_assign" ? "assign_appeal" : requestedAction === "accept_decide" ? "decide" : requestedAction;
+  const isAcceptance = ["save_acceptance", "verify"].includes(requestedAction);
+  const action = isAcceptance ? "verify" : requestedAction === "accept_assign" ? "assign_appeal" : requestedAction === "accept_decide" ? "decide" : requestedAction;
   const target = entity(state, id)!;
   const [formRev,setFormRev] = useState(target.rev);
   const remedyTarget = "standardVersion" in target ? target : "target" in target ? state.remedies.find(r=>r.id === target.target) : undefined;
   const call = callFor(state, id);
   const isReview = "findingIds" in target;
   const isRemedy = "standardVersion" in target;
+  const staleAcceptanceDraft = isAcceptance && isRemedy && !!(target.acceptanceDraft || target.draft) && !acceptanceDraftMatches(target, state.identity);
   const isRule = "indicator" in target && "versions" in target;
   const isResource = "versions" in target && !isRule;
   const f =
@@ -101,6 +105,10 @@ export function ActionForm({
       data.sampleCount = target.sampleCount;
       data.observation = target.observation;
       data.owner = target.inspector;
+      if (isAcceptance) {
+        data.note = target.acceptanceDraft?.note ?? target.draft ?? "";
+        data.value = target.acceptanceDraft?.result ?? "pass";
+      }
     }
     if (isRule) {
       const r = target as Rule,
@@ -126,7 +134,7 @@ export function ActionForm({
   };
   const [input, setInput] = useState<Input>(defaults);
   const [date, setDate] = useState(() =>
-    localInput(new Date(Date.now() + 86400000)),
+    localInput(new Date(isAcceptance && isRemedy && target.acceptanceDraft?.dueAt || Date.now() + 86400000)),
   );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -194,7 +202,7 @@ export function ActionForm({
         ...input,
         dueAt: date ? new Date(date).toISOString() : undefined,
       };
-      onSubmit({ id, action: override ?? (["save_review","submit_review"].includes(action) ? "submit_review" : requestedAction), rev: formRev, requestId, input: data });
+      onSubmit({ id, action: override ?? (["save_review","submit_review"].includes(action) ? "submit_review" : isAcceptance ? "verify" : requestedAction), rev: formRev, requestId, input: data });
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : "操作失败");
@@ -231,7 +239,7 @@ export function ActionForm({
     </div>
   );
   return (
-    <Modal title={["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={onClose}>
+    <Modal title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={onClose}>
       <form onSubmit={(e:FormEvent)=>{e.preventDefault();execute();}}>
         <div className="form-context">
           <b>
@@ -247,6 +255,12 @@ export function ActionForm({
             {action === "create_resource" ? "保存后分配编号" : id} · 当前操作：{person(state.identity).name}
           </span>
         </div>
+        {isAcceptance && isRemedy && <div className="callout">
+          <b>第 {target.round} 轮 · 标准 V{target.standardVersion}</b>
+          <p>验收标准：{target.standard}</p><p>保存草稿由你继续处理；提交通过或不通过交主管处理，材料不足则交坐席补充后回到你核对。</p>
+          {target.pause && <p>申诉处理中，当前只能保存草稿。</p>}
+          {staleAcceptanceDraft && <><p>原草稿的轮次、标准或验收人已变化。内容已保留为参考，请核对本轮材料与标准。</p><label className="checkbox"><input type="checkbox" checked={!!input.draftBasisConfirmed} onChange={e=>set("draftBasisConfirmed",e.target.checked)}/>已核对当前轮次、标准与材料</label></>}
+        </div>}
         {action === "end_call" && (
           <p className="callout">
             这是原型场景事件。结束后封存证据，有效预设分派自动衔接复核；未设置或失效的分派回主管待办。
@@ -321,7 +335,7 @@ export function ActionForm({
               ? "补件期限"
               : "办理期限"}
             <input
-              aria-label="办理期限"
+              aria-label={action === "supplement" || action === "followup" ? "补件期限" : "办理期限"}
               type="datetime-local"
               required
               value={date}
@@ -341,7 +355,8 @@ export function ActionForm({
                   ? "预设执行结果"
                   : "关闭原因"}
             <select
-              aria-label="处理结果"
+              aria-label={action === "decide" ? "裁定结果" : action === "verify" ? "验收结果" : action === "finish_detection" ? "预设执行结果" : "关闭原因"}
+              name="action-result"
               value={input.value}
               onChange={(e) => set("value", e.target.value)}
             >
@@ -777,11 +792,13 @@ export function ActionForm({
                 ? "同人核查原因与要求"
                 : "处理说明"}
             <textarea
-              aria-label="处理说明"
+              aria-label={["reply", "material"].includes(action) ? "材料说明" : action === "assign_appeal" && input.owner === originalReviewer ? "同人核查原因与要求" : "处理说明"}
+              name="action-note"
+              autoComplete="off"
               required
               minLength={4}
               rows={3}
-              placeholder="写明本次处理的理由、要求或证据，至少 4 个字"
+              placeholder="例如：已核对本轮样例中的业务说明，至少 4 个字…"
               value={input.note}
               onChange={(e) => set("note", e.target.value)}
             />
@@ -795,10 +812,11 @@ export function ActionForm({
         {target.rev !== formRev && <p className="callout">当前记录已更新，输入已保留。请核对最新阶段与要求。<Button onClick={()=>{setFormRev(target.rev);setError("");}}>已核对，使用最新记录</Button></p>}
         <div className="modal-actions">
           <Button onClick={onClose}>取消</Button>
+          {isAcceptance && <Button disabled={busy || target.rev !== formRev || staleAcceptanceDraft && !input.draftBasisConfirmed} onClick={()=>execute("save_acceptance")}>保存草稿</Button>}
           {["save_review","submit_review"].includes(action) && <Button disabled={busy} onClick={()=>execute("save_review")}>保存草稿</Button>}
-          <Button primary type="submit" disabled={busy || target.rev !== formRev || (["save_review","submit_review"].includes(action) && !call?.endedAt)}>
-            {busy ? "保存中…" : ["save_review","submit_review"].includes(action) ? "提交复核意见" : ["save_resource", "create_resource"].includes(action) ? "保存草稿" : actionTitle}
-          </Button>
+          {(!isAcceptance || actions(state,id).includes("verify")) && <Button primary type="submit" disabled={busy || target.rev !== formRev || staleAcceptanceDraft && !input.draftBasisConfirmed || (["save_review","submit_review"].includes(action) && !call?.endedAt)}>
+            {busy ? "保存中…" : isAcceptance ? "提交验收意见" : ["save_review","submit_review"].includes(action) ? "提交复核意见" : ["save_resource", "create_resource"].includes(action) ? "保存草稿" : actionTitle}
+          </Button>}
         </div>
       </form>
     </Modal>
