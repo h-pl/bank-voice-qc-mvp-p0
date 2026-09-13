@@ -1,0 +1,17 @@
+{
+  "document_token": "JJiCdLFFbotAvgxXr7rcsdmDnwe",
+  "section": "7.5.1",
+  "block_id": "doxcn67bt1WcZtLXMZO4Nwq6Qth",
+  "board_token": "A9z8wlcxphcHTdbijx6cgp2BnBe",
+  "original_board_untouched": "ThqUw9v5ehsdbLbX6dfchv0In0f",
+  "mermaid_source": "/tmp/qc-flow-main.mmd",
+  "svg_source": "/tmp/qc-flow-main.svg",
+  "preview": "/tmp/qc-flow-main-preview.jpg",
+  "write_result": "success; final text corrected",
+  "visual_verification": "飞书预览已目视核验：四分区完整，菱形/分支/原任务补证回路可见，无严重文字溢出或节点覆盖；范围内未发现与范围依据不足无发现分为独立出口。",
+  "geometry_check": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "final_copy_correction": "质检员提出缺项与申请理由并保留原任务、草稿；主管明确执行人及期限并组织补证。"
+}

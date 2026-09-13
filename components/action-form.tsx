@@ -465,12 +465,12 @@ export function ActionForm({
                           placeholder="说明结论与证据的关系"
                         />
                       </label>
-                      <details>
-                        <summary>证据片段（已选 {op.evidence.length}）</summary>
+                      <div className="review-evidence">
+                        <p>证据片段（已选 {op.evidence.length}）</p>
                         {evidenceSelector(op.evidence, (v) =>
                           update({ evidence: v }),
                         )}
-                      </details>
+                      </div>
                       {action === "publish" && op.value === "risk" && <DispositionFields value={input.dispositions?.[fid] ?? {remedy:false}} onChange={patch=>set("dispositions",{...input.dispositions,[fid]:{...input.dispositions?.[fid],remedy:false,...input.dispositions?.[fid],...patch}})} previous={target.findingIds.indexOf(fid)>0 ? input.dispositions?.[target.findingIds[target.findingIds.indexOf(fid)-1]] : undefined} />}
                     </fieldset>
                   );

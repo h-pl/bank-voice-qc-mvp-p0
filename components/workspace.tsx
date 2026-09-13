@@ -285,8 +285,9 @@ export function Workspace({
             <label>开始日期<input aria-label="通话开始日期" type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setPage(1);onOpen("");}}/></label>
             <label>结束日期<input aria-label="通话结束日期" type="date" value={endDate} onChange={e=>{setEndDate(e.target.value);setPage(1);onOpen("");}}/></label>
             <select aria-label="通话坐席" value={agent} onChange={e=>{setAgent(e.target.value);setPage(1);onOpen("");}}><option value="">全部坐席</option>{people.filter(p=>p.role==="agent" && (role!=="agent" || p.id===state.identity)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
-            <details className="advanced-filters"><summary>更多筛选{group || execution ? "（已生效）":""}</summary><select aria-label="通话班组" value={group} onChange={e=>{setGroup(e.target.value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</select><select aria-label="检测状态" value={execution} onChange={e=>{setExecution(e.target.value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</select></details>
+            <div className="additional-filters"><select aria-label="通话班组" value={group} onChange={e=>{setGroup(e.target.value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</select><select aria-label="检测状态" value={execution} onChange={e=>{setExecution(e.target.value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</select></div>
           </>}
+          <div className="filter-actions">
           {(search || business || startDate || endDate || agent || group || execution) && <Button onClick={()=>{setSearch("");setBusiness("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>清除筛选</Button>}
           <span className="filter-total">共 {filtered.length} 条</span>
           <Button
@@ -326,6 +327,7 @@ export function Workspace({
           >
             导出
           </Button>
+          </div>
         </div>
         {view === "calls" ? (
           <>
@@ -980,9 +982,10 @@ export function Detail({
           </div>
           {allowed.length ? (
             <>
-            {allowed.filter(a=>a===mainAction || ["accept_decide","request_evidence","appeal","link_finding","add_finding"].includes(a)).map(a=><Button key={a} primary={a===mainAction} onClick={()=>onAction(item.id,a)}>{actionNames[a]}</Button>)}
+            {[...allowed.filter(a => a === mainAction), ...allowed.filter(a => a !== mainAction)].map(a => (
+              <Button key={a} primary={a === mainAction} onClick={() => onAction(item.id, a)}>{actionNames[a]}</Button>
+            ))}
             {actions(state,item.id).includes("save_review") && !allowed.includes("submit_review") && <Button onClick={()=>onAction(item.id,"save_review")}>编辑复核草稿</Button>}
-            {allowed.some(a=>a!==mainAction && !["accept_decide","request_evidence","appeal","link_finding","add_finding"].includes(a)) && <details className="more-actions"><summary>更多操作</summary>{allowed.filter(a=>a!==mainAction && !["accept_decide","request_evidence","appeal","link_finding","add_finding"].includes(a)).map(a=><Button key={a} onClick={()=>onAction(item.id,a)}>{actionNames[a]}</Button>)}</details>}
             {!mainAction && <p className="subtle">当前等待{owner?.name ?? "后续处理"}，无需重复提交。</p>}
             </>
           ) : (
@@ -994,22 +997,22 @@ export function Detail({
             !call.endedAt &&
             roleOf(state) === "supervisor" &&
             item.id !== call.id && (
-              <details className="scenario">
-                <summary>原型场景事件</summary>
+              <div className="scenario">
+                <p className="scenario-label">演示辅助</p>
                 <Button onClick={() => onAction(call.id, "end_call")}>
                   模拟通话结束
                 </Button>
-              </details>
+              </div>
             )}
           {"standardVersion" in item &&
             !["done", "terminated"].includes(item.status) &&
             roleOf(state) === "agent" && (
-              <details className="scenario">
-                <summary>原型场景事件</summary>
+              <div className="scenario">
+                <p className="scenario-label">演示辅助</p>
                 <Button onClick={() => onAction(item.id, "sample_calls")}>
                   生成整改后样例
                 </Button>
-              </details>
+              </div>
             )}
           <div className="rail-note">
             <Icon name="file" size={16} />

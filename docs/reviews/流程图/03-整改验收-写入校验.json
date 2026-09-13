@@ -1,0 +1,20 @@
+{
+  "status": "success",
+  "operation": "insert_new_whiteboard_preserving_original",
+  "doc": "JJiCdLFFbotAvgxXr7rcsdmDnwe",
+  "block_id": "doxcng5aIgAO5KDbB2HmMAewJpc",
+  "board_token": "JTeXwmpuAhkquqbBjMycfMWynlf",
+  "original_block": "doxcn3XuMIuTA6L4AtTDAWA9QRh",
+  "original_board": "HFhdwvVg5h9dvObnQtXcctsqnXu",
+  "original_preserved_verified": true,
+  "mermaid_source": "/tmp/qc-flow-remedy.mmd",
+  "drawing_source": "/tmp/qc-flow-remedy.svg",
+  "preview": "/tmp/qc-flow-remedy-preview.jpg",
+  "geometric_check": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "visual_review": "实际飞书导出预览已目检：节点和文字无溢出，菱形与通过/不通过/不足分支清楚，原轮补件和下一轮退回区分；暂停为独立叠加控制区。",
+  "implementation_claim": "图表示已采纳PRD目标；未修改代码，N01/N04差异仍由主agent说明。",
+  "approval_note": "初始SVG overwrite被自动审批拒绝；已改为新增流程画板，保留原时序画板，不执行覆盖。"
+}

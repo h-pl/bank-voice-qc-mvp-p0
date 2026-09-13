@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2100" height="2670" viewBox="0 0 2100 2670">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#62758c"/></marker></defs>
+<rect x="0" y="0" width="2100" height="2670" fill="#f8fafc"/>
+<text x="90" y="72" font-family="Noto Sans SC" font-size="42" fill="#172d47" text-anchor="start" font-weight="bold">7.5.2  申诉回流</text>
+<text x="90" y="117" font-family="Noto Sans SC" font-size="25" fill="#536980" text-anchor="start" font-weight="normal">现行 PRD 目标流程 · 三个业务角色与系统联动</text>
+<g>
+<rect x="750" y="160" width="600" height="85" rx="42.5" fill="#e8f1ff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1050.0" y="210.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">坐席 · 本人最新已送达的不利结论</text>
+</g>
+<g>
+<polygon points="1050.0,290 1280,370.0 1050.0,450 820,370.0" fill="#fff4da" stroke="#c99839" stroke-width="2.5"/>
+<text x="1050.0" y="361.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统</text>
+<text x="1050.0" y="395.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">准入校验通过？</text>
+</g>
+<g>
+<rect x="80" y="315" width="545" height="110" rx="14" fill="#fff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="352.5" y="361.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统 · 提示缺项 / 重复</text>
+<text x="352.5" y="395.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">不创建有效申诉</text>
+</g>
+<g>
+<rect x="750" y="500" width="600" height="100" rx="14" fill="#e8f1ff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1050.0" y="541.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">坐席 · 正式提交理由与有效证据</text>
+<text x="1050.0" y="575.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统 · 立即暂停未终结关联整改</text>
+</g>
+<g>
+<polygon points="1050.0,660 1280,740.0 1050.0,820 820,740.0" fill="#fff4da" stroke="#c99839" stroke-width="2.5"/>
+<text x="1050.0" y="731.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管</text>
+<text x="1050.0" y="765.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">受理处理</text>
+</g>
+<g>
+<rect x="80" y="680" width="545" height="120" rx="14" fill="#edf2f7" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="352.5" y="714.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">不受理：主管说明原因</text>
+<text x="352.5" y="748.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统 · 取消未完成核查</text>
+<text x="352.5" y="782.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">撤回 / 不受理后恢复关联整改</text>
+</g>
+<g>
+<rect x="1590" y="675" width="430" height="100" rx="14" fill="#fff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1805.0" y="733.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管 · 明确缺项与期限</text>
+</g>
+<g>
+<rect x="1590" y="825" width="430" height="90" rx="14" fill="#e8f1ff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1805.0" y="878.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">本人坐席 · 补充材料</text>
+</g>
+<g>
+<rect x="1560" y="970" width="490" height="110" rx="14" fill="#fff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1805.0" y="1016.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管 · 接收补件</text>
+<text x="1805.0" y="1050.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">按来源阶段回流</text>
+</g>
+<g>
+<polygon points="1050.0,900 1280,980.0 1050.0,1060 820,980.0" fill="#fff4da" stroke="#c99839" stroke-width="2.5"/>
+<text x="1050.0" y="971.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管</text>
+<text x="1050.0" y="1005.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">需要质检核查？</text>
+</g>
+<g>
+<rect x="410" y="1140" width="625" height="95" rx="14" fill="#f0eaff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="722.5" y="1195.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管 · 分派质检员（优先另一人）</text>
+</g>
+<g>
+<rect x="410" y="1290" width="625" height="95" rx="14" fill="#f0eaff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="722.5" y="1345.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">质检员 · 执行申诉核查</text>
+</g>
+<g>
+<polygon points="722.5,1440 940,1520.0 722.5,1600 505,1520.0" fill="#fff4da" stroke="#c99839" stroke-width="2.5"/>
+<text x="722.5" y="1511.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">质检员</text>
+<text x="722.5" y="1545.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">证据齐备？</text>
+</g>
+<g>
+<rect x="410" y="1650" width="625" height="95" rx="14" fill="#f0eaff" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="722.5" y="1705.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">质检员 · 提交核查意见与依据</text>
+</g>
+<g>
+<rect x="1120" y="1650" width="470" height="95" rx="14" fill="#e1eee8" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1355.0" y="1705.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管 · 提交最终裁定</text>
+</g>
+<g>
+<polygon points="1355.0,1805 1575,1885.0 1355.0,1965 1135,1885.0" fill="#fff4da" stroke="#c99839" stroke-width="2.5"/>
+<text x="1355.0" y="1876.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统</text>
+<text x="1355.0" y="1910.0" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">按裁定联动</text>
+</g>
+<g>
+<rect x="60" y="2070" width="460" height="145" rx="14" fill="#e8f3ee" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="290.0" y="2116.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">维持原结论</text>
+<text x="290.0" y="2150.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统 · 沿用原版本</text>
+<text x="290.0" y="2184.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">恢复整改原阶段</text>
+</g>
+<g>
+<rect x="560" y="2070" width="460" height="145" rx="14" fill="#e8f3ee" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="790.0" y="2116.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">调整成立范围 · 新版本</text>
+<text x="790.0" y="2150.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管 · 更新目标与标准</text>
+<text x="790.0" y="2184.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管 · 发起质检员重新核验</text>
+</g>
+<g>
+<rect x="1060" y="2070" width="460" height="145" rx="14" fill="#f7e9eb" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1290.0" y="2116.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">改判误报 · 新版本</text>
+<text x="1290.0" y="2150.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统 · 终止未完成整改</text>
+<text x="1290.0" y="2184.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">保留误报原因</text>
+</g>
+<g>
+<rect x="1560" y="2070" width="480" height="145" rx="14" fill="#f7e9eb" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1800.0" y="2116.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">改判证据不足 · 新版本</text>
+<text x="1800.0" y="2150.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统 · 以依据不足终止旧整改</text>
+<text x="1800.0" y="2184.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">主管 · 可另建具名、有期限补证</text>
+</g>
+<g>
+<rect x="670" y="2300" width="810" height="85" rx="42.5" fill="#e1eee8" stroke="#7c96b3" stroke-width="2.5"/>
+<text x="1075.0" y="2350.5" font-family="Noto Sans SC" font-size="24" fill="#172d47" text-anchor="middle" font-weight="normal">系统 · 立即送达裁定，保留历史并同步报表</text>
+</g>
+<polyline points="1050,245 1050,290" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="820,370 625,370" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="710.5" y="331" width="39" height="30" fill="#f8fafc"/>
+<text x="730" y="353" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">否</text>
+<polyline points="352,315 352,202 750,202" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="438.0" y="164" width="144" height="30" fill="#f8fafc"/>
+<text x="510" y="186" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">补正后再校验</text>
+<polyline points="1050,450 1050,500" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1060.5" y="460" width="39" height="30" fill="#f8fafc"/>
+<text x="1080" y="482" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">是</text>
+<polyline points="1050,600 1050,660" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="820,740 625,740" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="674.5" y="701" width="81" height="30" fill="#f8fafc"/>
+<text x="715" y="723" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">不受理</text>
+<polyline points="750,550 352,550 352,680" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)" stroke-dasharray="8 6"/>
+<rect x="345.0" y="510" width="270" height="30" fill="#f8fafc"/>
+<text x="480" y="532" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">坐席 · 未办结时可撤回</text>
+<polyline points="80,740 35,740 35,202 352,202" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="83.5" y="462" width="123" height="30" fill="#f8fafc"/>
+<text x="145" y="484" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">可补正重提</text>
+<polyline points="1280,740 1590,725" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1415.0" y="701" width="60" height="30" fill="#f8fafc"/>
+<text x="1445" y="723" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">缺项</text>
+<polyline points="1805,775 1805,825" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1805,915 1805,970" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1560,1000 1460,1000 1460,790 1280,740" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1429.5" y="816" width="81" height="30" fill="#f8fafc"/>
+<text x="1470" y="838" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">受理前</text>
+<polyline points="1050,820 1050,900" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1060.0" y="853" width="60" height="30" fill="#f8fafc"/>
+<text x="1090" y="875" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">受理</text>
+<polyline points="820,980 722,980 722,1140" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="672.0" y="1082" width="102" height="30" fill="#f8fafc"/>
+<text x="723" y="1104" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">需要核查</text>
+<polyline points="1280,980 1370,980 1370,1650" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1245.5" y="1573" width="249" height="30" fill="#f8fafc"/>
+<text x="1370" y="1595" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">材料充分 · 直接裁定</text>
+<polyline points="722,1235 722,1290" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="722,1385 722,1440" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="940,1520 1495,1520 1495,725 1590,725" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1070.0" y="1477" width="270" height="30" fill="#f8fafc"/>
+<text x="1205" y="1499" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">缺项：申请补证并保留草稿</text>
+<polyline points="1805,1080 1805,1340 1035,1340" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1284.0" y="1296" width="312" height="30" fill="#f8fafc"/>
+<text x="1440" y="1318" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">核查中补件 → 回原核查任务</text>
+<polyline points="722,1600 722,1650" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="740.0" y="1611" width="60" height="30" fill="#f8fafc"/>
+<text x="770" y="1633" font-family="Noto Sans SC" font-size="21" fill="#536980" text-anchor="middle" font-weight="normal">齐备</text>
+<polyline points="1035,1697 1120,1697" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1355,1745 1355,1805" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1355,1965 1355,2010 290,2010 290,2070" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1355,2010 790,2010 790,2070" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1355,2010 1290,2010 1290,2070" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1355,2010 1800,2010 1800,2070" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="290,2215 290,2255 1075,2255 1075,2300" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="790,2215 790,2255 1075,2255 1075,2300" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1290,2215 1290,2255 1075,2255 1075,2300" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<polyline points="1800,2215 1800,2255 1075,2255 1075,2300" fill="none" stroke="#62758c" stroke-width="2.5" marker-end="url(#arr)"/>
+<line x1="80" y1="2430" x2="2020" y2="2430" stroke="#ced7e2" stroke-width="2"/>
+<text x="85" y="2470" font-family="Noto Sans SC" font-size="22" fill="#536980" text-anchor="start" font-weight="normal">准入：成立 / 部分成立；本人、最新、已送达；理由与有效证据齐全；同版无并行有效申诉且未实质办结。</text>
+<text x="85" y="2506" font-family="Noto Sans SC" font-size="22" fill="#536980" text-anchor="start" font-weight="normal">回路：撤回 / 不受理可补正重提；同版实质办结后的新证据由主管跟进；新不利版本可再次申诉。</text>
+<text x="85" y="2542" font-family="Noto Sans SC" font-size="22" fill="#536980" text-anchor="start" font-weight="normal">联动：全部暂停来源解除后按实际暂停时长顺延，保留曾逾期；暂停可补材料与留草稿，禁止验收通过 / 结案。</text>
+<text x="85" y="2578" font-family="Noto Sans SC" font-size="22" fill="#536980" text-anchor="start" font-weight="normal">边界：活跃申诉禁止从原问题旁路改写结论；原质检员核查须注明无人可替代；改判保留旧结论与历史。</text>
+<text x="85" y="2614" font-family="Noto Sans SC" font-size="22" fill="#536980" text-anchor="start" font-weight="normal">证据不足：终止不计完成或误报；补证回主管，重新确认成立且需整改时新建关联整改；已结案仅追加改判标记。</text>
+</svg>

@@ -1,0 +1,404 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2480" height="2340" viewBox="0 0 2480 2340">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#58718b"/></marker></defs>
+<rect width="2480" height="2340" fill="#f3f6fa"/>
+<text x="1240" y="51.0" text-anchor="middle" font-family="Noto Sans SC" font-size="38" font-weight="700" fill="#19334d">
+<tspan x="1240" dy="0">质检主线 · 当前采纳流程</tspan>
+</text>
+<text x="1240" y="91.0" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="400" fill="#60758a">
+<tspan x="1240" dy="0">角色：主管 / 质检员 / 坐席 + 系统   ｜   编号圆点表示跨分区衔接，沿箭头阅读</tspan>
+</text>
+<rect x="30" y="130" width="1190" height="860" rx="22" fill="#f9fbfe" stroke="#c4d2df" stroke-width="2"/>
+<text x="625.0" y="173.0" text-anchor="middle" font-family="Noto Sans SC" font-size="28" font-weight="700" fill="#19334d">
+<tspan x="625.0" dy="0">01  候选风险分诊</tspan>
+</text>
+<text x="625.0" y="208.0" text-anchor="middle" font-family="Noto Sans SC" font-size="19" font-weight="400" fill="#60758a">
+<tspan x="625.0" dy="0">关闭须区分误报与证据不足；跟进必须有责任人与期限</tspan>
+</text>
+<rect x="1260" y="130" width="1190" height="860" rx="22" fill="#f9fbfe" stroke="#c4d2df" stroke-width="2"/>
+<text x="1855.0" y="173.0" text-anchor="middle" font-family="Noto Sans SC" font-size="28" font-weight="700" fill="#19334d">
+<tspan x="1855.0" dy="0">02  任务衔接与人工抽查</tspan>
+</text>
+<text x="1855.0" y="208.0" text-anchor="middle" font-family="Noto Sans SC" font-size="19" font-weight="400" fill="#60758a">
+<tspan x="1855.0" dy="0">提醒回执缺失或异议，不阻断通话结束后的复核</tspan>
+</text>
+<rect x="30" y="1020" width="1190" height="1230" rx="22" fill="#f9fbfe" stroke="#c4d2df" stroke-width="2"/>
+<text x="625.0" y="1063.0" text-anchor="middle" font-family="Noto Sans SC" font-size="28" font-weight="700" fill="#19334d">
+<tspan x="625.0" dy="0">03  人工复核与补证</tspan>
+</text>
+<text x="625.0" y="1098.0" text-anchor="middle" font-family="Noto Sans SC" font-size="19" font-weight="400" fill="#60758a">
+<tspan x="625.0" dy="0">通话中可保存草稿；通话结束后才正式提交</tspan>
+</text>
+<rect x="1260" y="1020" width="1190" height="1230" rx="22" fill="#f9fbfe" stroke="#c4d2df" stroke-width="2"/>
+<text x="1855.0" y="1063.0" text-anchor="middle" font-family="Noto Sans SC" font-size="28" font-weight="700" fill="#19334d">
+<tspan x="1855.0" dy="0">04  主管确认与结果送达</tspan>
+</text>
+<text x="1855.0" y="1098.0" text-anchor="middle" font-family="Noto Sans SC" font-size="19" font-weight="400" fill="#60758a">
+<tspan x="1855.0" dy="0">按问题保留结论版本；任务汇总不替代逐项结论</tspan>
+</text>
+<rect x="375.0" y="235.0" width="410" height="80" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="580" y="267.41" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="580" dy="0">系统：生成自动候选风险</tspan>
+<tspan x="580" dy="29.900000000000002">展示证据</tspan>
+</text>
+<polyline points="580,315 580,345" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polygon points="580,345.0 740.0,425 580,505.0 420.0,425" fill="#fff3d9" stroke="#d4a447" stroke-width="2"/>
+<text x="580" y="417.7" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="600" fill="#19334d">
+<tspan x="580" dy="0">主管</tspan>
+<tspan x="580" dy="28.6">选择分诊动作</tspan>
+</text>
+<polyline points="420,425 200,425 200,490" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="254.0" y="382.0" width="62" height="36" rx="5" fill="#f9fbfe"/>
+<text x="285" y="406.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="285" dy="0">误报</tspan>
+</text>
+<rect x="55.0" y="490.0" width="290" height="100" rx="14" fill="#edf1f5" stroke="#9aadc0" stroke-width="2"/>
+<text x="200" y="532.41" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="200" dy="0">主管记录误报原因</tspan>
+<tspan x="200" dy="29.900000000000002">和证据并关闭</tspan>
+</text>
+<polyline points="420,425 370,425 370,640 200,640 200,685" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="176.5" y="602.0" width="167" height="36" rx="5" fill="#f9fbfe"/>
+<text x="260" y="626.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="260" dy="0">证据不足且关闭</tspan>
+</text>
+<rect x="50.0" y="685.0" width="300" height="110" rx="14" fill="#edf1f5" stroke="#9aadc0" stroke-width="2"/>
+<text x="200" y="717.46" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="200" dy="0">主管记录不足依据</tspan>
+<tspan x="200" dy="29.900000000000002">并关闭候选</tspan>
+<tspan x="200" dy="29.900000000000002">不计误报</tspan>
+</text>
+<polyline points="740,425 980,425 980,490" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="818.0" y="382.0" width="104" height="36" rx="5" fill="#f9fbfe"/>
+<text x="870" y="406.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="870" dy="0">补证跟进</tspan>
+</text>
+<rect x="800.0" y="490.0" width="360" height="130" rx="14" fill="#ecf7f4" stroke="#9aadc0" stroke-width="2"/>
+<text x="980" y="532.46" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="980" dy="0">主管明确缺项、执行人</tspan>
+<tspan x="980" dy="29.900000000000002">期限与复查触发</tspan>
+<tspan x="980" dy="29.900000000000002">可有依据地延期</tspan>
+</text>
+<polyline points="1160,555 1190,555 1190,345 780,345 780,425 740,425" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="849.5" y="247.0" width="251" height="36" rx="5" fill="#f9fbfe"/>
+<text x="975" y="271.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="975" dy="0">新材料 / 到期回主管</tspan>
+</text>
+<polyline points="535,482 535,670" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="482.5" y="562.0" width="125" height="36" rx="5" fill="#f9fbfe"/>
+<text x="545" y="586.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="545" dy="0">转人工复核</tspan>
+</text>
+<rect x="375.0" y="675.0" width="320" height="130" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="535" y="717.46" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="535" dy="0">主管分派质检员</tspan>
+<tspan x="535" dy="29.900000000000002">填写复核要求</tspan>
+<tspan x="535" dy="29.900000000000002">及未来期限</tspan>
+</text>
+<polyline points="535,805 535,875" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<circle cx="535" cy="900" r="25" fill="#193f64"/>
+<text x="535" y="908.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="535" dy="0">①</tspan>
+</text>
+<polyline points="635,482 635,525 720,525 720,640 910,640 910,670" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="706.5" y="602.0" width="167" height="36" rx="5" fill="#f9fbfe"/>
+<text x="790" y="626.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="790" dy="0">高风险且通话中</tspan>
+</text>
+<rect x="755.0" y="675.0" width="310" height="130" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="910" y="717.46" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="910" dy="0">主管发送实时提醒</tspan>
+<tspan x="910" dy="29.900000000000002">可预设复核人</tspan>
+<tspan x="910" dy="29.900000000000002">仅通话未结束可用</tspan>
+</text>
+<polyline points="910,805 910,875" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<circle cx="910" cy="900" r="25" fill="#193f64"/>
+<text x="910" y="908.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="910" dy="0">②</tspan>
+</text>
+<rect x="1305.0" y="230.0" width="310" height="120" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="1460" y="282.41" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="1460" dy="0">主管从通话记录</tspan>
+<tspan x="1460" dy="29.900000000000002">发起人工抽查</tspan>
+</text>
+<polyline points="1460,350 1460,480" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1305.0" y="480.0" width="310" height="130" rx="14" fill="#fff" stroke="#9aadc0" stroke-width="2"/>
+<text x="1460" y="537.41" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="1460" dy="0">填写检查范围</tspan>
+<tspan x="1460" dy="29.900000000000002">质检员、要求、期限</tspan>
+</text>
+<polyline points="1460,610 1460,720" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1305.0" y="720.0" width="310" height="130" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="1460" y="762.46" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="1460" dy="0">系统建立 / 复用</tspan>
+<tspan x="1460" dy="29.900000000000002">人工抽查任务</tspan>
+<tspan x="1460" dy="29.900000000000002">可无初始风险</tspan>
+</text>
+<circle cx="1730" cy="265" r="25" fill="#193f64"/>
+<text x="1730" y="273.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="1730" dy="0">①</tspan>
+</text>
+<polyline points="1730,290 1730,690 1850,690 1850,720" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<circle cx="2050" cy="265" r="25" fill="#193f64"/>
+<text x="2050" y="273.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="2050" dy="0">②</tspan>
+</text>
+<polyline points="2050,290 2050,370" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="2140.0" y="230.0" width="270" height="120" rx="14" fill="#ecf7f4" stroke="#9aadc0" stroke-width="2"/>
+<text x="2275" y="283.07000000000005" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2275" dy="0">坐席：已读、执行</tspan>
+<tspan x="2275" dy="27.3">或提出提醒异议</tspan>
+</text>
+<polyline points="2075,265 2110,265" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="8 6"/>
+<rect x="2128.5" y="202.0" width="83" height="36" rx="5" fill="#f9fbfe"/>
+<text x="2170" y="226.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2170" dy="0">可反馈</tspan>
+</text>
+<rect x="1865.0" y="370.0" width="370" height="110" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="2050" y="417.41" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="2050" dy="0">系统：通话结束事件</tspan>
+<tspan x="2050" dy="29.900000000000002">封存证据并去重</tspan>
+</text>
+<text x="2050" y="350.0" text-anchor="middle" font-family="Noto Sans SC" font-size="20" font-weight="600" fill="#946c21">
+<tspan x="2050" dy="0">不等待提醒反馈</tspan>
+</text>
+<polyline points="2050,480 2050,500" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polygon points="2050,500.0 2205.0,565 2050,630.0 1895.0,565" fill="#fff3d9" stroke="#d4a447" stroke-width="2"/>
+<text x="2050" y="557.7" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="600" fill="#19334d">
+<tspan x="2050" dy="0">已有</tspan>
+<tspan x="2050" dy="28.6">有效分派？</tspan>
+</text>
+<polyline points="2050,630 2050,685 1950,685 1950,720" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="2044.5" y="640.0" width="41" height="36" rx="5" fill="#f9fbfe"/>
+<text x="2065" y="664.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2065" dy="0">是</tspan>
+</text>
+<polyline points="2205,565 2290,565 2290,680" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="2259.5" y="527.0" width="41" height="36" rx="5" fill="#f9fbfe"/>
+<text x="2280" y="551.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2280" dy="0">否</tspan>
+</text>
+<rect x="2155.0" y="680.0" width="270" height="130" rx="14" fill="#fff" stroke="#9aadc0" stroke-width="2"/>
+<text x="2290" y="738.07" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2290" dy="0">主管补全质检员</tspan>
+<tspan x="2290" dy="27.3">核查要求及期限</tspan>
+</text>
+<polyline points="2155,745 2120,745 2120,785 2060,785" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1720.0" y="720.0" width="340" height="130" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="1890" y="762.46" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="1890" dy="0">系统建立 / 复用</tspan>
+<tspan x="1890" dy="29.900000000000002">候选复核工单</tspan>
+<tspan x="1890" dy="29.900000000000002">同风险同轮次去重</tspan>
+</text>
+<polyline points="1460,850 1460,910 1775,910" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polyline points="1890,850 1890,910 1825,910" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<circle cx="1800" cy="910" r="25" fill="#193f64"/>
+<text x="1800" y="918.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="1800" dy="0">③</tspan>
+</text>
+<circle cx="530" cy="1150" r="25" fill="#193f64"/>
+<text x="530" y="1158.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="530" dy="0">③</tspan>
+</text>
+<polyline points="530,1175 530,1230" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="305.0" y="1230.0" width="450" height="120" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="530" y="1282.4099999999999" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="530" dy="0">质检员：在本人有效任务内</tspan>
+<tspan x="530" dy="29.900000000000002">按类型与检查范围检查证据</tspan>
+</text>
+<polyline points="530,1350 530,1410" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polygon points="530,1410.0 695.0,1490 530,1570.0 365.0,1490" fill="#fff3d9" stroke="#d4a447" stroke-width="2"/>
+<text x="530" y="1482.7" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="600" fill="#19334d">
+<tspan x="530" dy="0">是否先</tspan>
+<tspan x="530" dy="28.6">补充材料？</tspan>
+</text>
+<polyline points="695,1490 940,1490 940,1560" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="784.5" y="1447.0" width="41" height="36" rx="5" fill="#f9fbfe"/>
+<text x="805" y="1471.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="805" dy="0">是</tspan>
+</text>
+<rect x="755.0" y="1560.0" width="370" height="130" rx="14" fill="#ecf7f4" stroke="#9aadc0" stroke-width="2"/>
+<text x="940" y="1603.44" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="400" fill="#19334d">
+<tspan x="940" dy="0">质检员申请补证</tspan>
+<tspan x="940" dy="28.6">提出缺项与申请理由</tspan>
+<tspan x="940" dy="28.6">保留原任务与草稿</tspan>
+</text>
+<polyline points="940,1690 940,1760" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="745.0" y="1760.0" width="390" height="160" rx="14" fill="#ecf7f4" stroke="#9aadc0" stroke-width="2"/>
+<text x="940" y="1804.1399999999999" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="400" fill="#19334d">
+<tspan x="940" dy="0">主管明确执行人及期限</tspan>
+<tspan x="940" dy="28.6">组织补证（可由坐席执行）</tspan>
+<tspan x="940" dy="28.6">材料或到期先回主管</tspan>
+<tspan x="940" dy="28.6">接收后回原任务</tspan>
+</text>
+<polyline points="1135,1840 1180,1840 1180,1290 755,1290" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="870.0" y="1222.0" width="230" height="36" rx="5" fill="#f9fbfe"/>
+<text x="985" y="1246.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="985" dy="0">回原任务 / 原草稿</tspan>
+</text>
+<polyline points="530,1570 530,1650" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="527.5" y="1587.0" width="41" height="36" rx="5" fill="#f9fbfe"/>
+<text x="548" y="1611.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="548" dy="0">否</tspan>
+</text>
+<polygon points="530,1650.0 685.0,1725 530,1800.0 375.0,1725" fill="#fff3d9" stroke="#d4a447" stroke-width="2"/>
+<text x="530" y="1717.7" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="600" fill="#19334d">
+<tspan x="530" dy="0">通话</tspan>
+<tspan x="530" dy="28.6">已结束？</tspan>
+</text>
+<polyline points="375,1725 210,1725 210,1800" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="254.5" y="1682.0" width="41" height="36" rx="5" fill="#f9fbfe"/>
+<text x="275" y="1706.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="275" dy="0">否</tspan>
+</text>
+<rect x="60.0" y="1800.0" width="300" height="120" rx="14" fill="#edf1f5" stroke="#9aadc0" stroke-width="2"/>
+<text x="210" y="1852.4099999999999" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="210" dy="0">质检员保存草稿</tspan>
+<tspan x="210" dy="29.900000000000002">等待通话结束</tspan>
+</text>
+<polyline points="210,1920 210,1970 530,1970 530,1800" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="303.0" y="1922.0" width="104" height="36" rx="5" fill="#f9fbfe"/>
+<text x="355" y="1946.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="355" dy="0">结束事件</tspan>
+</text>
+<polyline points="685,1725 720,1725 720,2000 530,2000 530,2040" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="699.5" y="1942.0" width="41" height="36" rx="5" fill="#f9fbfe"/>
+<text x="720" y="1966.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="720" dy="0">是</tspan>
+</text>
+<rect x="225.0" y="2040.0" width="610" height="120" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="530" y="2092.4100000000003" text-anchor="middle" font-family="Noto Sans SC" font-size="23" font-weight="400" fill="#19334d">
+<tspan x="530" dy="0">质检员提交逐项意见、理由与证据</tspan>
+<tspan x="530" dy="29.900000000000002">抽查支持：范围内无发现 / 有发现 / 证据不足</tspan>
+</text>
+<polyline points="835,2100 980,2100" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<circle cx="1005" cy="2100" r="25" fill="#193f64"/>
+<text x="1005" y="2108.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="1005" dy="0">④</tspan>
+</text>
+<circle cx="1760" cy="1150" r="25" fill="#193f64"/>
+<text x="1760" y="1158.0" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="600" fill="white">
+<tspan x="1760" dy="0">④</tspan>
+</text>
+<polyline points="1760,1175 1760,1230" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polygon points="1760,1230.0 1925.0,1310 1760,1390.0 1595.0,1310" fill="#fff3d9" stroke="#d4a447" stroke-width="2"/>
+<text x="1760" y="1302.7" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="600" fill="#19334d">
+<tspan x="1760" dy="0">主管</tspan>
+<tspan x="1760" dy="28.6">可确认？</tspan>
+</text>
+<polyline points="1925,1310 2200,1310 2200,1425" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="2034.0" y="1257.0" width="272" height="36" rx="5" fill="#f9fbfe"/>
+<text x="2170" y="1281.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2170" dy="0">退回补充核查 / 先补证</tspan>
+</text>
+<rect x="2005.0" y="1425.0" width="390" height="110" rx="14" fill="#ecf7f4" stroke="#9aadc0" stroke-width="2"/>
+<text x="2200" y="1472.74" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="400" fill="#19334d">
+<tspan x="2200" dy="0">回 ③ 原复核任务</tspan>
+<tspan x="2200" dy="28.6">明确补查要求或补证缺项</tspan>
+</text>
+<polyline points="1760,1390 1760,1450" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1658.5" y="1402.0" width="83" height="36" rx="5" fill="#f9fbfe"/>
+<text x="1700" y="1426.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1700" dy="0">可确认</tspan>
+</text>
+<polygon points="1760,1450.0 1940.0,1525 1760,1600.0 1580.0,1525" fill="#fff3d9" stroke="#d4a447" stroke-width="2"/>
+<text x="1760" y="1517.7" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="600" fill="#19334d">
+<tspan x="1760" dy="0">人工抽查</tspan>
+<tspan x="1760" dy="28.6">范围汇总？</tspan>
+</text>
+<polyline points="1580,1525 1450,1525 1450,1600" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1453.5" y="1477.0" width="83" height="36" rx="5" fill="#f9fbfe"/>
+<text x="1495" y="1501.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1495" dy="0">未发现</tspan>
+</text>
+<rect x="1295.0" y="1600.0" width="310" height="180" rx="14" fill="#edf1f5" stroke="#9aadc0" stroke-width="2"/>
+<text x="1450" y="1655.77" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1450" dy="0">主管确认已查范围</tspan>
+<tspan x="1450" dy="27.3">完成抽查任务</tspan>
+<tspan x="1450" dy="27.3">不创建风险 / 不计AI误报</tspan>
+<tspan x="1450" dy="27.3">不代表整通全部合格</tspan>
+</text>
+<polyline points="1940,1525 1975,1525 1975,1560 2240,1560 2240,1600" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="2120.0" y="1557.0" width="230" height="36" rx="5" fill="#f9fbfe"/>
+<text x="2235" y="1581.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2235" dy="0">范围依据不足且无发现</tspan>
+</text>
+<rect x="2067.5" y="1600.0" width="365" height="180" rx="14" fill="#edf1f5" stroke="#9aadc0" stroke-width="2"/>
+<text x="2250" y="1655.77" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2250" dy="0">主管确认范围依据不足</tspan>
+<tspan x="2250" dy="27.3">完成抽查任务</tspan>
+<tspan x="2250" dy="27.3">不强造 Finding / 不计误报</tspan>
+<tspan x="2250" dy="27.3">与未发现问题分开记录</tspan>
+</text>
+<polyline points="1760,1600 1760,1625 1860,1625 1860,1650" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1917.5" y="1603.0" width="125" height="64" rx="5" fill="#f9fbfe"/>
+<text x="1980" y="1627.35" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1980" dy="0">有问题 /</tspan>
+<tspan x="1980" dy="27.3">候选复核</tspan>
+</text>
+<polygon points="1860,1650.0 2055.0,1730 1860,1810.0 1665.0,1730" fill="#fff3d9" stroke="#d4a447" stroke-width="2"/>
+<text x="1860" y="1722.7" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="600" fill="#19334d">
+<tspan x="1860" dy="0">主管逐问题</tspan>
+<tspan x="1860" dy="28.6">确认结论与处置</tspan>
+</text>
+<polyline points="1860,1810 1860,1840 1415,1840 1415,1910" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1342.0" y="1856.0" width="146" height="36" rx="5" fill="#f9fbfe"/>
+<text x="1415" y="1880.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1415" dy="0">成立且需整改</tspan>
+</text>
+<polyline points="1860,1810 1860,1840 1710,1840 1710,1910" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1637.0" y="1856.0" width="146" height="36" rx="5" fill="#f9fbfe"/>
+<text x="1710" y="1880.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1710" dy="0">成立无需整改</tspan>
+</text>
+<polyline points="1860,1810 1860,1840 2005,1840 2005,1910" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1974.0" y="1856.0" width="62" height="36" rx="5" fill="#f9fbfe"/>
+<text x="2005" y="1880.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2005" dy="0">误报</tspan>
+</text>
+<polyline points="1860,1810 1860,1840 2300,1840 2300,1910" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="2248.0" y="1856.0" width="104" height="36" rx="5" fill="#f9fbfe"/>
+<text x="2300" y="1880.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2300" dy="0">证据不足</tspan>
+</text>
+<rect x="1280.0" y="1910.0" width="270" height="160" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="1415" y="1955.77" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1415" dy="0">一次填写整改要素</tspan>
+<tspan x="1415" dy="27.3">创建关联整改案件</tspan>
+<tspan x="1415" dy="27.3">并完成复核</tspan>
+<tspan x="1415" dy="27.3">→ 7.5.3 整改闭环</tspan>
+</text>
+<rect x="1575.0" y="1910.0" width="270" height="160" rx="14" fill="#ecf7f4" stroke="#9aadc0" stroke-width="2"/>
+<text x="1710" y="1955.77" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="1710" dy="0">记录无需整改原因</tspan>
+<tspan x="1710" dy="27.3">并结案</tspan>
+<tspan x="1710" dy="27.3">已有关联事项</tspan>
+<tspan x="1710" dy="27.3">保留自身状态</tspan>
+</text>
+<rect x="1870.0" y="1910.0" width="270" height="160" rx="14" fill="#edf1f5" stroke="#9aadc0" stroke-width="2"/>
+<text x="2005" y="1969.42" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2005" dy="0">记录误报理由</tspan>
+<tspan x="2005" dy="27.3">与证据</tspan>
+<tspan x="2005" dy="27.3">完成复核</tspan>
+</text>
+<rect x="2165.0" y="1910.0" width="270" height="160" rx="14" fill="#edf1f5" stroke="#9aadc0" stroke-width="2"/>
+<text x="2300" y="1955.77" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="400" fill="#19334d">
+<tspan x="2300" dy="0">记录证据不足依据</tspan>
+<tspan x="2300" dy="27.3">完成复核</tspan>
+<tspan x="2300" dy="27.3">可补证则主管具名</tspan>
+<tspan x="2300" dy="27.3">另行跟进</tspan>
+</text>
+<polyline points="1415,2070 1415,2100 1860,2100 1860,2120" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polyline points="1710,2070 1710,2100 1860,2100 1860,2120" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polyline points="2005,2070 2005,2100 1860,2100 1860,2120" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<polyline points="2300,2070 2300,2100 1860,2100 1860,2120" fill="none" stroke="#58718b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="1440.0" y="2120.0" width="840" height="80" rx="14" fill="#e5f0ff" stroke="#9aadc0" stroke-width="2"/>
+<text x="1860" y="2167.68" text-anchor="middle" font-family="Noto Sans SC" font-size="24" font-weight="400" fill="#19334d">
+<tspan x="1860" dy="0">系统按问题保存结论版本并通知坐席</tspan>
+</text>
+<text x="1860" y="2230.0" text-anchor="middle" font-family="Noto Sans SC" font-size="21" font-weight="600" fill="#355f87">
+<tspan x="1860" dy="0">符合条件的本人最新已送达不利结论 → 7.5.2 申诉回流</tspan>
+</text>
+<text x="1240" y="2298.0" text-anchor="middle" font-family="Noto Sans SC" font-size="22" font-weight="400" fill="#60758a">
+<tspan x="1240" dy="0">主管改变质检意见须记录理由与证据；证据不足可补证，不能强制归为成立或误报。</tspan>
+</text>
+</svg>

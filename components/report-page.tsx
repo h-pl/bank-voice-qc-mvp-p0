@@ -185,7 +185,7 @@ export function ReportPage({
           ] : [{title:"所选期间结果",keys,collapsed:false}]).map(group=>{
             const list=group.keys.flatMap(key=>{const m=cards.find(x=>x.key===key);return m?[m]:[];});
             const content=group.collapsed ? <table className="metric-details"><thead><tr><th>指标</th><th>数量 / 占比</th><th>口径</th></tr></thead><tbody>{list.map(m=><tr key={m.key}><td><button className="text-button" onClick={()=>{setSelected(m.key);setPage(1);}}>{m.label}</button></td><td>{m.value}</td><td>{m.note}</td></tr>)}</tbody></table> : <div className="report-cards">{list.map(m=><button key={m.key} className={`report-card ${metric?.key===m.key ? "selected":""}`} onClick={()=>{setSelected(m.key);setPage(1);}}><span>{m.label}<em>↗</em></span><strong>{m.value}<small>{m.value.includes("%") || m.value === "—" ? "" : m.key==="calls" ? " 通":" 项"}</small></strong><small>{m.note}</small></button>)}</div>;
-            return group.collapsed ? <details className="panel report-section" key={group.title}><summary>{group.title}</summary><div className="table-scroll">{content}</div></details> : <section className="report-section" key={group.title}><h2>{group.title}</h2>{content}</section>;
+            return group.collapsed ? <section className="panel report-section report-table-section" key={group.title}><h2>{group.title}</h2><div className="table-scroll">{content}</div></section> : <section className="report-section" key={group.title}><h2>{group.title}</h2>{content}</section>;
           })}
           {tab === "teams" && (
             <div className="panel team-report">
