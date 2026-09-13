@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { Activity, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "../components/icon";
 import { Badge, Button, Empty, Modal } from "../components/ui";
-import { ActionForm } from "../components/action-form";
+import dynamic from "next/dynamic";
+import { allowNavigation } from "../components/rule-editor";
+const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
 import { Workspace, label, stateLabel, viewFor } from "../components/workspace";
 import { Strategy } from "../components/strategy";
 import { ReportPage } from "../components/report-page";
@@ -15,6 +17,7 @@ import {
 } from "../lib/store";
 import {
   apply,
+  actionNames,
   entity,
   canSee,
   nav,
@@ -84,6 +87,8 @@ export default function Home() {
     role = roleOf(state),
     personNow = person(state.identity),
     allowedNav = nav[role];
+  const routeRef = useRef("");
+  const [visited, setVisited] = useState<Set<View>>(() => new Set());
   const [mobile, setMobile] = useState(false),
     [noticeOpen, setNoticeOpen] = useState(false),
     [noticeTab, setNoticeTab] = useState("todo"),
@@ -98,6 +103,7 @@ export default function Home() {
     }
   }, [toast]);
   const go = (view: View, id?: string) => {
+    if (!allowNavigation()) return;
     const s = getSnapshot();
     if (!nav[roleOf(s)].includes(view) || (id && !canSee(s, id))) {
       setToast("该记录不在当前身份授权范围内");
@@ -105,16 +111,20 @@ export default function Home() {
     }
     history.replaceState({...history.state,qc:true,identity:s.identity,scrollY:window.scrollY}, "", location.href);
     updateState({ ...s, view });
+    setVisited(prev => new Set([...prev, s.view, view]));
     setFocus(id);
     setMobile(false);
     setNoticeOpen(false);
+    if (view !== s.view || view === "calls" && id) requestAnimationFrame(() => window.scrollTo(0, 0));
     window.history.pushState(
-      {qc:true,identity:s.identity,scrollY:0},
+      {qc:true,identity:s.identity,scrollY:0,fromView:s.view},
       "",
       `?view=${view}${id ? `&id=${encodeURIComponent(id)}` : ""}`,
     );
+    routeRef.current = location.href;
   };
   useEffect(() => {
+    routeRef.current = location.href;
     const params = new URLSearchParams(window.location.search),
       id = params.get("id");
     if (id && canSee(getSnapshot(), id)) {
@@ -125,6 +135,9 @@ export default function Home() {
         s = getSnapshot(),
         view = p.get("view") as View;
       const valid = nav[roleOf(s)].includes(view) ? view : nav[roleOf(s)][0];
+      if (!allowNavigation()) { history.pushState(history.state, "", routeRef.current); return; }
+      routeRef.current = location.href;
+      setVisited(prev => new Set([...prev, valid]));
       updateState({ ...s, view: valid });
       setFocus(
         p.get("id") && canSee(s, p.get("id")!) ? p.get("id")! : undefined,
@@ -136,29 +149,39 @@ export default function Home() {
   }, []);
   const open = (id: string) => {
     if (!id) {
+      if (!allowNavigation()) return;
       setFocus(undefined);
       history.replaceState(null, "", `?view=${state.view}`);
+      routeRef.current = location.href;
       return;
     }
     const item=entity(state,id);
     const target=item && "executor" in item ? item.target : id;
-    go(item && ("batches" in item || "versions" in item) ? viewFor(state,target) : state.view, target);
+    go(viewFor(state,target), target);
   };
   const changeIdentity = (identity: string) => {
+    if (!allowNavigation()) return;
     const s = getSnapshot(),
       view = nav[person(identity).role][0];
     updateState({ ...s, identity, view });
+    setVisited(new Set([view]));
     setForm(undefined);
     setFocus(undefined);
     setNoticeOpen(false);
     history.replaceState(null, "", `?view=${view}`);
+    routeRef.current = location.href;
   };
   const submit = (command: Command) => {
-    const result = apply(getSnapshot(), command);
+    const before = getSnapshot();
+    const result = apply(before, command);
     const saved = updateState(result);
+    if (command.action === "create_resource") {
+      const created = result.resources.find(resource => !before.resources.some(old => old.id === resource.id));
+      if (created) go("resources", created.id);
+    }
     setToast(
       saved
-        ? "已保存，相关事项与待办已同步"
+        ? `${({save_rule:"参数草稿已保存，当前生效版本未改变",check_rule:"草稿检查已完成",publish_rule:"新规则版本已生效",save_resource:"资源草稿已保存",publish_resource:"资源新版本已生效"} as Record<string,string>)[command.action] ?? `${actionNames[command.action] ?? "操作"}已完成`}`
         : "本次已更新，但浏览器存储不可用，刷新可能恢复示例",
     );
   };
@@ -184,6 +207,13 @@ export default function Home() {
       },
     });
   };
+  useEffect(() => {
+    const pointer = () => { document.documentElement.dataset.input = "pointer"; };
+    const keyboard = () => { document.documentElement.dataset.input = "keyboard"; };
+    document.addEventListener("pointerdown", pointer, true);
+    document.addEventListener("keydown", keyboard, true);
+    return () => { document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("keydown", keyboard, true); };
+  }, []);
   if (!ready)
     return (
       <div className="loading-state" role="status">
@@ -196,6 +226,7 @@ export default function Home() {
     );
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">跳到主要内容</a>
       {mobile && (
         <button
           className="nav-backdrop"
@@ -230,10 +261,11 @@ export default function Home() {
                   {allowedNav
                     .filter((v) => pages[v].group === group)
                     .map((v) => (
-                      <button
+                      <a
+                        href={`?view=${v}`}
                         key={v}
                         className={state.view === v ? "active" : ""}
-                        onClick={() => go(v)}
+                        onClick={event => { if (!event.metaKey && !event.ctrlKey) { event.preventDefault(); go(v); } }}
                         aria-current={state.view === v ? "page" : undefined}
                       >
                         <Icon name={pages[v].icon} />
@@ -248,7 +280,7 @@ export default function Home() {
                               }
                             </em>
                           )}
-                      </button>
+                      </a>
                     ))}
                 </div>
               ),
@@ -318,7 +350,7 @@ export default function Home() {
             </button>
           </div>
         </header>
-        <main>
+        <main id="main-content" tabIndex={-1}>
           <div className="page-heading">
             <div>
               <p className="eyebrow">BANKING QUALITY · MVP-P0</p>
@@ -330,9 +362,9 @@ export default function Home() {
               当前：{roleNames[role]}
             </div>
           </div>
-          {focus && <div className="context-back"><Button onClick={()=>{if(history.state?.qc)history.back();else open("");}}>返回上一位置</Button><span>查看关联事项，原队列条件保留</span></div>}
-          {allowedNav.map((v) => (
-            <div key={`${state.identity}-${v}`} hidden={state.view !== v}>
+          {focus && !["rules","resources"].includes(state.view) && history.state?.fromView && history.state.fromView !== state.view && <div className="context-back"><Button onClick={()=>{if(history.state?.qc)history.back();else open("");}}>返回来源页面</Button><span>查看关联事项，原队列条件保留</span></div>}
+          {allowedNav.filter(v => visited.has(v) || state.view === v).map((v) => (
+            <Activity key={`${state.identity}-${v}`} mode={state.view === v ? "visible" : "hidden"}><div>
               {["alerts", "workorders", "improvement", "calls"].includes(v) ? (
                 <Workspace
                   state={state}
@@ -347,15 +379,17 @@ export default function Home() {
                   view={v}
                   focus={state.view === v ? focus : undefined}
                   onAction={handleAction}
+                  onOpen={open}
+                  onSubmit={submit}
                 />
               ) : (
                 <ReportPage state={state} onOpen={open} />
               )}
-            </div>
+            </div></Activity>
           ))}
           <footer className="page-footer">
             <span>Moss Quality · 核心质检闭环</span>
-            <span>3 个核心角色 · 7 个业务模块 · v0.2.0</span>
+            <span>3 个核心角色 · 7 个业务模块 · v0.2.1</span>
           </footer>
         </main>
       </div>
@@ -462,12 +496,7 @@ export default function Home() {
           </div>
         </>
       )}
-      {toast && (
-        <div className="toast" role="status">
-          <Icon name="check" size={17} />
-          {toast}
-        </div>
-      )}
+      <div className={`toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">{toast ? <><Icon name="check" size={17}/>{toast}</> : null}</div>
       {form && (
         <ActionForm
           key={`${form.id}-${form.action}`}

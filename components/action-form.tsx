@@ -35,6 +35,7 @@ export function ActionForm({
   onClose: () => void;
   onSubmit: (command: Command) => void;
 }) {
+  const actionTitle = ({check_rule:"检查草稿",check_resource:"检查草稿",publish_rule:"发布新版本",publish_resource:"发布新版本",save_resource:"编辑资源",create_resource:"新增资源"} as Record<string,string>)[requestedAction] ?? actionNames[requestedAction];
   const action = requestedAction === "accept_assign" ? "assign_appeal" : requestedAction === "accept_decide" ? "decide" : requestedAction;
   const target = entity(state, id)!;
   const [formRev,setFormRev] = useState(target.rev);
@@ -230,11 +231,11 @@ export function ActionForm({
     </div>
   );
   return (
-    <Modal title={["save_review","submit_review"].includes(action) ? "复核处理" : actionNames[requestedAction]} onClose={onClose}>
+    <Modal title={["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={onClose}>
       <form onSubmit={(e:FormEvent)=>{e.preventDefault();execute();}}>
         <div className="form-context">
           <b>
-            {"title" in target
+            {action === "create_resource" ? "新资源草稿" : "title" in target
               ? target.title
               : "goal" in target
                 ? target.goal
@@ -243,7 +244,7 @@ export function ActionForm({
                   : id}
           </b>
           <span>
-            {id} · 当前操作：{person(state.identity).name}
+            {action === "create_resource" ? "保存后分配编号" : id} · 当前操作：{person(state.identity).name}
           </span>
         </div>
         {action === "end_call" && (
@@ -796,7 +797,7 @@ export function ActionForm({
           <Button onClick={onClose}>取消</Button>
           {["save_review","submit_review"].includes(action) && <Button disabled={busy} onClick={()=>execute("save_review")}>保存草稿</Button>}
           <Button primary type="submit" disabled={busy || target.rev !== formRev || (["save_review","submit_review"].includes(action) && !call?.endedAt)}>
-            {busy ? "保存中…" : ["save_review","submit_review"].includes(action) ? "提交复核意见" : actionNames[requestedAction]}
+            {busy ? "保存中…" : ["save_review","submit_review"].includes(action) ? "提交复核意见" : ["save_resource", "create_resource"].includes(action) ? "保存草稿" : actionTitle}
           </Button>
         </div>
       </form>

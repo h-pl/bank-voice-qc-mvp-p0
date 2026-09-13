@@ -145,10 +145,11 @@ export function Workspace({
     : [["all","全部通话"],["live","通话中"],["failed","处理异常"],["sample","授权样例"]];
   const done = (e:Entity) => "status" in e && ["done","cancelled","withdrawn","rejected","terminated","closed","delivered"].includes(e.status);
   const match = (e:Entity,key:string) => key === "all" ? true : key === "mine" ? isTodo(state,e) : key === "active" ? !done(e) : key === "done" ? done(e) : key === "live" ? "batches" in e && !e.endedAt : key === "failed" ? "batches" in e && detection(e).includes("失败") : key === "sample" ? "batches" in e && e.sample : "status" in e && (e.status===key || key === "closed" && e.status === "delivered");
+  const invalidDates = !!startDate && !!endDate && startDate > endDate;
   const searched = category.filter((e) => {
     const c = callFor(state, e.id);
     return (
-      (!business || c?.business === business) &&
+      !invalidDates && (!business || c?.business === business) &&
       (!agent || c?.agentId===agent) && (!group || c?.group===group) &&
       (!execution || c && detection(c)===execution) &&
       (!startDate || !!c && localDate(c.endedAt ?? c.startedAt)>=startDate) &&
@@ -170,7 +171,7 @@ export function Workspace({
   const selectedId =
     focus && all.some((e) => e.id === focus)
       ? focus
-      : selection && filtered.some((e) => e.id === selection)
+      : selection && rows.some((e) => e.id === selection)
         ? selection
         : rows[0]?.id;
   const focused =
@@ -188,6 +189,13 @@ export function Workspace({
     setSelection(id);
     onOpen(id);
   };
+  if (view === "calls" && focused && "batches" in focused) {
+    const index = filtered.findIndex(x => x.id === focused.id);
+    return <section className="panel call-focus" aria-label="通话详情">
+      <div className="detail-navigation"><Button onClick={() => onOpen("")}>返回通话列表</Button><span>筛选条件和第 {currentPage} 页已保留</span><div><Button disabled={index <= 0} onClick={() => click(filtered[index - 1].id)}>上一通</Button><Button disabled={index < 0 || index >= filtered.length - 1} onClick={() => click(filtered[index + 1].id)}>下一通</Button></div></div>
+      <Detail key={focused.id} state={state} item={focused} onOpen={onOpen} onAction={onAction}/>
+    </section>;
+  }
   return (
     <>
       <div className="stats-strip">
@@ -199,19 +207,19 @@ export function Workspace({
           </strong>
         </div>
         <div>
-          <span>{role === "agent" && view === "workorders" ? "待知悉" : "需我处理"}</span>
+          <span>{view === "calls" ? "通话中" : role === "agent" && view === "workorders" ? "待知悉" : "需我处理"}</span>
           <strong>
             {
-              all.filter((e) => isTodo(state,e))
+              all.filter((e) => view === "calls" ? "batches" in e && !e.endedAt : isTodo(state,e))
                 .length
             }
             <small> 项</small>
           </strong>
         </div>
         <div>
-          <span>当前逾期</span>
+          <span>{view === "calls" ? "检测异常" : "当前逾期"}</span>
           <strong className={overdue ? "red" : ""}>
-            {overdue}
+            {view === "calls" ? all.filter(e => "batches" in e && detection(e).includes("失败")).length : overdue}
             <small> 项</small>
           </strong>
         </div>
@@ -233,7 +241,7 @@ export function Workspace({
           </div>
         </div>
       </div>
-      <div className="panel work-panel">
+      <div className={`panel work-panel ${focus ? "has-focus" : ""}`}>
         {view === "improvement" && <div className="tabs business-tabs" role="tablist" aria-label="业务类型">{[["appeal","申诉"],["remedy","整改"]].map(([key,name])=><button key={key} role="tab" aria-selected={kind===key} className={kind===key?"active":""} onClick={()=>{setKind(key);setPage(1);onOpen("");}}>{name}<span>{all.filter(e=>(key==="appeal" ? state.appeals.some(a=>a.id===e.id):"standardVersion" in e) && isTodo(state,e)).length} 待办</span></button>)}</div>}
         <div className="tabs" role="tablist" aria-label="记录分类">
           {tabs.map(([key, name]) => (
@@ -258,7 +266,7 @@ export function Workspace({
             <Icon name="search" size={16} />
             <input
               aria-label="搜索记录"
-              placeholder="搜索编号、问题或坐席"
+              name="record-search" autoComplete="off" placeholder="搜索编号、问题或坐席…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -291,6 +299,7 @@ export function Workspace({
           {(search || business || startDate || endDate || agent || group || execution) && <Button onClick={()=>{setSearch("");setBusiness("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>清除筛选</Button>}
           <span className="filter-total">共 {filtered.length} 条</span>
           <Button
+            disabled={invalidDates}
             icon="download"
             onClick={() =>
               download(
@@ -329,6 +338,7 @@ export function Workspace({
           </Button>
           </div>
         </div>
+        {invalidDates ? <p className="filter-error" role="alert">开始日期不能晚于结束日期，请调整日期范围。<button className="text-button" onClick={() => { setStartDate(endDate); setEndDate(startDate); }}>交换日期</button></p> : null}
         {view === "calls" ? (
           <>
             <div className="table-scroll">
@@ -338,10 +348,10 @@ export function Workspace({
                     <th>通话 / 客户</th>
                     <th>业务 / 班组</th>
                     <th>坐席</th>
-                    <th>结束时间</th>
+                    <th>通话时间 / 时长</th>
                     <th>检测状态</th>
-                    <th>候选 / 成立</th>
-                    <th />
+                    <th>质检结果</th>
+                    <th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -353,10 +363,9 @@ export function Workspace({
                     return (
                       <tr
                         key={c.id}
-                        className={selectedId === c.id ? "selected" : ""}
                       >
                         <td>
-                          <b>{c.id}</b>
+                          <a className="record-link" href={`?view=calls&id=${c.id}`} onClick={e => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); click(c.id); } }}>{c.id}</a>
                           <small>{c.customer}</small>
                         </td>
                         <td>
@@ -386,19 +395,10 @@ export function Workspace({
                           </Badge>
                         </td>
                         <td>
-                          {findings.filter((f) => f.source === "auto").length} /{" "}
-                          {
-                            findings.filter((f) => latest(f)?.value === "risk")
-                              .length
-                          }
+                          <span className="result-counts">候选 {findings.filter((f) => f.source === "auto").length}<small>已确认成立 {findings.filter((f) => latest(f)?.value === "risk").length}</small></span>
                         </td>
                         <td>
-                          <button
-                            className="text-button"
-                            onClick={() => click(c.id)}
-                          >
-                            查看详情
-                          </button>
+                          <a className="table-detail-link" href={`?view=calls&id=${c.id}`} onClick={e => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); click(c.id); } }}>查看详情<Icon name="chevron" size={14}/></a>
                         </td>
                       </tr>
                     );
@@ -411,23 +411,14 @@ export function Workspace({
               page={currentPage}
               total={filtered.length}
               size={size}
-              onPage={setPage}
+              onPage={n => { setPage(n); setSelection(undefined); onOpen(""); }}
               onSize={(n) => {
                 setSize(n);
                 setPage(1);
+                setSelection(undefined);
+                onOpen("");
               }}
             />
-            {selected && (
-              <div className="call-detail">
-                <Detail
-                  key={selected.id}
-                  state={state}
-                  item={selected}
-                  onOpen={onOpen}
-                  onAction={onAction}
-                />
-              </div>
-            )}
           </>
         ) : (
           <>
@@ -439,6 +430,7 @@ export function Workspace({
                     return (
                       <button
                         key={e.id}
+                        aria-pressed={selectedId === e.id}
                         className={`queue-card ${selectedId === e.id ? "selected" : ""}`}
                         onClick={() => click(e.id)}
                       >
@@ -493,6 +485,7 @@ export function Workspace({
                 )}
               </section>
               <section className="detail">
+                <div className="case-mobile-back"><Button onClick={() => onOpen("")}>返回事项列表</Button></div>
                 {selected ? (
                   <Detail
                     key={selected.id}
@@ -513,10 +506,12 @@ export function Workspace({
               page={currentPage}
               total={filtered.length}
               size={size}
-              onPage={setPage}
+              onPage={n => { setPage(n); setSelection(undefined); onOpen(""); }}
               onSize={(n) => {
                 setSize(n);
                 setPage(1);
+                setSelection(undefined);
+                onOpen("");
               }}
             />
           </>
@@ -627,24 +622,24 @@ export function Detail({
       <header className="detail-heading">
         <div>
           <div className="overline">
-            {item.id} <span> / {call?.id}</span>
+            {item.id}{call && call.id !== item.id ? <span> / {call.id}</span> : null}
           </div>
           <h2>{label(item)}</h2>
           <div className="detail-badges">
             <Badge
               tone={
-                "status" in item &&
-                ["done", "closed", "delivered"].includes(item.status)
+                ("batches" in item ? detection(item) === "已完成" : "status" in item &&
+                ["done", "closed", "delivered"].includes(item.status))
                   ? "success"
                   : "warning"
               }
             >
-              {stateLabel(item)}
+              {"batches" in item ? `检测${stateLabel(item)}` : stateLabel(item)}
             </Badge>
             {"pause" in item && item.pause && (
               <Badge tone="warning">申诉暂停</Badge>
             )}
-            {primary && (
+            {primary && !("batches" in item) && (
               <span>
                 {primary.source === "auto" ? "自动候选" : "人工发现"} ·{" "}
                 {primary.indicator}
@@ -652,14 +647,14 @@ export function Detail({
             )}
           </div>
         </div>
-        <button
+        {!("batches" in item) && <button
           className="icon-button"
           title="查看通话"
           aria-label="查看关联通话"
           onClick={() => call && onOpen(call.id)}
         >
           <Icon name="headset" />
-        </button>
+        </button>}
       </header>
       <div className="detail-meta">
         <span>
@@ -668,9 +663,7 @@ export function Detail({
         <span>
           业务 <b>{call?.business}</b>
         </span>
-        <span>
-          当前责任 <b>{owner?.name ?? "已办结"}</b>
-        </span>
+        {"batches" in item ? <><span>通话状态 <b>{item.endedAt ? "已结束" : "通话中"}</b></span><span>时长 <b>{clock(item.duration)}</b></span><span>班组 <b>{item.group}</b></span></> : <span>当前责任 <b>{owner?.name ?? "当前无待办"}</b></span>}
         {"dueAt" in item && (
           <span>
             期限 <b>{stamp(item.dueAt)}</b>
@@ -972,21 +965,21 @@ export function Detail({
           )}
         </div>
         <aside className="action-rail">
-          <h3>处理此事项</h3>
-          <div className="owner-card">
+          <h3>{"batches" in item ? "通话操作" : "处理此事项"}</h3>
+          {!("batches" in item) && <div className="owner-card">
             <span className="avatar">{owner?.name.slice(-1) ?? "✓"}</span>
             <div>
               <b>{owner?.name ?? "已完成当前阶段"}</b>
               <small>{owner ? "当前责任人" : "后续仍可追溯"}</small>
             </div>
-          </div>
+          </div>}
           {allowed.length ? (
             <>
             {[...allowed.filter(a => a === mainAction), ...allowed.filter(a => a !== mainAction)].map(a => (
               <Button key={a} primary={a === mainAction} onClick={() => onAction(item.id, a)}>{actionNames[a]}</Button>
             ))}
             {actions(state,item.id).includes("save_review") && !allowed.includes("submit_review") && <Button onClick={()=>onAction(item.id,"save_review")}>编辑复核草稿</Button>}
-            {!mainAction && <p className="subtle">当前等待{owner?.name ?? "后续处理"}，无需重复提交。</p>}
+            {!mainAction && !("batches" in item) && <p className="subtle">当前等待{owner?.name ?? "后续处理"}，无需重复提交。</p>}
             </>
           ) : (
             <p className="subtle">
@@ -1143,10 +1136,10 @@ function Evidence({
         ))}
       </div>
       {rule && version && (
-        <details className="basis">
-          <summary>
+        <section className="basis evidence-basis">
+          <h3>
             判断依据 · {rule.id} / V{version.version}
-          </summary>
+          </h3>
           <p>
             <b>{rule.name}</b> · {rule.description}
           </p>
@@ -1170,7 +1163,7 @@ function Evidence({
           <small>
             检测批次 {f?.batchId} · 保留命中时版本，不随当前参数改变
           </small>
-        </details>
+        </section>
       )}
       <details className="basis">
         <summary>检测批次与执行状态（{call.batches.length}）</summary>

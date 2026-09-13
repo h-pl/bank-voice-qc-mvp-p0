@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import { Icon, type IconName } from "./icon";
 export function Button({
   children,
@@ -66,69 +66,25 @@ export function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDialogElement>(null);
+  const close = useEffectEvent(onClose);
   useEffect(() => {
-    const prior = document.activeElement as HTMLElement;
-    const focusable = () =>
-      Array.from(
-        ref.current?.querySelectorAll<HTMLElement>(
-          'button:not([disabled]),input,select,textarea,[tabindex="0"]',
-        ) || [],
-      );
-    focusable()[0]?.focus();
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-      if (e.key === "Tab") {
-        const els = focusable(),
-          first = els[0],
-          last = els.at(-1);
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-    document.addEventListener("keydown", key);
+    const dialog = ref.current!;
+    const prior = document.activeElement as HTMLElement | null;
+    dialog.showModal();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const cancel = (event: Event) => { event.preventDefault(); close(); };
+    dialog.addEventListener("cancel", cancel);
     return () => {
-      document.removeEventListener("keydown", key);
+      dialog.removeEventListener("cancel", cancel);
+      dialog.close();
       document.body.style.overflow = overflow;
       prior?.focus();
     };
-  }, [onClose]);
-  return (
-    <div
-      className="overlay"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={ref}
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-      >
-        <header>
-          <h2>{title}</h2>
-          <button
-            className="icon-button"
-            aria-label="关闭弹窗"
-            onClick={onClose}
-          >
-            <Icon name="close" />
-          </button>
-        </header>
-        {children}
-      </div>
-    </div>
-  );
+  }, []);
+  return <dialog ref={ref} className="modal" aria-label={title}>
+    <header><h2>{title}</h2><button type="button" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></button></header>
+    {children}
+  </dialog>;
 }
