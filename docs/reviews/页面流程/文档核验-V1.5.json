@@ -1,0 +1,13 @@
+{
+  "version": "V1.5",
+  "revision": 120,
+  "page_guide_heading": "doxcnjSdlTqLqfR7c2npEdZcjRg",
+  "current_core_flowcharts": 3,
+  "current_sequence_diagrams": 3,
+  "page_event_diagrams": 1,
+  "page_internal_diagrams": 7,
+  "page_role_tables": 7,
+  "event_contracts": 13,
+  "sequence_original_tokens_preserved": true,
+  "known_code_gaps": "N01—N06 unchanged"
+}

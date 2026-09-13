@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 630"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#637d88"/></marker></defs><rect width="1040" height="630" fill="white"/>
+<text x="520.0" y="32" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#243d46">质检规则 · 页面内流程</text>
+<rect x="250" y="60" width="540" height="60" rx="12" fill="#eef5f7" stroke="#97afb9"/>
+<text x="520.0" y="96.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520.0" dy="0">选择条目，核对当前或引用版本</tspan></text>
+<polyline points="520,120 520,148" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
+<polygon points="520,150 655,195 520,240 385,195" fill="#fff5df" stroke="#cda957"/>
+<text x="520" y="201" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520" dy="0">主管且可维护？</tspan></text>
+<polyline points="385,195 190,195 190,273" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="300" y="181" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#243d46"><tspan x="300" dy="0">否</tspan></text>
+<rect x="30" y="278" width="320" height="80" rx="12" fill="#f5f5f5" stroke="#97afb9"/>
+<text x="190.0" y="312.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="190.0" dy="0">只读核对当前或历史依据</tspan><tspan x="190.0" dy="26">返回原案件</tspan></text>
+<polyline points="520,240 520,274" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="544" y="262" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#243d46"><tspan x="544" dy="0">是</tspan></text>
+<rect x="365" y="278" width="330" height="80" rx="12" fill="#eef5f7" stroke="#97afb9"/>
+<text x="530.0" y="312.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="530.0" dy="0">编辑允许字段并保存草稿</tspan><tspan x="530.0" dy="26">校验后查看预设检查和差异</tspan></text>
+<polyline points="520,358 520,389" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
+<polygon points="520,391 655,436 520,481 385,436" fill="#fff5df" stroke="#cda957"/>
+<text x="520" y="442" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520" dy="0">检查通过且确认？</tspan></text>
+<polyline points="655,436 850,436 850,318 698,318" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="748" y="389" width="204" height="27" fill="white"/><text x="850" y="410" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#243d46"><tspan x="850" dy="0">失败／取消：留草稿</tspan></text>
+<polyline points="520,481 520,524" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="554" y="509" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#243d46"><tspan x="554" dy="0">确认</tspan></text>
+<rect x="260" y="529" width="520" height="80" rx="12" fill="#e9f3ee" stroke="#97afb9"/>
+<text x="520.0" y="563.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520.0" dy="0">发布新版本，后续检测引用</tspan><tspan x="520.0" dy="26">历史与在途案件保留原快照</tspan></text>
+</svg>

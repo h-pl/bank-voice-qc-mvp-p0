@@ -1,0 +1,13 @@
+{
+  "board_token": "ThqUw9v5ehsdbLbX6dfchv0In0f",
+  "format": "mermaid",
+  "diagram_type": "sequenceDiagram",
+  "update_result": "success",
+  "source_matches_readback": true,
+  "source": "/tmp/qc-current-sequence-main.mmd",
+  "source_before": "/tmp/qc-current-sequence-main-before.mmd",
+  "preview": "/tmp/qc-current-sequence-main-preview.jpg",
+  "scope": "Only original main sequence board; no document blocks or other boards edited",
+  "requirements": "Current PRD sequence; no claim N01-N06 implementation defects are fixed",
+  "visual_verification": "实际飞书预览已核验：三阶段与四条角色/操作页生命线完整，无裁切和重叠；纵向时序较长，需在画板中放大阅读。Mermaid 源码已原样读回。"
+}

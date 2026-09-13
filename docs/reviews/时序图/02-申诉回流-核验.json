@@ -1,0 +1,13 @@
+{
+  "same_source": true,
+  "sequence_format": true,
+  "four_participants": true,
+  "immediate_delivery_before_followup": true,
+  "immediate_delivery_before_remedy_verification": true,
+  "source_board": "K0u5waIaEh5uTjbYb3Fc3tsPnNd",
+  "updated": true,
+  "preview": "/tmp/qc-current-sequence-appeal-preview.jpg",
+  "source_sha256": "7195efb102820c0597dd74e05cc6f9633b738d62a777b1bd2c18fa37461d0452",
+  "visual_review": "Actual Feishu preview inspected: actors, lifelines, alt/opt boundaries, page labels, withdrawal branches and immediate delivery before followups are present; no clipping or overlapping messages observed. Long sequence requires zoom.",
+  "implementation_claim": "PRD target behavior only; N01/N02 not declared fixed."
+}

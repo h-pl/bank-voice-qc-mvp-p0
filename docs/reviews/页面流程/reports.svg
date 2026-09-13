@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 540">
+<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#6b7d86"/></marker></defs>
+<rect width="1080" height="540" fill="#fff"/>
+<text x="540.0" y="30" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="24" fill="#243d46"><tspan x="540.0" dy="0">质量报表 · 页面内流程</tspan></text>
+<rect x="200.0" y="55" width="680" height="75" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="540.0" y="86.5" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">选择视图并直接设置查询条件</tspan><tspan x="540.0" dy="27">查看时间口径和统计范围</tspan></text>
+<polyline points="540.0,130 540.0,151" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<polygon points="540.0,155 675.0,205 540.0,255 405.0,205" fill="#fff5df" stroke="#cda957" stroke-width="1.5"/>
+<text x="540.0" y="212" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">需要哪类信息</tspan></text>
+<polyline points="540.0,255 540.0,278 192.66666666666666,278 192.66666666666666,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="150.66666666666666" y="285" width="84" height="24" fill="white"/>
+<text x="192.66666666666666" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="192.66666666666666" dy="0">当前积压</tspan></text>
+<rect x="30.0" y="315" width="325.3333333333333" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="192.66666666666666" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="192.66666666666666" dy="0">查看待复核、待申诉处理、待整改</tspan><tspan x="192.66666666666666" dy="27">明确不受期间筛选影响</tspan></text>
+<polyline points="192.66666666666666,407 192.66666666666666,436 540.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="540.0,255 540.0,278 540.0,278 540.0,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="498.0" y="285" width="84" height="24" fill="white"/>
+<text x="540.0" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="540.0" dy="0">期间结果</tspan></text>
+<rect x="377.3333333333333" y="315" width="325.3333333333333" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="540.0" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">查看覆盖、问题、裁定与到期结果</tspan><tspan x="540.0" dy="27">使用各指标注明的时间归属</tspan></text>
+<polyline points="540.0,407 540.0,436 540.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="540.0,255 540.0,278 887.3333333333333,278 887.3333333333333,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="845.3333333333333" y="285" width="84" height="24" fill="white"/>
+<text x="887.3333333333333" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="887.3333333333333" dy="0">明细核对</tspan></text>
+<rect x="724.6666666666666" y="315" width="325.3333333333333" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="887.3333333333333" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="887.3333333333333" dy="0">直接选择指标并查看对象清单</tspan><tspan x="887.3333333333333" dy="27">导出或点击对象定位原案件</tspan></text>
+<polyline points="887.3333333333333,407 887.3333333333333,436 540.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="540.0,436 540.0,462" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="175.0" y="465" width="730" height="66" rx="12" fill="#e9f3ee" stroke="#97afb9" stroke-width="1.5"/>
+<text x="540.0" y="492.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">下钻回到对象所属页面</tspan><tspan x="540.0" dy="27">报表读取状态，不直接裁定或结案</tspan></text>
+</svg>

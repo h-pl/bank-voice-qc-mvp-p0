@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "identity": "user",
+  "board_token": "SlGWwpNL3hpmO9bJ784cFX2nnQh",
+  "block_id": "doxcnKpSJfFPsdWYWstTFCinyqg",
+  "format": "svg",
+  "source": "/tmp/qc-page-guide/events.svg",
+  "backup": "/tmp/qc-page-guide/events-before.svg",
+  "preview_image_path": "/tmp/qc-page-guide/events-飞书预览.jpg",
+  "size_bytes": 258603,
+  "update_result": "success",
+  "created_node_id": "o1:15",
+  "change": "仅第3/4行下移45，语义无变化；未改正文与其他画板",
+  "geometry_check": {
+    "errors": 0,
+    "warnings": 0,
+    "textOverflow": 0,
+    "nodeOverlap": 0,
+    "textOcclusion": 0
+  },
+  "visual_verification": "已查看实际飞书预览，E05连线与E07/E08标签分离，第三、四行和页底说明完整，无文字遮挡。"
+}

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 540">
+<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#6b7d86"/></marker></defs>
+<rect width="1080" height="540" fill="#fff"/>
+<text x="540.0" y="30" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="24" fill="#243d46"><tspan x="540.0" dy="0">通话记录 · 页面内流程</tspan></text>
+<rect x="200.0" y="55" width="680" height="75" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="540.0" y="86.5" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">直接设置日期、业务、坐席、班组、检测状态</tspan><tspan x="540.0" dy="27">选择记录并查看证据</tspan></text>
+<polyline points="540.0,130 540.0,151" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<polygon points="540.0,155 675.0,205 540.0,255 405.0,205" fill="#fff5df" stroke="#cda957" stroke-width="1.5"/>
+<text x="540.0" y="212" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">本次查看目的</tspan></text>
+<polyline points="540.0,255 540.0,278 192.66666666666666,278 192.66666666666666,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="150.66666666666666" y="285" width="84" height="24" fill="white"/>
+<text x="192.66666666666666" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="192.66666666666666" dy="0">核对证据</tspan></text>
+<rect x="30.0" y="315" width="325.3333333333333" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="192.66666666666666" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="192.66666666666666" dy="0">回听定位、阅读上下文</tspan><tspan x="192.66666666666666" dy="27">查看关联规则与资源版本</tspan></text>
+<polyline points="192.66666666666666,407 192.66666666666666,436 540.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="540.0,255 540.0,278 540.0,278 540.0,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="498.0" y="285" width="84" height="24" fill="white"/>
+<text x="540.0" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="540.0" dy="0">主管抽查</tspan></text>
+<rect x="377.3333333333333" y="315" width="325.3333333333333" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="540.0" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">填写检查范围、质检员和期限</tspan><tspan x="540.0" dy="27">创建或复用人工抽查工单</tspan></text>
+<polyline points="540.0,407 540.0,436 540.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="540.0,255 540.0,278 887.3333333333333,278 887.3333333333333,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="845.3333333333333" y="285" width="84" height="24" fill="white"/>
+<text x="887.3333333333333" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="887.3333333333333" dy="0">检测演示</tspan></text>
+<rect x="724.6666666666666" y="315" width="325.3333333333333" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="887.3333333333333" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="887.3333333333333" dy="0">主管启动或完成示例检测</tspan><tspan x="887.3333333333333" dy="27">保留批次及执行状态</tspan></text>
+<polyline points="887.3333333333333,407 887.3333333333333,436 540.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="540.0,436 540.0,462" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="175.0" y="465" width="730" height="66" rx="12" fill="#e9f3ee" stroke="#97afb9" stroke-width="1.5"/>
+<text x="540.0" y="492.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="540.0" dy="0">返回原案件或打开关联对象</tspan><tspan x="540.0" dy="27">浏览证据本身不改变正式结论</tspan></text>
+</svg>

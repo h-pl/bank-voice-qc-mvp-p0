@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 540">
+<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#6b7d86"/></marker></defs>
+<rect width="1200" height="540" fill="#fff"/>
+<text x="600.0" y="30" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="24" fill="#243d46"><tspan x="600.0" dy="0">风险预警 · 页面内流程</tspan></text>
+<rect x="260.0" y="55" width="680" height="75" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="600.0" y="86.5" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="600.0" dy="0">主管选择候选风险</tspan><tspan x="600.0" dy="27">核对录音、转写、上下文与依据</tspan></text>
+<polyline points="600.0,130 600.0,151" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<polygon points="600.0,155 735.0,205 600.0,255 465.0,205" fill="#fff5df" stroke="#cda957" stroke-width="1.5"/>
+<text x="600.0" y="212" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="600.0" dy="0">选择分诊路径</tspan></text>
+<polyline points="600.0,255 600.0,278 164.25,278 164.25,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="114.25" y="285" width="100" height="24" fill="white"/>
+<text x="164.25" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="164.25" dy="0">有关闭依据</tspan></text>
+<rect x="30.0" y="315" width="268.5" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="164.25" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="164.25" dy="0">关闭候选</tspan><tspan x="164.25" dy="27">区分误报与证据不足</tspan></text>
+<polyline points="164.25,407 164.25,436 600.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="600.0,255 600.0,278 454.75,278 454.75,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="420.75" y="285" width="68" height="24" fill="white"/>
+<text x="454.75" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="454.75" dy="0">需补证</tspan></text>
+<rect x="320.5" y="315" width="268.5" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="454.75" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="454.75" dy="0">登记缺项、执行人和期限</tspan><tspan x="454.75" dy="27">材料或到期回主管再分诊</tspan></text>
+<polyline points="454.75,407 454.75,436 600.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="600.0,255 600.0,278 745.25,278 745.25,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="695.25" y="285" width="100" height="24" fill="white"/>
+<text x="745.25" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="745.25" dy="0">需人工复核</tspan></text>
+<rect x="611.0" y="315" width="268.5" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="745.25" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="745.25" dy="0">分派质检员、范围与期限</tspan><tspan x="745.25" dy="27">生成或复用关联工单</tspan></text>
+<polyline points="745.25,407 745.25,436 600.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="600.0,255 600.0,278 1035.75,278 1035.75,310" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="969.75" y="285" width="132" height="24" fill="white"/>
+<text x="1035.75" y="303" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#243d46"><tspan x="1035.75" dy="0">高风险且通话中</tspan></text>
+<rect x="901.5" y="315" width="268.5" height="92" rx="12" fill="#eef5f7" stroke="#97afb9" stroke-width="1.5"/>
+<text x="1035.75" y="355.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="1035.75" dy="0">提醒本人坐席并记录反馈</tspan><tspan x="1035.75" dy="27">结束后检查分派、进入复核</tspan></text>
+<polyline points="1035.75,407 1035.75,436 600.0,436" fill="none" stroke="#6b7d86" stroke-width="2"/>
+<polyline points="600.0,436 600.0,462" fill="none" stroke="#6b7d86" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="235.0" y="465" width="730" height="66" rx="12" fill="#e9f3ee" stroke="#97afb9" stroke-width="1.5"/>
+<text x="600.0" y="492.0" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#243d46"><tspan x="600.0" dy="0">留在本风险查看结果与关联事项</tspan><tspan x="600.0" dy="27">新的办理任务交给具名角色</tspan></text>
+</svg>

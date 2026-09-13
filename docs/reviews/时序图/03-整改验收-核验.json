@@ -1,0 +1,14 @@
+{
+  "status": "success",
+  "board_token": "HFhdwvVg5h9dvObnQtXcctsqnXu",
+  "created_node_id": "t5:2",
+  "format": "mermaid",
+  "diagram_type": "sequenceDiagram",
+  "source": "/tmp/qc-current-sequence-remedy.mmd",
+  "original_source_backup": "/tmp/qc-current-sequence-remedy-original.mmd",
+  "preview": "/tmp/qc-current-sequence-remedy-preview.jpg",
+  "roundtrip_source": "/tmp/qc-current-sequence-remedy-roundtrip.mmd",
+  "exact_source_match": true,
+  "visual_check": "实际飞书预览无截断、节点遮挡；时序较长，适合打开画板放大阅读。四泳道明确角色与页面，par表达整改主线与异步申诉事件。",
+  "scope": "仅更新原整改时序板；未改流程图、文档正文或代码。图为现行PRD规范，N01/N04实现差异不因此消除。"
+}
