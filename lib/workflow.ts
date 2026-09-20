@@ -2,7 +2,6 @@ import { pendingResourceRules, switchResourceReferences } from "./resource-publi
 
 export type Role = "supervisor" | "inspector" | "agent";
 export type View =
-  | "overview"
   | "alerts"
   | "workorders"
   | "improvement"
@@ -10,6 +9,7 @@ export type View =
   | "rules"
   | "resources"
   | "reports";
+export const defaultView: View = "workorders";
 export const roleNames: Record<Role, string> = {
   supervisor: "质检主管",
   inspector: "质检员",
@@ -25,7 +25,6 @@ export const people = [
 export const person = (id: string) => people.find((p) => p.id === id)!;
 export const nav: Record<Role, View[]> = {
   supervisor: [
-    "overview",
     "alerts",
     "workorders",
     "improvement",
@@ -34,8 +33,8 @@ export const nav: Record<Role, View[]> = {
     "resources",
     "reports",
   ],
-  inspector: ["overview", "workorders", "improvement", "calls", "rules", "resources"],
-  agent: ["overview", "workorders", "improvement", "calls"],
+  inspector: ["workorders", "improvement", "calls", "rules", "resources"],
+  agent: ["workorders", "improvement", "calls"],
 };
 export type Verdict = "risk" | "false_positive" | "insufficient";
 export const verdictNames: Record<Verdict, string> = {

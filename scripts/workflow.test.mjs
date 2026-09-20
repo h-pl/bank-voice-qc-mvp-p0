@@ -300,10 +300,10 @@ test("T11: multi-risk counts separate from calls, zero denominators show dash, C
   assert.equal(output.split("\r\n").length, risk.rows.length + 1);
   assert.match(csv([["=1+2"]]), /"'=1\+2"/);
 });
-test("T12: 3 roles, 8 routes, identity-scoped objects and actions, stale version rejected", () => {
+test("T12: 3 roles, 7 routes, identity-scoped objects and actions, stale version rejected", () => {
   const s = start();
-  assert.equal(nav.supervisor.length, 8);
-  assert.equal(nav.agent.length, 4);
+  assert.equal(nav.supervisor.length, 7);
+  assert.equal(nav.agent.length, 3);
   const agent = as(s, "A1048");
   assert.equal(canSeeCall(agent, s.calls[3]), false);
   assert.equal(canSee(agent, "REC-1034"), false);

@@ -442,7 +442,7 @@ export function createInitial(now = new Date()): State {
     schema: 2,
     revision: 1,
     identity: "S01",
-    view: "alerts",
+    view: "workorders",
     calls,
     findings,
     reviews,

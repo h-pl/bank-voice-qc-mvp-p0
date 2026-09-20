@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import { allowNavigation } from "../components/rule-editor";
 const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
 import { Workspace, label, stateLabel, viewFor } from "../components/workspace";
-import { Workbench } from "../components/workbench";
 import { ResourceCatalog } from "../components/resource-catalog";
 import { Strategy } from "../components/strategy";
 import { ReportPage } from "../components/report-page";
@@ -24,6 +23,7 @@ import {
   entity,
   canSee,
   nav,
+  defaultView,
   notices,
   people,
   person,
@@ -36,7 +36,6 @@ const pages: Record<
   View,
   { title: string; icon: IconName; group: string }
 > = {
-  overview: {title:"我的待办",icon:"grid",group:"工作区"},
   alerts: {
     title: "风险预警",
     icon: "bell",
@@ -124,6 +123,10 @@ export default function Home() {
     routeRef.current = location.href;
   };
   useEffect(() => {
+    const initialQuery = new URLSearchParams(location.search);
+    if (!initialQuery.has("view") || initialQuery.get("view") === "overview") {
+      history.replaceState(null, "", `?view=${defaultView}`);
+    }
     routeRef.current = location.href;
     const params = new URLSearchParams(window.location.search),
       id = params.get("id");
@@ -136,8 +139,9 @@ export default function Home() {
       const p = new URLSearchParams(location.search),
         s = getSnapshot(),
         view = p.get("view") as View;
-      const valid = nav[roleOf(s)].includes(view) ? view : nav[roleOf(s)][0];
+      const valid = nav[roleOf(s)].includes(view) ? view : defaultView;
       if (!allowNavigation()) { history.pushState(history.state, "", routeRef.current); return; }
+      if (p.get("view") === "overview") history.replaceState(null, "", `?view=${defaultView}`);
       routeRef.current = location.href;
       setVisited(prev => new Set([...prev, valid]));
       updateState({ ...s, view: valid });
@@ -165,7 +169,7 @@ export default function Home() {
   const changeIdentity = (identity: string) => {
     if (!allowNavigation()) return;
     const s = getSnapshot(),
-      view = nav[person(identity).role][0];
+      view = defaultView;
     updateState({ ...s, identity, view });
     setVisited(new Set([view]));
     setForm(undefined);
@@ -244,7 +248,7 @@ export default function Home() {
         </div>
         <div className="workspace-name">银行客服中心</div>
         <nav aria-label="主导航">
-          {["工作区", "质检作业", "策略与资源", "分析"].map(
+          {["质检作业", "策略与资源", "分析"].map(
             (group) =>
               allowedNav.some((v) => pages[v].group === group) && (
                 <div key={group}>
@@ -346,7 +350,7 @@ export default function Home() {
                   onOpen={open}
                   onAction={handleAction}
                 />
-              ) : v === "overview" ? <Workbench state={state} onOpen={open} onNavigate={go}/> : v === "resources" ? <ResourceCatalog state={state} focus={state.view === v ? focus : undefined} onOpen={open} onAction={handleAction} onSubmit={submit}/> : v === "rules" ? (
+              ) : v === "resources" ? <ResourceCatalog state={state} focus={state.view === v ? focus : undefined} onOpen={open} onAction={handleAction} onSubmit={submit}/> : v === "rules" ? (
                 <Strategy
                   state={state}
                   view={v}

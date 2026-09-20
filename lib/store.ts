@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { createInitial } from "./fixtures.ts";
-import { nav, person, restoreLifecycle, type State } from "./workflow.ts";
+import { defaultView, nav, person, restoreLifecycle, type State } from "./workflow.ts";
 export const storageKey = "moss-qc-mvp-p0-v2";
 const initial = createInitial(new Date("2026-09-12T00:00:00+08:00"));
 let cache: State | undefined;
@@ -43,9 +43,7 @@ export function getSnapshot(): State {
       view:
         query && allowed.includes(query as State["view"])
           ? (query as State["view"])
-          : allowed.includes(cache.view)
-            ? cache.view
-            : allowed[0],
+          : defaultView,
     };
   }
   return cache;
@@ -76,7 +74,7 @@ export function updateState(s: State) {
 export function resetState() {
   const s = createInitial();
   updateState(s);
-  history.replaceState(null, "", "?view=alerts");
+  history.replaceState(null, "", `?view=${defaultView}`);
   return s;
 }
 
