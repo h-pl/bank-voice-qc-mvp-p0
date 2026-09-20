@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { actions, roleOf, type State, type Command } from "../lib/workflow";
 import { pendingResourceRules } from "../lib/resource-publication";
-import { Badge, Button, Empty, Modal, SearchField, Tabs } from "./ui";
+import { PageHeader, Badge, Button, Empty, Modal, SearchField, Tabs } from "./ui";
 import { ResourceContent } from "./policy-content";
 import { Strategy } from "./strategy";
 import { ActionForm } from "./action-form";
@@ -26,7 +26,7 @@ export function ResourceCatalog({state,focus,onOpen,onAction,onSubmit}: {state:S
   const reset=()=>{setSearch("");setCategory("全部");setStatus("");setPage(1);};
   return <>
     <div hidden={!!focus} className="resource-catalog panel">
-      <header className="catalog-heading"><div><h2>业务资源库 <span>{state.resources.length}</span></h2><p>维护业务依据，查看哪些规则正在使用它。</p></div>{manager && state.resources[0] && <Button primary icon="plus" onClick={()=>act(state.resources[0].id,"create_resource")}>新增资源</Button>}</header>
+      <PageHeader title={<>业务资源库 <span>{state.resources.length}</span></>} description="维护业务依据，查看哪些规则正在使用它。">{manager && state.resources[0] && <Button primary icon="plus" onClick={()=>act(state.resources[0].id,"create_resource")}>新增资源</Button>}</PageHeader>
       <Tabs label="资源分类" panelId="resource-results" value={category} options={["全部","业务知识","词库","SOP"].map(value=>({value,label:value,count:state.resources.filter(x=>value==="全部" || x.type===value).length}))} onChange={value=>{setCategory(value);setPage(1);}}/>
       <div role="tabpanel" id="resource-results" aria-labelledby={`resource-results-tab-${category}`}>
         <div className="catalog-toolbar"><SearchField name="resource-search" label="搜索资源" placeholder="搜索名称、编号或适用业务…" value={search} onValueChange={value=>{setSearch(value);setPage(1);}}/><label>状态<select aria-label="资源状态" value={status} onChange={e=>{setStatus(e.target.value);setPage(1);}}><option value="">全部状态</option><option value="draft">有待发布草稿</option><option value="pending">待切换引用</option><option value="published">已有发布版本</option></select></label><span role="status">共 {rows.length} 项</span>{(search || status || category!=="全部") && <Button onClick={reset}>重置筛选</Button>}</div>

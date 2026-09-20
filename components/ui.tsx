@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import { Icon, type IconName } from "./icon";
+export function PageHeader({title, description, children}: {title:ReactNode; description:string; children?:ReactNode}) {
+  return <header className="catalog-heading page-section-header"><div><h2>{title}</h2><p>{description}</p></div>{children}</header>;
+}
+export function MetricSummary({items, selected, onSelect, label}: {items:{key:string;label:string;value:ReactNode;hint:string}[];selected:string;onSelect:(key:string)=>void;label:string}) {
+  return <div className="metric-summary" role="group" aria-label={label} style={{gridTemplateColumns:`repeat(${items.length}, minmax(0, 1fr))`}}>{items.map(item=><button type="button" key={item.key} aria-pressed={selected===item.key} onClick={()=>onSelect(item.key)}><span>{item.label}</span><strong>{item.value}</strong><small>{item.hint}</small></button>)}</div>;
+}
 export function DetailNavigation({label, onBack, children}: {label:string; onBack:()=>void; children?:ReactNode}) {
   return <nav className="detail-backbar" aria-label="详情导航"><button type="button" className="detail-back-link" onClick={onBack}><Icon name="arrow" size={16}/><span>{label}</span></button>{children && <div className="detail-back-actions">{children}</div>}</nav>;
 }

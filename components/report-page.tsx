@@ -4,7 +4,7 @@ import { useDemoClock } from '../lib/store';
 import { report, reportCsv, localDate, type Metric, type ReportFilter } from '../lib/reports';
 import { reportTrend, reportVisuals, periodMetric, visualMetric, type TrendPoint } from '../lib/report-visuals';
 import { people, type State } from '../lib/workflow';
-import { Button, Empty, Tabs } from './ui';
+import { Button, Empty, MetricSummary, PageHeader, Tabs } from './ui';
 import { download, stamp, Pagination } from './workspace';
 import { TrendChart, RingChart, HorizontalBars, chartColors, formatNumber } from './report-charts';
 import './report-page.css';
@@ -19,7 +19,7 @@ const verdictColors = [chartColors.red, chartColors.green, chartColors.orange, c
 const initialMetric = (tab: Tab) => tab === 'improvement' ? 'review-backlog' : tab === 'issues' ? 'risk' : 'calls';
 
 function Summary({ metrics, selected, onSelect }: { metrics: Metric[]; selected: string; onSelect: (key: string) => void }) {
-  return <div className="qa-summary" style={{ gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))` }}>{metrics.map(m => <button key={m.key} className={`qa-summary-item ${selected === m.key ? 'selected' : ''}`} aria-pressed={selected === m.key} onClick={() => onSelect(m.key)}><span>{m.label}</span><strong>{m.value.includes('%') || m.value === '—' ? m.value : formatNumber(Number(m.value))}<small>{m.value.includes('%') || m.value === '—' ? '' : ['calls', 'completed'].includes(m.key) ? '通' : '项'}</small></strong><small>{m.note.split('；')[0]}</small></button>)}</div>;
+  return <MetricSummary label="分析指标" selected={selected} onSelect={onSelect} items={metrics.map(m=>({key:m.key,label:m.label,value:<>{m.value.includes('%') || m.value === '—' ? m.value : formatNumber(Number(m.value))}<small>{m.value.includes('%') || m.value === '—' ? '' : ['calls','completed'].includes(m.key) ? '通' : '项'}</small></>,hint:m.note.split('；')[0]}))}/>;
 }
 
 export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: string) => void }) {
@@ -59,7 +59,8 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
   const trend = reportTrend(state, metrics, trendKey, filter, today);
   const detailKeys = tab === 'overview' ? ['riskcalls', 'candidates', 'manual'] : tab === 'issues' ? ['riskappealing'] : tab === 'improvement' ? ['review-overdue', 'appeal-overdue', 'remedy-overdue', 'paused', 'materialpending', 'extended', 'everoverdue', 'sourcechanged', 'review-due', 'appeal-due', 'remedy-due', 'terminated'] : [];
   if (!metrics.length) return <Empty text="当前角色无质量报表权限"/>;
-  return <div className="qa-analytics">
+  return <div className="qa-analytics panel page-work-surface">
+    <PageHeader title="质量分析" description="查看质量变化、定位问题，并下钻核对具体事项。"><span className="page-update">截至 {stamp(asOf)}</span></PageHeader>
     <Tabs value={tab} label="质量报表视图" panelId="report-view-panel" className="qa-tabs" options={tabs.map(([value,label]) => ({value,label}))} onChange={changeTab}/>
     <section className="qa-filter-panel" aria-label="报表筛选"><div className="qa-filter-fields">
       <label>开始日期<input name="report-start" aria-label="报表开始日期" type="date" value={filter.start} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('start', e.target.value)}/></label>
@@ -71,7 +72,7 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
       {invalid && <p className="qa-date-error" id="report-date-error" role="alert">开始日期不能晚于结束日期。<button type="button" onClick={() => { setFilter(f => ({ ...f, start: f.end, end: f.start }));setPage(1); }}>交换日期</button></p>}
     </section>
     {!invalid && <div role="tabpanel" id="report-view-panel" aria-labelledby={`report-view-panel-tab-${tab}`}>
-      <div className="qa-context"><span>{tab === 'improvement' ? '当前管理范围快照；期间结果单独按日期统计' : '按通话结束日期；问题使用当前有效结论'}</span><span>截至 {stamp(asOf)}</span></div>
+      <div className="qa-context"><span>{tab === 'improvement' ? '当前管理范围快照；期间结果单独按日期统计' : '按通话结束日期；问题使用当前有效结论'}</span></div>
       <section className="qa-analysis-panel">
         {tab === 'improvement' && <div className="qa-section-title"><h2>当前待处理</h2><span>截至当前时刻，不受日期范围限制</span></div>}
         <Summary metrics={summaries[tab].map(key => m(key))} selected={tab === 'overview' ? trendKey : selection.key} onSelect={key => { selectMetric(key);if (tab === 'overview') setTrendKey(key); }}/>

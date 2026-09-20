@@ -891,3 +891,42 @@ dialog.modal.navigation-dialog > .modal-body { padding:0; }
 @media(max-width:700px) { .detail-backbar { padding:12px 16px; flex-wrap:wrap; gap:8px; } .detail-back-actions { margin-left:auto; } }
 
 .detail-back-actions > .btn { min-height:32px; height:32px; padding:6px 12px; }
+
+/* Shared page hierarchy: header, controls, summary, task-specific content. */
+.page-work-surface { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-panel); overflow:clip; }
+.page-section-header { min-height:94px; }
+.page-section-header h2 { font-size:24px; font-weight:650; }
+.page-update { flex-shrink:0; color:var(--muted); font-size:12px; }
+.metric-summary { display:grid; gap:0; padding:16px 24px; border-bottom:1px solid var(--line); }
+.metric-summary > button { position:relative; min-width:0; display:flex; flex-direction:column; align-items:flex-start; text-align:left; padding:14px 18px; border:1px solid transparent; border-radius:8px; background:transparent; }
+.metric-summary > button + button::before { content:""; position:absolute; left:-1px; top:16px; bottom:16px; width:1px; background:var(--line); }
+.metric-summary > button[aria-pressed=true] { background:var(--accent-soft); border-color:var(--line); box-shadow:inset 3px 0 var(--orange); }
+.metric-summary > button[aria-pressed=true]::before, .metric-summary > button[aria-pressed=true] + button::before { display:none; }
+.metric-summary > button:hover { background:var(--surface-subtle); }
+.metric-summary > button[aria-pressed=true]:hover { background:var(--accent-soft); }
+.metric-summary > button > span { color:var(--muted); font-size:13px; font-weight:600; }
+.metric-summary strong { font-size:28px; line-height:1.3; font-weight:650; font-variant-numeric:tabular-nums; margin:8px 0; }
+.metric-summary small { color:var(--muted); font-size:12px; font-weight:400; line-height:1.6; }
+.metric-summary strong small { margin-left:6px; }
+.workbench.page-work-surface .workbench-columns { gap:0; grid-template-columns:minmax(0,1fr) 320px; align-items:stretch; }
+.workbench.page-work-surface .workbench-events { border-left:1px solid var(--line); background:var(--surface-subtle); }
+.workbench.page-work-surface .catalog-heading { padding:20px 24px; }
+.section-count { margin-left:8px; color:var(--muted); font-size:12px; font-weight:400; }
+.qa-analytics.page-work-surface { padding-bottom:0; font-size:14px; }
+.qa-analytics.page-work-surface .qa-tabs { margin:0; padding-inline:24px; }
+.qa-analytics.page-work-surface .qa-filter-panel { margin:0; padding:16px 24px; border:0; border-bottom:1px solid var(--line); border-radius:0; }
+.qa-analytics.page-work-surface .qa-context { margin:0; padding:12px 24px 0; }
+.qa-analytics.page-work-surface .qa-analysis-panel, .qa-analytics.page-work-surface .qa-secondary-panel, .qa-analytics.page-work-surface .qa-data-panel { margin:0; border:0; border-radius:0; box-shadow:none; }
+.qa-analytics.page-work-surface .qa-secondary-panel, .qa-analytics.page-work-surface .qa-data-panel { border-top:1px solid var(--line); }
+.qa-analytics.page-work-surface .page-section-header h2 { font-size:24px; }
+@media(max-width:900px) { .workbench.page-work-surface .workbench-columns { grid-template-columns:1fr; } .workbench.page-work-surface .workbench-events { border-left:0; border-top:1px solid var(--line); } }
+@media(max-width:700px) { .page-section-header { flex-wrap:wrap; gap:8px; } .metric-summary { padding:12px 16px; grid-template-columns:repeat(2,minmax(0,1fr)) !important; } .metric-summary > button { padding:12px; } .metric-summary > button + button::before { display:none; } .qa-analytics.page-work-surface .qa-tabs { padding-inline:16px; } .qa-analytics.page-work-surface .qa-filter-panel { padding:16px; } }
+
+@media(min-width:1151px) {
+  .workbench.page-work-surface { height:calc(100dvh - 116px); display:flex; flex-direction:column; }
+  .workbench.page-work-surface > .page-section-header, .workbench.page-work-surface > .metric-summary { flex-shrink:0; }
+  .workbench.page-work-surface .workbench-columns { flex:1; min-height:0; }
+  .workbench.page-work-surface .workbench-tasks { display:flex; flex-direction:column; min-height:0; }
+  .workbench.page-work-surface .workbench-tasks > .catalog-heading { flex-shrink:0; }
+  .workbench.page-work-surface .workbench-tasks > [role=region], .workbench.page-work-surface .workbench-events { overflow-y:auto; min-height:0; overscroll-behavior:contain; }
+}
