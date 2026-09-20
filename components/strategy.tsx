@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Badge, Button, Empty, Modal, SearchField } from "./ui";
+import { Badge, Button, DetailNavigation, Empty, Modal, SearchField } from "./ui";
 import { pendingResourceRules } from "../lib/resource-publication";
 import { Icon } from "./icon";
 import { officialIndicators } from "../lib/official-indicators";
@@ -61,7 +61,7 @@ export function Strategy({ state, view, onAction, onSubmit, onOpen, focus, detai
       </aside>}
       <section className="policy-detail panel" aria-label={resources ? "资源详情" : "规则详情"}>
         {current && snapshot ? <>
-          {detailOnly && <div className="policy-backbar"><button type="button" className="resource-back-link" onClick={()=>choose("")}><Icon name="arrow" size={16}/><span>返回资源列表</span></button></div>}
+          {detailOnly && <DetailNavigation label="返回资源列表" onBack={()=>choose("")}/>}
           <div className="policy-mobile-back"><Button onClick={() => choose("")}>返回{resources ? "资源" : "规则"}列表</Button></div>
           <header className="policy-heading"><div><div className="policy-identity"><span className="policy-mark" aria-hidden="true"><Icon name={resources ? "database" : "sliders"} size={20}/></span><div><p>{current.id}{rule ? ` · 指标 ${rule.indicator}` : ` · ${(current as Resource).type}`}{rule && <button className="policy-info" aria-label="指标说明" title="指标说明" onClick={()=>setCatalog(true)}><Icon name="info" size={16}/></button>}</p><h2 ref={headingRef} tabIndex={-1}>{current.name}</h2></div></div><div className="policy-heading-status"><Badge tone={historical ? "neutral" : snapshot.version ? "success" : "warning"}>{historical ? "历史版本 · 只读" : snapshot.version ? resources ? "最新已发布" : "当前生效" : "尚未发布"}</Badge><span>{snapshot.at ? `更新于 ${stamp(snapshot.at)}` : "先完善内容，再发布"}</span></div></div><label className="policy-version-picker"><span>查看版本</span><select aria-label="查看历史版本" value={snapshot.version} onChange={e => chooseVersion(Number(e.target.value))}>{!versions.length ? <option value={0}>未发布草稿</option> : [...versions].reverse().map(v => <option key={v.version} value={v.version}>V{v.version} {v === versions.at(-1) ? resources ? "最新已发布" : "当前生效" : "历史版本"}</option>)}</select></label></header>
           {!!versions.length && <p className="policy-version-summary">{versionSummary(snapshot as ResourceVersion, versions.find(v => v.version === snapshot.version - 1))}</p>}

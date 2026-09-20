@@ -101,3 +101,6 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 
 
 统一弹窗：案件材料、证据、资源、指标目录、通知与操作表单共用 Modal；普通阅读正文由 modal-body 承载，表单正文由 action-form-body 承载，二者均保持标题与 footer 可见。资源进入详情再返回时不得清空 lastOpened，保留分类与触发条目焦点。规则参数仍校验 3–60 整数秒、非空修改原因及版本冲突，不因迁移弹窗绕过保存/检查/发布。
+
+
+详情返回契约：资源与通话使用共同 DetailNavigation。通话从外页下钻保留来源，连续切换通话后返回仍到原来源；从列表打开则返回列表。返回不重置已挂载列表的筛选及分页。导航动作共处一行，避免两层返回竞争。

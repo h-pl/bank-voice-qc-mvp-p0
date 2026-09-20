@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import { Icon, type IconName } from "./icon";
+export function DetailNavigation({label, onBack, children}: {label:string; onBack:()=>void; children?:ReactNode}) {
+  return <nav className="detail-backbar" aria-label="详情导航"><button type="button" className="detail-back-link" onClick={onBack}><Icon name="arrow" size={16}/><span>{label}</span></button>{children && <div className="detail-back-actions">{children}</div>}</nav>;
+}
 export function Button({
   children,
   onClick,

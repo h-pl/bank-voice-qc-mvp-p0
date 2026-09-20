@@ -879,3 +879,15 @@ dialog.modal.navigation-dialog > .modal-body { padding:0; }
 
 /* Resource editing uses the shared modal; long source content keeps useful writing space. */
 .action-dialog .resource-content-input { min-height:132px; }
+
+/* One return row for detail pages, shared by calls and resources. */
+.detail-backbar { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:57px; padding:12px 24px; border-bottom:1px solid var(--line); background:var(--surface); flex-shrink:0; }
+.detail-back-link, .detail-list-link { display:inline-flex; align-items:center; gap:8px; min-height:32px; padding:4px 0; color:var(--muted); font:inherit; font-size:13px; background:none; border:0; border-radius:4px; cursor:pointer; }
+.detail-back-link > svg { transform:rotate(180deg); }
+.detail-back-link:hover, .detail-list-link:hover { color:var(--ink); }
+.detail-back-actions { display:flex; align-items:center; gap:12px; }
+.call-focus > .case-shell { padding:0; background:var(--surface); }
+.call-focus .case-main { border:0; border-radius:0; }
+@media(max-width:700px) { .detail-backbar { padding:12px 16px; flex-wrap:wrap; gap:8px; } .detail-back-actions { margin-left:auto; } }
+
+.detail-back-actions > .btn { min-height:32px; height:32px; padding:6px 12px; }

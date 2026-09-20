@@ -1,7 +1,7 @@
 "use client";
 import { Activity, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "../components/icon";
-import { Button, Empty, Modal, Tabs } from "../components/ui";
+import { Button, DetailNavigation, Empty, Modal, Tabs } from "../components/ui";
 import dynamic from "next/dynamic";
 import { allowNavigation } from "../components/rule-editor";
 const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
@@ -104,6 +104,7 @@ export default function Home() {
       setToast("该记录不在当前身份授权范围内");
       return;
     }
+    const continuingCall = view === "calls" && !!id && s.view === "calls" && new URLSearchParams(location.search).has("id");
     history.replaceState({...history.state,qc:true,identity:s.identity,scrollY:window.scrollY}, "", location.href);
     updateState({ ...s, view });
     setVisited(prev => new Set([...prev, s.view, view]));
@@ -112,7 +113,7 @@ export default function Home() {
     setNoticeOpen(false);
     if (view !== s.view || view === "calls" && id) requestAnimationFrame(() => window.scrollTo(0, 0));
     window.history.pushState(
-      {qc:true,identity:s.identity,scrollY:0,fromView:s.view},
+      {qc:true,identity:s.identity,scrollY:0,fromView:continuingCall && history.state?.fromView ? history.state.fromView : s.view,returnSteps:continuingCall && history.state?.fromView && history.state.fromView !== "calls" ? (history.state?.returnSteps ?? 0)+1 : 1},
       "",
       `?view=${view}${id ? `&id=${encodeURIComponent(id)}` : ""}`,
     );
@@ -185,6 +186,9 @@ export default function Home() {
       try {submit({id,action,rev:entity(getSnapshot(),id)!.rev,requestId:crypto.randomUUID(),input:{}});} catch(e) {setToast(e instanceof Error ? e.message : "操作失败");}
     } else setForm({id,action});
   };
+  const sourceView = typeof window !== "undefined" ? history.state?.fromView as View | undefined : undefined;
+  const sourceLabel = sourceView && sourceView !== state.view && pages[sourceView] ? `返回${pages[sourceView].title}` : undefined;
+  const returnSource = sourceLabel ? {label:sourceLabel, onBack:()=>{if(history.state?.qc)history.go(-(history.state.returnSteps ?? 1));else open("");}} : undefined;
   const tasks = notices(state),
     current = pages[state.view],
     events = state.logs
@@ -321,13 +325,14 @@ export default function Home() {
           </div>
         </header>
         <main id="main-content" tabIndex={-1} aria-labelledby="page-title">
-          {focus && !["rules","resources"].includes(state.view) && history.state?.fromView && history.state.fromView !== state.view && <div className="context-back"><Button onClick={()=>{if(history.state?.qc)history.back();else open("");}}>返回来源页面</Button></div>}
+          {focus && !["rules","resources","calls"].includes(state.view) && sourceLabel && <DetailNavigation label={sourceLabel} onBack={()=>returnSource?.onBack()}/>}
           {allowedNav.filter(v => visited.has(v) || state.view === v).map((v) => (
             <Activity key={`${state.identity}-${v}`} mode={state.view === v ? "visible" : "hidden"}><div>
               {["alerts", "workorders", "improvement", "calls"].includes(v) ? (
                 <Workspace
                   state={state}
                   view={v}
+                  returnSource={state.view === v ? returnSource : undefined}
                   focus={state.view === v ? focus : undefined}
                   onOpen={open}
                   onAction={handleAction}

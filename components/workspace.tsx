@@ -4,7 +4,7 @@ import { ruleCategories } from "../lib/fixtures";
 import { CaseDocuments, nextResponsibility } from "./case-documents";
 import { localDate } from "../lib/reports";
 import { useDemoClock } from "../lib/store";
-import { Badge, Button, Empty, Modal, SearchField, Tabs } from "./ui";
+import { Badge, Button, DetailNavigation, Empty, Modal, SearchField, Tabs } from "./ui";
 import { Icon } from "./icon";
 import {
   actions,
@@ -123,12 +123,14 @@ export function Workspace({
   state,
   view,
   focus,
+  returnSource,
   onOpen,
   onAction,
 }: {
   state: State;
   view: View;
   focus?: string;
+  returnSource?: {label:string; onBack:()=>void};
   onOpen: (id: string) => void;
   onAction: (id: string, action: string) => void;
 }) {
@@ -217,7 +219,7 @@ export function Workspace({
   if (view === "calls" && focused && "batches" in focused) {
     const index = filtered.findIndex(x => x.id === focused.id);
     return <section className="panel call-focus" aria-label="通话详情">
-      <div className="detail-navigation"><Button onClick={() => onOpen("")}>返回通话列表</Button><span>筛选条件和第 {currentPage} 页已保留</span><div><Button disabled={index <= 0} onClick={() => click(filtered[index - 1].id)}>上一通</Button><Button disabled={index < 0 || index >= filtered.length - 1} onClick={() => click(filtered[index + 1].id)}>下一通</Button></div></div>
+      <DetailNavigation label={returnSource?.label ?? "返回通话列表"} onBack={returnSource?.onBack ?? (()=>onOpen(""))}>{returnSource && <button type="button" className="detail-list-link" onClick={()=>onOpen("")}>通话列表</button>}<Button disabled={index <= 0} onClick={() => click(filtered[index - 1].id)}>上一通</Button><Button disabled={index < 0 || index >= filtered.length - 1} onClick={() => click(filtered[index + 1].id)}>下一通</Button></DetailNavigation>
       <Detail key={focused.id} state={state} item={focused} onOpen={onOpen} onAction={onAction}/>
     </section>;
   }
