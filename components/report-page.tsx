@@ -4,13 +4,12 @@ import { useDemoClock } from '../lib/store';
 import { report, reportCsv, localDate, type Metric, type ReportFilter } from '../lib/reports';
 import { reportTrend, reportVisuals, periodMetric, visualMetric, type TrendPoint } from '../lib/report-visuals';
 import { people, type State } from '../lib/workflow';
-import { Button, Empty, MetricSummary, PageHeader, Tabs } from './ui';
+import { Button, Empty, MetricSummary, PageHeader } from './ui';
 import { download, stamp, Pagination } from './workspace';
 import { TrendChart, RingChart, HorizontalBars, chartColors, formatNumber } from './report-charts';
 import './report-page.css';
 
-const tabs = [['overview', '质检概览'], ['issues', '问题分布'], ['teams', '坐席 / 班组'], ['improvement', '申诉与整改']] as const;
-type Tab = typeof tabs[number][0];
+import { reportModules, type ReportModule as Tab } from '../lib/report-navigation';
 type Selection = { kind: 'metric' | 'indicator' | 'verdict' | 'team'; key: string; agent?: string; period?: Pick<TrendPoint, 'start' | 'end'> };
 const summaries: Record<Tab, string[]> = { overview: ['calls', 'coverage', 'risk', 'fp'], issues: ['candidates', 'risk', 'manual', 'fp'], teams: ['calls', 'completed', 'riskcalls', 'risk'], improvement: ['review-backlog', 'appeal-backlog', 'remedy-backlog'] };
 const detectionGroups = [ ['completed', '已完成', chartColors.green], ['partial', '部分失败', chartColors.orange], ['failed', '失败', chartColors.red], ['running', '处理中', chartColors.slate], ['pending', '待处理', chartColors.gray] ];
@@ -22,10 +21,11 @@ function Summary({ metrics, selected, onSelect }: { metrics: Metric[]; selected:
   return <MetricSummary label="分析指标" selected={selected} onSelect={onSelect} items={metrics.map(m=>({key:m.key,label:m.label,value:<>{m.value.includes('%') || m.value === '—' ? m.value : formatNumber(Number(m.value))}<small>{m.value.includes('%') || m.value === '—' ? '' : ['calls','completed'].includes(m.key) ? '通' : '项'}</small></>,hint:m.note.split('；')[0]}))}/>;
 }
 
-export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: string) => void }) {
+export function ReportPage({ state, onOpen, module = "overview" }: { state: State; onOpen: (id: string) => void; module?:Tab }) {
   const clock = useDemoClock(), today = localDate(new Date(clock).toISOString());
   const [filter, setFilter] = useState<ReportFilter>(() => ({ business: '', group: '', agent: '', start: localDate(new Date(Date.now() - 6 * 86400000).toISOString()), end: localDate(new Date().toISOString()) }));
-  const [tab, setTab] = useState<Tab>('overview'), [selection, setSelection] = useState<Selection>({ kind: 'metric', key: 'calls' }), [trendKey, setTrendKey] = useState('calls');
+  const tab=module, moduleInfo=reportModules.find(item=>item.id===module)!;
+  const [selection, setSelection] = useState<Selection>({ kind: 'metric', key: initialMetric(module) }), [trendKey, setTrendKey] = useState('calls');
   const [page, setPage] = useState(1), [size, setSize] = useState(5);
   const detail = useRef<HTMLElement>(null);
   const asOf = new Date(clock).toISOString();
@@ -52,7 +52,6 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
   const current = Math.min(page, Math.max(1, Math.ceil((selected?.rows.length ?? 0) / size)));
   const select = (next: Selection, inspect = false) => { setSelection(next);setPage(1);if (inspect) detail.current?.focus({ preventScroll: false }); };
   const selectMetric = (key: string, inspect = false) => select({ kind: 'metric', key }, inspect);
-  const changeTab = (next: Tab) => { setTab(next);selectMetric(initialMetric(next));if (next === 'overview') setTrendKey('calls'); };
   const set = (key: keyof ReportFilter, value: string) => { setFilter(f => ({ ...f, [key]: value }));selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); };
   const range = (days: number) => ({ start: localDate(new Date(Date.parse(today + 'T12:00:00+08:00') - (days - 1) * 86400000).toISOString()), end: today });
   const rangeLabel = `${filter.start || '不限开始'} — ${filter.end || '不限结束'}`;
@@ -60,9 +59,8 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
   const detailKeys = tab === 'overview' ? ['riskcalls', 'candidates', 'manual'] : tab === 'issues' ? ['riskappealing'] : tab === 'improvement' ? ['review-overdue', 'appeal-overdue', 'remedy-overdue', 'paused', 'materialpending', 'extended', 'everoverdue', 'sourcechanged', 'review-due', 'appeal-due', 'remedy-due', 'terminated'] : [];
   if (!metrics.length) return <Empty text="当前角色无质量报表权限"/>;
   return <div className="qa-analytics panel page-work-surface">
-    <PageHeader title="质量报表" description="查看质量变化、定位问题，并下钻核对具体事项。"><span className="page-update">截至 {stamp(asOf)}</span></PageHeader>
-    <Tabs value={tab} label="质量报表视图" panelId="report-view-panel" className="qa-tabs" options={tabs.map(([value,label]) => ({value,label}))} onChange={changeTab}/>
-    <div role="tabpanel" id="report-view-panel" aria-labelledby={`report-view-panel-tab-${tab}`}>
+    <PageHeader title={moduleInfo.title} description={moduleInfo.description}><span className="page-update">截至 {stamp(asOf)}</span></PageHeader>
+    <div role="region" aria-label={moduleInfo.title}>
     <section className="qa-filter-panel" aria-label="报表筛选"><div className="qa-filter-fields">
       <label>开始日期<input name="report-start" aria-label="报表开始日期" type="date" value={filter.start} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('start', e.target.value)}/></label>
       <label>结束日期<input name="report-end" aria-label="报表结束日期" type="date" value={filter.end} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('end', e.target.value)}/></label>

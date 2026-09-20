@@ -10,6 +10,7 @@ import { Workbench } from "../components/workbench";
 import { ResourceCatalog } from "../components/resource-catalog";
 import { Strategy } from "../components/strategy";
 import { ReportPage } from "../components/report-page";
+import { reportModules, readReportModule, reportModuleTitle, type ReportModule } from "../lib/report-navigation";
 import {
   getSnapshot,
   getServerSnapshot,
@@ -83,6 +84,8 @@ export default function Home() {
     role = roleOf(state),
     allowedNav = nav[role];
   const routeRef = useRef("");
+  const [reportModule,setReportModule]=useState<ReportModule>("overview");
+  const [visitedReports,setVisitedReports]=useState<Set<ReportModule>>(()=>new Set(["overview"]));
   const [visited, setVisited] = useState<Set<View>>(() => new Set());
   const [mobile, setMobile] = useState(false),
     [noticeOpen, setNoticeOpen] = useState(false),
@@ -97,7 +100,7 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
-  const go = (view: View, id?: string) => {
+  const go = (view: View, id?: string, module:ReportModule = "overview") => {
     if (!allowNavigation()) return;
     const s = getSnapshot();
     if (!nav[roleOf(s)].includes(view) || (id && !canSee(s, id))) {
@@ -107,15 +110,16 @@ export default function Home() {
     const continuingCall = view === "calls" && !!id && s.view === "calls" && new URLSearchParams(location.search).has("id");
     history.replaceState({...history.state,qc:true,identity:s.identity,scrollY:window.scrollY}, "", location.href);
     updateState({ ...s, view });
+    if(view === "reports") {setReportModule(module);setVisitedReports(previous=>new Set([...previous,module]));}
     setVisited(prev => new Set([...prev, s.view, view]));
     setFocus(id);
     setMobile(false);
     setNoticeOpen(false);
-    if (view !== s.view || view === "calls" && id) requestAnimationFrame(() => window.scrollTo(0, 0));
+    if (view !== s.view || view === "reports" || view === "calls" && id) requestAnimationFrame(() => window.scrollTo(0, 0));
     window.history.pushState(
-      {qc:true,identity:s.identity,scrollY:0,fromView:continuingCall && history.state?.fromView ? history.state.fromView : s.view,returnSteps:continuingCall && history.state?.fromView && history.state.fromView !== "calls" ? (history.state?.returnSteps ?? 0)+1 : 1},
+      {qc:true,identity:s.identity,scrollY:0,fromReportModule:continuingCall ? history.state?.fromReportModule : reportModule,fromView:continuingCall && history.state?.fromView ? history.state.fromView : s.view,returnSteps:continuingCall && history.state?.fromView && history.state.fromView !== "calls" ? (history.state?.returnSteps ?? 0)+1 : 1},
       "",
-      `?view=${view}${id ? `&id=${encodeURIComponent(id)}` : ""}`,
+      `?view=${view}${view === "reports" ? `&module=${module}` : ""}${id ? `&id=${encodeURIComponent(id)}` : ""}`,
     );
     routeRef.current = location.href;
   };
@@ -123,6 +127,8 @@ export default function Home() {
     routeRef.current = location.href;
     const params = new URLSearchParams(window.location.search),
       id = params.get("id");
+    const initialModule=readReportModule(params.get("module"));
+    queueMicrotask(()=>{setReportModule(initialModule);setVisitedReports(previous=>new Set([...previous,initialModule]));});
     if (id && canSee(getSnapshot(), id)) {
       queueMicrotask(() => setFocus(id));
     }
@@ -135,6 +141,7 @@ export default function Home() {
       routeRef.current = location.href;
       setVisited(prev => new Set([...prev, valid]));
       updateState({ ...s, view: valid });
+      if(valid === "reports") { const nextModule=readReportModule(p.get("module"));setReportModule(nextModule);setVisitedReports(previous=>new Set([...previous,nextModule])); }
       setFocus(
         p.get("id") && canSee(s, p.get("id")!) ? p.get("id")! : undefined,
       );
@@ -187,10 +194,10 @@ export default function Home() {
     } else setForm({id,action});
   };
   const sourceView = typeof window !== "undefined" ? history.state?.fromView as View | undefined : undefined;
-  const sourceLabel = sourceView && sourceView !== state.view && pages[sourceView] ? `返回${pages[sourceView].title}` : undefined;
+  const sourceLabel = sourceView && sourceView !== state.view && pages[sourceView] ? `返回${sourceView === "reports" ? reportModuleTitle(readReportModule(history.state?.fromReportModule)) : pages[sourceView].title}` : undefined;
   const returnSource = sourceLabel ? {label:sourceLabel, onBack:()=>{if(history.state?.qc)history.go(-(history.state.returnSteps ?? 1));else open("");}} : undefined;
   const tasks = notices(state),
-    current = pages[state.view],
+    current = state.view === "reports" ? {...pages.reports,title:reportModuleTitle(reportModule),group:"质量报表"} : pages[state.view],
     events = state.logs
       .filter((l) => canSee(state, l.target))
       .slice()
@@ -213,7 +220,7 @@ export default function Home() {
     document.addEventListener("keydown", keyboard, true);
     return () => { document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("keydown", keyboard, true); };
   }, []);
-  useEffect(() => { document.title = ready ? `${pages[state.view].title} · Moss Quality` : "正在恢复工作区 · Moss Quality"; }, [ready, state.view]);
+  useEffect(() => { document.title = ready ? `${current.title} · Moss Quality` : "正在恢复工作区 · Moss Quality"; }, [ready, current.title]);
   if (!ready)
     return (
       <div className="loading-state" role="status">
@@ -241,10 +248,12 @@ export default function Home() {
             (group) =>
               allowedNav.some((v) => pages[v].group === group) && (
                 <div key={group}>
-                  <p className="nav-label">{group}</p>
+                  <p className="nav-label">{group === "分析" ? "质量报表" : group}</p>
                   {allowedNav
                     .filter((v) => pages[v].group === group)
-                    .map((v) => (
+                    .map((v) => v === "reports" ? <div className="report-nav-module" key={v}>
+                      {reportModules.map(module=><a key={module.id} href={`?view=reports&module=${module.id}`} className={state.view === "reports" && reportModule === module.id ? "active" : ""} aria-current={state.view === "reports" && reportModule === module.id ? "page" : undefined} onClick={event=>{if(!event.metaKey && !event.ctrlKey){event.preventDefault();go("reports",undefined,module.id);}}}><Icon name={module.id === "overview" ? "chart" : module.id === "issues" ? "sliders" : module.id === "teams" ? "grid" : "shield"}/><span>{module.title}</span></a>)}
+                    </div> : (
                       <a
                         href={`?view=${v}`}
                         key={v}
@@ -347,7 +356,7 @@ export default function Home() {
                   onSubmit={submit}
                 />
               ) : (
-                <ReportPage state={state} onOpen={open} />
+                <>{reportModules.filter(module=>visitedReports.has(module.id) || reportModule===module.id).map(module=><Activity key={module.id} mode={reportModule===module.id ? "visible" : "hidden"}><ReportPage state={state} onOpen={open} module={module.id}/></Activity>)}</>
               )}
             </div></Activity>
           ))}

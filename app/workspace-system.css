@@ -930,3 +930,7 @@ dialog.modal.navigation-dialog > .modal-body { padding:0; }
   .workbench.page-work-surface .workbench-tasks > .catalog-heading { flex-shrink:0; }
   .workbench.page-work-surface .workbench-tasks > [role=region], .workbench.page-work-surface .workbench-events { overflow-y:auto; min-height:0; overscroll-behavior:contain; }
 }
+
+/* Report submodules use the same navigation rows as other business modules. */
+
+.sidebar nav .nav-label { margin-top:10px; }

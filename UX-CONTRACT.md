@@ -109,4 +109,4 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 工作台范围切换由 MetricSummary 唯一承接（待我处理、已逾期、24 小时内到期），aria-pressed 表达选中，空分类提供返回全部入口；筛选只影响待办主区，最近变化独立展示。高风险候选数量按当前筛选结果展示。桌面只在待办正文滚动，打开事项再返回仍保留筛选。分析页共用指标组件，指标切换、分类、日期与业务筛选仍联动图表和明细，导出继续针对当前明细。
 
 
-趋势图验收需比较 clientWidth/scrollWidth 与 clientHeight/scrollHeight：稳定状态应一致，绘图区没有 auto/scroll 的内部滚动容器。callout 首尾日期与比例口径须位于画布内；Home/End/方向键和查看明细仍可用。质量报表四个页签共同归属单一模块，筛选始终处于当前 tabpanel。
+趋势图验收需比较 clientWidth/scrollWidth 与 clientHeight/scrollHeight：稳定状态应一致，绘图区没有 auto/scroll 的内部滚动容器。callout 首尾日期与比例口径须位于画布内；Home/End/方向键和查看明细仍可用。质量报表为左侧分组，四个子模块平铺在分组下；每项有独立地址，刷新及浏览器前进后退恢复正确模块。在同一会话中切换子模块保留各自筛选，事项下钻返回具体来源子模块。
