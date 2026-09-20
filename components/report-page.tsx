@@ -60,8 +60,9 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
   const detailKeys = tab === 'overview' ? ['riskcalls', 'candidates', 'manual'] : tab === 'issues' ? ['riskappealing'] : tab === 'improvement' ? ['review-overdue', 'appeal-overdue', 'remedy-overdue', 'paused', 'materialpending', 'extended', 'everoverdue', 'sourcechanged', 'review-due', 'appeal-due', 'remedy-due', 'terminated'] : [];
   if (!metrics.length) return <Empty text="当前角色无质量报表权限"/>;
   return <div className="qa-analytics panel page-work-surface">
-    <PageHeader title="质量分析" description="查看质量变化、定位问题，并下钻核对具体事项。"><span className="page-update">截至 {stamp(asOf)}</span></PageHeader>
+    <PageHeader title="质量报表" description="查看质量变化、定位问题，并下钻核对具体事项。"><span className="page-update">截至 {stamp(asOf)}</span></PageHeader>
     <Tabs value={tab} label="质量报表视图" panelId="report-view-panel" className="qa-tabs" options={tabs.map(([value,label]) => ({value,label}))} onChange={changeTab}/>
+    <div role="tabpanel" id="report-view-panel" aria-labelledby={`report-view-panel-tab-${tab}`}>
     <section className="qa-filter-panel" aria-label="报表筛选"><div className="qa-filter-fields">
       <label>开始日期<input name="report-start" aria-label="报表开始日期" type="date" value={filter.start} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('start', e.target.value)}/></label>
       <label>结束日期<input name="report-end" aria-label="报表结束日期" type="date" value={filter.end} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('end', e.target.value)}/></label>
@@ -71,7 +72,7 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
     </div><div className="qa-filter-footer"><span>北京时间</span><div className="qa-date-shortcuts">{[7, 14, 30].map(days => <button type="button" key={days} aria-pressed={filter.start === range(days).start && filter.end === today} onClick={() => { setFilter(f => ({ ...f, ...range(days) }));selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>近 {days} 天</button>)}<button type="button" onClick={() => { setFilter({ business: '', group: '', agent: '', ...range(7) });selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>重置筛选</button></div></div>
       {invalid && <p className="qa-date-error" id="report-date-error" role="alert">开始日期不能晚于结束日期。<button type="button" onClick={() => { setFilter(f => ({ ...f, start: f.end, end: f.start }));setPage(1); }}>交换日期</button></p>}
     </section>
-    {!invalid && <div role="tabpanel" id="report-view-panel" aria-labelledby={`report-view-panel-tab-${tab}`}>
+    {!invalid && <>
       <div className="qa-context"><span>{tab === 'improvement' ? '当前管理范围快照；期间结果单独按日期统计' : '按通话结束日期；问题使用当前有效结论'}</span></div>
       <section className="qa-analysis-panel">
         {tab === 'improvement' && <div className="qa-section-title"><h2>当前待处理</h2><span>截至当前时刻，不受日期范围限制</span></div>}
@@ -84,7 +85,7 @@ export function ReportPage({ state, onOpen }: { state: State; onOpen: (id: strin
       {detailKeys.length > 0 && <section className="qa-secondary-panel" aria-label={tab === 'improvement' ? '跟进与期限指标' : '相关指标'}><div className="qa-section-title"><h2>{tab === 'improvement' ? '跟进与期限' : '相关指标'}</h2></div><div className="qa-secondary-metrics">{detailKeys.map(key => <button key={key} aria-pressed={selection.key === key} onClick={() => selectMetric(key, true)}><span>{m(key).label}</span><b>{m(key).value}</b></button>)}</div></section>}
       {tab === 'teams' && <section className="qa-data-panel"><div className="qa-section-title"><h2>坐席 / 班组明细</h2><span>已判定、确认问题按问题数统计</span></div><div className="qa-table-scroll"><table><thead><tr><th>坐席 / 班组</th><th className="qa-numeric">通话量</th><th className="qa-numeric">已判定</th><th className="qa-numeric">确认问题</th><th className="qa-numeric">误报</th><th className="qa-numeric">证据不足</th><th className="qa-numeric">整改未完成</th></tr></thead><tbody>{visuals.teams.map(a => <tr key={a.id}><td><button className="text-button" onClick={() => select({ kind: 'team', key: a.id }, true)}>{a.name}</button><small>{a.group}</small></td>{[a.calls.length, a.known.length, a.risk.length, a.fp.length, a.insufficient.length, a.activeRemedies].map((n, i) => <td key={i} className="qa-numeric">{n}</td>)}</tr>)}</tbody></table></div></section>}
       {selected && <section className="qa-data-panel qa-detail" ref={detail} tabIndex={-1} aria-label="报表明细"><div className="qa-detail-heading"><div><h2>{selected.label}<span>{selected.rows.length} 条</span></h2><p>{selected.note}</p></div><div>{selection.period && <button className="text-button" onClick={() => selectMetric(selection.key)}>查看全期间</button>}<Button icon="download" onClick={() => download(reportCsv(selected!, state, asOf, filter), `${selected!.key}-P0-1.1.csv`)}>导出当前明细</Button></div></div><div className="qa-table-scroll"><table><thead><tr><th>对象编号</th><th>关联通话</th><th>事项</th><th>状态 / 结果</th><th>归属时间</th><th>操作</th></tr></thead><tbody>{selected.rows.slice((current - 1) * size, current * size).map(r => <tr key={r.id}><td className="qa-object-id">{r.id}</td><td>{r.callId}</td><td>{r.title}</td><td><span className={`qa-result ${r.status.includes('失败') || r.status.includes('风险成立') ? 'risk' : r.status.includes('完成') || r.status.includes('误报') ? 'good' : ''}`}>{r.status}</span></td><td>{stamp(r.date)}</td><td><button className="text-button" onClick={() => onOpen(r.id)}>查看事项</button></td></tr>)}</tbody></table>{!selected.rows.length && <Empty text="当前口径下没有记录" hint="可切换图表分类或调整筛选；比例分母为零时显示 —。"/>}</div><Pagination page={current} size={size} total={selected.rows.length} onPage={setPage} onSize={n => { setSize(n);setPage(1); }}/></section>}
-    </div>}
-
+    </>}
+    </div>
   </div>;
 }

@@ -39,8 +39,8 @@
 .qa-chart-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:20px; }
 .qa-chart-heading p { display:flex; align-items:center; gap:6px; color:var(--qa-muted); font-size:12px; margin-top:5px; }
 .qa-window { color:var(--muted); white-space:nowrap; font-size:12px; padding-top:3px; font-variant-numeric:tabular-nums; }
-.qa-chart-scroll, .qa-matrix-scroll, .qa-table-scroll { overflow-x:auto; overscroll-behavior-x:contain; }
-.qa-trend-canvas { position:relative; width:100%; min-width:520px; aspect-ratio:720/258; }
+.qa-matrix-scroll, .qa-table-scroll { overflow-x:auto; overscroll-behavior-x:contain; }
+.qa-trend-canvas { position:relative; width:100%; min-width:0; }
 .qa-trend-canvas svg { display:block; width:100%; height:100%; overflow:visible; }
 .qa-trend-canvas text { fill:#69737e; font:14px -apple-system, BlinkMacSystemFont, sans-serif; font-variant-numeric:tabular-nums; }
 .qa-gridline { stroke:#e9ecf0; stroke-dasharray:3 4; }
@@ -129,7 +129,7 @@
 .qa-result.risk { color:var(--red); background:var(--status-danger-bg); }
 .qa-result.good { color:var(--green); background:var(--status-success-bg); }
 .qa-footnote { color:var(--qa-muted); font-size:12px; margin:18px 0 0; }
-@media (min-width:1600px) { .qa-trend-canvas { max-height:340px; } }
+
 @media (max-width:1150px) {
   .qa-summary-item { padding:15px 13px 12px; }
   .qa-chart-region, .qa-trend, .qa-ring-section, .qa-period-results, .qa-matrix-region { padding:20px; }
@@ -196,7 +196,7 @@
 .qa-chart-callout > div { color:var(--ink); font-weight:500; }
 .qa-chart-callout p { margin-top:5px; }
 .qa-chart-callout small { color:var(--muted); display:block; margin-top:3px; }
-.qa-trend-float { width:240px; }
+.qa-trend-float { width:100%; overflow-wrap:anywhere; }
 .qa-point.selected span { width:12px; height:12px; background:var(--orange); border:2px solid var(--surface); box-shadow:none; }
 .qa-point.selected span.missing { background:var(--surface-subtle); border-color:var(--muted); }
 .qa-ring-stage { position:relative; width:100%; max-width:400px; margin:0 auto 12px; }
@@ -212,8 +212,8 @@
 
 /* Match the reference's transform-based 400 ms tooltip glide. */
 .qa-analytics { --qa-callout-duration:400ms; --qa-mark-duration:180ms; }
-.qa-callout-anchor { position:absolute; inset:0; pointer-events:none; z-index:3; transition:transform var(--qa-callout-duration) ease; will-change:transform; }
-.qa-callout-anchor .qa-trend-float { top:0; left:0; }
+.qa-callout-anchor { position:absolute; top:0; left:0; pointer-events:none; z-index:3; transition:transform var(--qa-callout-duration) ease; will-change:transform; }
+.qa-callout-anchor .qa-trend-float { position:relative; top:0; left:0; }
 .qa-chart-cursor, .qa-chart-active-dot { transition:transform var(--qa-mark-duration) ease-out; }
 .qa-point.selected span:not(.missing) { opacity:0; }
 .qa-ring-segment { transition:stroke-width 220ms ease-out, opacity 220ms ease-out; }
