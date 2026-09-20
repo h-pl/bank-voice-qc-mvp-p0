@@ -8,3 +8,5 @@ artifacts/
 playwright-report/
 
 /node_modules
+.vercel
+.env*
