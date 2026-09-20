@@ -72,12 +72,14 @@ export function Modal({
   onClose,
   variant = "default",
   description,
+  footer,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   variant?: "default" | "notification" | "navigation" | "evidence" | "resource" | "action";
   description?: string;
+  footer?: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const close = useEffectEvent(onClose);
@@ -96,9 +98,9 @@ export function Modal({
       prior?.focus();
     };
   }, []);
-  return <dialog ref={ref} className={`modal ${variant}-dialog`} aria-label={title} onClick={event => { if (variant !== "action" && event.target === event.currentTarget) { const box = event.currentTarget.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) onClose(); } }}>
+  return <dialog ref={ref} className={`modal ${variant}-dialog`} aria-label={title}>
     <header><div><h2>{title}</h2>{description && <p className="modal-description">{description}</p>}</div><button type="button" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></button></header>
-    {children}
+    {variant === "action" ? children : <><div className="modal-body">{children}</div>{variant !== "navigation" && <div className="modal-actions">{footer ?? <Button onClick={onClose}>关闭</Button>}</div>}</>}
   </dialog>;
 }
 

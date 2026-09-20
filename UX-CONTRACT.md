@@ -12,7 +12,7 @@
 | --- | --- | --- | --- | --- |
 | Select/Listbox | 原生 select | PRD / 本契约 | 接受系统弹层几何和键盘行为 | 浏览器打开与键盘检查 |
 | Date | 原生 date / datetime-local | PRD / 本契约 | 接受系统日历；标签与校验中文 | 范围错误检查 |
-| Form | ActionForm / RuleEditor | workflow 校验 + 本契约 | 业务动作弹窗 / 规则就地编辑 / 资源独立编辑页 | 校验、取消、冲突、保存 |
+| Form | ActionForm / RuleEditor | workflow 校验 + 本契约 | 业务动作弹窗 / 规则参数弹窗 / 资源独立编辑页 | 校验、取消、冲突、保存 |
 | Scrollbar | app/workspace-system.css | DESIGN.md | 全局主题；策略列表稳定 gutter | 宽窄屏、滚动检查 |
 | Toast | Home 单一 live region | 本契约 | 操作回执；错误仍保留表单中 | 保存与失败反馈 |
 | CRUD | Home go/open + workflow apply | PRD 第 7–9 节 | 就地草稿 / 新资源定位 / 版本化发布 | 业务回归测试 |
@@ -74,7 +74,7 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 - 显示的所有案件动作仍由 workflow.actions 与 primaryAction 决定。暂停状态不增加正式验收或结案动作；质检员核查入口和补件责任流不变。
 - 通话更多筛选支持 aria-expanded；收起不会清空条件，活动条件标签常显。标签移除与重置都回第一页并清除旧详情选择。
 - 趋势与环形图各默认显示一个浮层 callout；趋势包含日期、指标、数值及适用的样本分母，整块绘图区移动即可切换最近日期，移开保持。环图通过扇区/图例悬停或图例键盘焦点切换分类、数量及一位小数占比，移开保持。取消每点数值标签和环图引线。数据点 Enter/点击、图例点击仍下钻；悬停不触发下钻，零分母显示 —。
-- 规则 info 入口打开原有完整指标说明，关闭恢复入口焦点。参数继续就地展开，不新增编辑弹窗。
+- 规则 info 入口打开原有完整指标说明，关闭恢复入口焦点。参数使用统一编辑弹窗；未修改直接关闭，未保存修改需继续编辑或明确放弃。保存草稿后回当前规则，生效版本保持不变。
 
 本轮桌面操作验收见 docs/reviews/桌面作业交互重构-20260913.md。
 
@@ -82,7 +82,7 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
-| Resource navigation | ResourceCatalog + Home go/open | 当前资源及规则快照 | 分类表格、resource 抽屉、Strategy detailOnly | 返回恢复分类；Escape 恢复触发者 |
+| Resource navigation | ResourceCatalog + Home go/open | 当前资源及规则快照 | 分类表格、resource 预览弹窗、Strategy detailOnly | 返回恢复分类；Escape 恢复触发者 |
 | Resource form | ActionForm + InlineFormSurface | workflow apply 的资源校验 | 独立页面；无新编辑校验副本 | 未保存导航阻止，返回明确放弃；保存后定位草稿 |
 | Case documents | CaseDocuments + Modal | 案件当前轮次和绑定结论版本 | 结论/申诉/要求/材料/验收只读预览 | 原文可见，关闭回案，跨对象先关闭 |
 | Workbench | Workbench + notices/canSee | workflow 责任与阅读待办 | 当前身份、逾期、24h | 点击进入原任务，角色切换重算 |
@@ -98,3 +98,6 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 - 作业页支持专注办理（收起队列、再次展开恢复列表位置）及按当前筛选顺序上一/下一事项，跨分页同步当前页。无相邻事项时禁用对应按钮；原详情与弹窗状态不因折叠队列而丢失。窄屏保留列表/详情返回路径。
 
 操作弹窗补充：标题与对象信息只表达一次，逐项结论按问题分组。证据摘要必须保留已选原文与数量；展开/收起不得丢失选择或修改业务结论。长表单仅正文滚动，提交按钮及校验反馈保持可见；点击遮罩不关闭。Escape、取消、关闭按钮保留原有取消语义与焦点恢复。隐藏的证据列表仅含可选复选框，不隐藏必填文本字段。
+
+
+统一弹窗：案件材料、证据、资源、指标目录、通知与操作表单共用 Modal；普通阅读正文由 modal-body 承载，表单正文由 action-form-body 承载，二者均保持标题与 footer 可见。资源进入详情再返回时不得清空 lastOpened，保留分类与触发条目焦点。规则参数仍校验 3–60 整数秒、非空修改原因及版本冲突，不因迁移弹窗绕过保存/检查/发布。

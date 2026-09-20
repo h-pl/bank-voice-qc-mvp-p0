@@ -810,7 +810,7 @@ export function Detail({
         {"firstOverdueAt" in item && item.firstOverdueAt && <p className="case-overdue-history">首次逾期：{stamp(item.firstOverdueAt)}</p>}
       </aside>
     </div>
-    {preview && <Modal title={preview === "evidence" ? "录音与证据" : "案件材料"} description={`${item.id} · ${caseTitle(state,item)}`} variant="evidence" onClose={()=>setPreview(null)}>
+    {preview && <Modal title={preview === "evidence" ? "录音与证据" : "案件材料"} description={`${item.id} · ${caseTitle(state,item)}`} variant={preview === "evidence" ? "evidence" : "default"} onClose={()=>setPreview(null)}>
       {preview === "evidence" && call ? <Evidence state={state} call={call} findings={"batches" in item || "findingIds" in item ? associated : primary ? [primary] : []} primary={associated.find(f=>f.id===previewFinding) ?? primary} pinnedVersion={closure ? item.conclusionVersion : undefined}/> : <CaseMaterials state={state} item={item} primary={primary} onOpen={id=>{setPreview(null);onOpen(id);}} onAction={(id,action)=>{setPreview(null);onAction(id,action);}}/>}
     </Modal>}
   </>;
