@@ -911,6 +911,7 @@ dialog.modal.navigation-dialog > .modal-body { padding:0; }
 .workbench.page-work-surface .workbench-columns { gap:0; grid-template-columns:minmax(0,1fr) 320px; align-items:stretch; }
 .workbench.page-work-surface .workbench-events { border-left:1px solid var(--line); background:var(--surface-subtle); }
 .workbench.page-work-surface .catalog-heading { padding:20px 24px; }
+.workbench.page-work-surface .catalog-heading h2 { font-size:16px; }
 .section-count { margin-left:8px; color:var(--muted); font-size:12px; font-weight:400; }
 .qa-analytics.page-work-surface { padding-bottom:0; font-size:14px; }
 .qa-analytics.page-work-surface .qa-tabs { margin:0; padding-inline:24px; }
