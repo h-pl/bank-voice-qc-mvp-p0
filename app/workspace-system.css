@@ -747,3 +747,63 @@ dialog.modal.resource-dialog[open] { animation:b2b-drawer-enter 220ms cubic-bezi
  .case-next-action > h3 { padding:10px 14px; }
  .case-action-buttons { padding:10px 14px; }
 }
+
+
+/* Task dialogs: one surface, one scroll region, persistent actions. */
+dialog.modal.action-dialog { width:min(680px,calc(100vw - 48px)); max-width:680px; max-height:min(880px,calc(100dvh - 48px)); padding:0; overflow:hidden; border:0; border-radius:16px; }
+dialog.modal.action-dialog[open] { display:flex; flex-direction:column; }
+dialog.modal.action-dialog::backdrop { background:rgb(0 0 0 / 72%); }
+.action-dialog > header { position:static; flex-shrink:0; border:0; margin:0; padding:24px 28px 16px; align-items:flex-start; gap:16px; }
+.action-dialog > header h2 { font-size:20px; line-height:1.4; font-weight:650; }
+.action-dialog .modal-description { font-size:13px; line-height:1.6; margin-top:8px; overflow-wrap:anywhere; }
+.action-dialog > header .icon-button { width:32px; height:32px; margin:-4px -8px 0 0; flex-shrink:0; }
+.action-dialog .action-form { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+.action-dialog .action-form-body { overflow-y:auto; overscroll-behavior:contain; padding:0 28px 4px; min-height:0; scrollbar-gutter:stable; }
+.action-dialog .action-form-body > label { margin:16px 0; }
+.action-dialog label { color:var(--ink); font-size:14px; font-weight:500; line-height:1.6; }
+.action-dialog label > input:not([type=checkbox]), .action-dialog label > select, .action-dialog label > textarea { font-weight:400; font-size:14px; margin-top:7px; }
+.action-dialog textarea { min-height:72px; height:72px; line-height:1.6; }
+.action-dialog .modal-actions { position:static; flex-shrink:0; margin:0; padding:18px 28px 24px; border:0; background:var(--surface); box-shadow:0 -8px 16px -16px #20252b40; }
+.action-dialog .modal-actions .btn { min-width:76px; min-height:40px; }
+.action-dialog fieldset { border:0; border-radius:0; padding:0; margin:20px 0; min-width:0; }
+.action-dialog legend { padding:0; color:var(--ink); font-size:15px; font-weight:600; }
+.action-dialog .opinion-section { margin:12px 0 0; padding:0 0 24px; }
+.action-dialog .opinion-section + .opinion-section { border-top:1px solid var(--line); padding-top:20px; margin-top:0; }
+.action-dialog .opinion-section legend { float:left; width:100%; margin:0 0 16px; }
+.action-dialog .opinion-section legend + label { clear:both; }
+.action-dialog .opinion-section legend span { color:var(--muted); margin-right:4px; }
+.action-dialog fieldset label { margin:12px 0; }
+.action-dialog .disposition-fields { border:0; margin-top:16px; padding:0; }
+.action-dialog .disposition-fields > label:first-child { max-width:240px; }
+.action-dialog .opinion-section > label:first-of-type { max-width:240px; }
+.action-dialog .review-evidence { margin:16px 0; }
+.evidence-selection-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; font-size:14px; font-weight:500; }
+.evidence-selection-heading small { margin-left:6px; font-size:12px; font-weight:400; color:var(--muted); }
+.selected-evidence { padding:10px 12px; border-radius:7px; background:var(--surface-subtle); }
+.selected-evidence p { font-size:13px; line-height:1.7; margin:0; }
+.selected-evidence p + p { margin-top:8px; }
+.selected-evidence p > span { color:var(--muted); font-size:12px; margin-right:12px; white-space:nowrap; }
+.action-dialog .evidence-options { max-height:none; overflow:visible; border:0; border-radius:0; }
+.action-dialog .evidence-options .checkbox { margin:0; padding:10px 0; font-size:13px; font-weight:400; color:var(--ink); border-bottom:1px solid var(--line); }
+.action-dialog .checkbox b { font-size:12px; color:var(--muted); margin-bottom:2px; }
+.action-dialog .checkbox input { flex-shrink:0; width:16px; height:16px; }
+.inline-editor .action-form-body { display:contents; }
+@media(max-width:700px) {
+ dialog.modal.action-dialog { width:calc(100vw - 24px); max-height:calc(100dvh - 24px); border-radius:12px; }
+ .action-dialog > header { padding:20px 20px 14px; }
+ .action-dialog .action-form-body { padding:0 20px 4px; }
+ .action-dialog .modal-actions { padding:16px 20px 20px; }
+}
+.action-dialog .opinion-section legend { width:calc(100% - 196px); min-height:40px; display:flex; align-items:center; margin-bottom:12px; }
+.action-dialog .opinion-section > label:first-of-type { float:right; clear:none; width:184px; display:flex; align-items:center; gap:10px; margin:0 0 12px; font-size:13px; }
+.action-dialog .opinion-section > label:first-of-type select { flex:1; min-width:0; width:auto; margin:0; }
+.action-dialog .opinion-section > label:nth-of-type(2) { clear:both; }
+.action-dialog .opinion-section textarea { min-height:64px; height:64px; }
+.inline-editor .action-form-body > label, .inline-editor .action-form-body > fieldset { margin:20px 0; }
+@media(max-width:520px) {
+ .action-dialog .opinion-section legend { width:100%; min-height:0; }
+ .action-dialog .opinion-section > label:first-of-type { float:none; clear:both; width:100%; max-width:none; }
+}
+
+.action-dialog .action-form > .form-error { flex-shrink:0; margin:8px 28px 0; }
+@media(max-width:700px) { .action-dialog .action-form > .form-error { margin:8px 20px 0; } }

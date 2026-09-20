@@ -1,6 +1,6 @@
 "use client";
 import { pendingResourceRules } from "../lib/resource-publication";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Modal, Button, InlineFormSurface } from "./ui";
 import {
   actionNames,
@@ -235,34 +235,11 @@ export function ActionForm({
     selected: number[],
     onChange: (indices: number[]) => void,
   ) => (
-    <div className="evidence-options">
-      {call?.transcript.map((seg, n) => (
-        <label className="checkbox" key={n}>
-          <input
-            type="checkbox"
-            checked={selected.includes(n)}
-            onChange={(e) =>
-              onChange(
-                e.target.checked
-                  ? [...selected, n]
-                  : selected.filter((x) => x !== n),
-              )
-            }
-          />
-          <span>
-            <b>
-              {String(seg.at).padStart(2, "0")}s ·{" "}
-              {seg.speaker === "agent" ? "坐席" : "客户"}
-            </b>
-            {seg.text}
-          </span>
-        </label>
-      ))}
-    </div>
+    <EvidenceSelection transcript={call?.transcript ?? []} selected={selected} onChange={onChange}/>
   );
   return (
-    <Surface title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={embedded ? closeForm : onClose}>
-      <form noValidate onSubmit={(e:FormEvent<HTMLFormElement>)=>{
+    <Surface title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={embedded ? closeForm : onClose} {...(!embedded ? {variant:"action" as const, description: action === "create_resource" ? "保存后分配资源编号" : `${id} · ${isReview ? target.scope : "title" in target ? target.title : "name" in target ? target.name : person(state.identity).name}`} : {})}>
+      <form className="action-form" noValidate onSubmit={(e:FormEvent<HTMLFormElement>)=>{
         e.preventDefault();
         const invalid = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select")).find(field => !field.disabled && !field.validity.valid);
         if (invalid) {
@@ -278,8 +255,9 @@ export function ActionForm({
         const field = event.target as HTMLElement;
         if (field.dataset.formInvalid) { field.removeAttribute("aria-invalid"); field.removeAttribute("aria-describedby"); delete field.dataset.formInvalid; setError(""); }
       }}>
+        <div className="action-form-body">
         {discardPrompt && <div className="edit-warning" role="alert"><p>离开将放弃这次未保存的内容，已保存版本不受影响。</p><div className="editor-discard-actions"><Button onClick={()=>setDiscardPrompt(false)}>继续编辑</Button><Button intent="danger" onClick={onClose}>放弃修改并返回</Button></div></div>}
-        <div className="form-context">
+        {embedded && <div className="form-context">
           <b>
             {action === "create_resource" ? "新资源草稿" : "title" in target
               ? target.title
@@ -292,7 +270,7 @@ export function ActionForm({
           <span>
             {action === "create_resource" ? "保存后分配编号" : id} · 当前操作：{person(state.identity).name}
           </span>
-        </div>
+        </div>}
         {isAcceptance && isRemedy && <div className="callout">
           <b>第 {target.round} 轮 · 标准 V{target.standardVersion}</b>
           <p>验收标准：{target.standard}</p><p>保存草稿由你继续处理；提交通过或不通过交主管处理，材料不足则交坐席补充后回到你核对。</p>
@@ -492,10 +470,10 @@ export function ActionForm({
                       [fid]: { ...op, ...patch },
                     });
                   return (
-                    <fieldset key={fid}>
-                      <legend>{finding.title}</legend>
+                    <fieldset className="opinion-section" key={fid}>
+                      <legend><span>{target.findingIds.indexOf(fid)+1}.</span> {finding.title}</legend>
                       <label>
-                        逐项结论
+                        结论
                         <select
                           value={op.value}
                           onChange={(e) =>
@@ -520,7 +498,6 @@ export function ActionForm({
                         />
                       </label>
                       <div className="review-evidence">
-                        <p>证据片段（已选 {op.evidence.length}）</p>
                         {evidenceSelector(op.evidence, (v) =>
                           update({ evidence: v }),
                         )}
@@ -843,12 +820,13 @@ export function ActionForm({
             />
           </label>
         )}
+        {target.rev !== formRev && <p className="callout">当前记录已更新，输入已保留。请核对最新阶段与要求。<Button onClick={()=>{setFormRev(target.rev);setError("");}}>已核对，使用最新记录</Button></p>}
+        </div>
         {error && (
           <p className="form-error" id="action-error" ref={errorRef} tabIndex={-1} role="alert">
             {error}
           </p>
         )}
-        {target.rev !== formRev && <p className="callout">当前记录已更新，输入已保留。请核对最新阶段与要求。<Button onClick={()=>{setFormRev(target.rev);setError("");}}>已核对，使用最新记录</Button></p>}
         <div className="modal-actions">
           <Button onClick={embedded ? closeForm : onClose}>取消</Button>
           {isAcceptance && <Button disabled={busy || target.rev !== formRev || staleAcceptanceDraft && !input.draftBasisConfirmed} onClick={()=>execute("save_acceptance")}>保存草稿</Button>}
@@ -864,7 +842,7 @@ export function ActionForm({
 
 function DispositionFields({value,onChange,previous}:{value:NonNullable<Input["dispositions"]>[string];onChange:(patch:Partial<NonNullable<Input["dispositions"]>[string]>)=>void;previous?:NonNullable<Input["dispositions"]>[string]}) {
   return <div className="disposition-fields">
-    <label>本问题后续处置<select value={value.remedy ? "yes":"no"} onChange={e=>onChange({remedy:e.target.value==="yes"})}><option value="no">无需整改</option><option value="yes">下发整改</option></select></label>
+    <label>后续处置<select value={value.remedy ? "yes":"no"} onChange={e=>onChange({remedy:e.target.value==="yes"})}><option value="no">无需整改</option><option value="yes">下发整改</option></select></label>
     {previous && <Button onClick={()=>onChange({...previous})}>沿用上一项要求</Button>}
     {!value.remedy ? <label>无需整改原因<textarea className="resize-none" required minLength={4} value={value.noRemedy ?? ""} onChange={e=>onChange({noRemedy:e.target.value})}/></label> : <>
     <label>整改目标<textarea className="resize-none" required value={value.goal ?? ""} onChange={e=>onChange({goal:e.target.value})}/></label>
@@ -875,4 +853,22 @@ function DispositionFields({value,onChange,previous}:{value:NonNullable<Input["d
     <label>观察与复测要求<input required value={value.observation ?? ""} onChange={e=>onChange({observation:e.target.value})}/></label></div>
     </>}
   </div>;
+}
+
+
+function EvidenceSelection({transcript,selected,onChange}:{
+  transcript: NonNullable<ReturnType<typeof callFor>>["transcript"];
+  selected:number[];
+  onChange:(indices:number[])=>void;
+}) {
+  const [expanded,setExpanded]=useState(selected.length===0);
+  const listId=useId();
+  return <section className="evidence-selection" aria-label="证据片段">
+    <div className="evidence-selection-heading"><span>证据片段 <small>已选 {selected.length}</small></span><button type="button" className="text-button" aria-expanded={expanded} aria-controls={listId} onClick={()=>setExpanded(!expanded)}>{expanded ? "收起列表" : "调整证据"}</button></div>
+    {!expanded && <div className="selected-evidence">{selected.length ? selected.slice().sort((a,b)=>a-b).map(n=>transcript[n] && <p key={n}><span>{String(transcript[n].at).padStart(2,"0")}s · {transcript[n].speaker==='agent' ? '坐席' : '客户'}</span>{transcript[n].text}</p>) : <p className="subtle">尚未选择证据片段</p>}</div>}
+    <div id={listId} hidden={!expanded} className="evidence-options">
+      {transcript.map((seg,n)=><label className="checkbox" key={n}><input type="checkbox" checked={selected.includes(n)} onChange={e=>onChange(e.target.checked ? [...selected,n] : selected.filter(x=>x!==n))}/><span><b>{String(seg.at).padStart(2,"0")}s · {seg.speaker==='agent' ? '坐席' : '客户'}</b>{seg.text}</span></label>)}
+      {!transcript.length && <p className="subtle">暂无转写片段</p>}
+    </div>
+  </section>;
 }
