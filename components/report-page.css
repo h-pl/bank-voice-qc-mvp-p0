@@ -185,16 +185,26 @@
   .qa-detail-heading > div:last-child { justify-content:space-between; width:100%; }
 }
 
-/* Data callouts stay near their mark; details remain an explicit click away. */
-.qa-point-callout { position:absolute; width:220px; padding:12px; border:1px solid var(--line); background:var(--surface); border-radius:8px; box-shadow:0 5px 20px rgb(32 37 43 / 12%); z-index:4; pointer-events:none; font-size:12px; }
-.qa-point-callout > small { color:var(--muted); font-size:11px; }
-.qa-point-callout > div { display:flex; justify-content:space-between; gap:10px; margin-top:7px; }
-.qa-point-callout span { display:flex; align-items:center; gap:6px; }
-.qa-point-callout i { width:6px; height:6px; border-radius:50%; }
-.qa-point-callout p { color:var(--muted); font-size:11px; margin-top:5px; }
-.qa-ring > .qa-ring-callout { position:absolute; display:block; height:auto; inset:auto auto -12px 50%; transform:translateX(-50%); width:max-content; max-width:240px; padding:7px 10px; border:1px solid var(--line); background:var(--surface); border-radius:7px; font-size:11px; color:var(--ink); box-shadow:0 3px 12px rgb(32 37 43 / 9%); pointer-events:none; z-index:2; }
 .qa-bar-row { position:relative; }
 .qa-bar-callout { display:none; position:absolute; bottom:100%; right:0; z-index:2; padding:7px 10px; font-size:11px; white-space:nowrap; background:var(--surface); border:1px solid var(--line); border-radius:7px; box-shadow:0 3px 12px rgb(32 37 43 / 9%); pointer-events:none; }
 .qa-bar-row:hover .qa-bar-callout, .qa-bar-row:focus-visible .qa-bar-callout { display:block; }
 .qa-filter-panel { padding:14px 20px; }
 .qa-filter-footer { margin-top:10px; }
+
+/* Callouts are data labels, visible before pointer or keyboard interaction. */
+.qa-trend-callout { pointer-events:none; }
+.qa-trend-callout rect { fill:var(--surface); stroke:var(--line); }
+.qa-trend-callout path { stroke:var(--line); fill:none; }
+.qa-trend-canvas .qa-trend-callout text { fill:var(--ink); font-size:13px; font-weight:600; }
+.qa-ring-with-labels { width:100%; max-width:440px; margin:0 auto 12px; }
+.qa-ring-with-labels svg { display:block; width:100%; height:auto; overflow:visible; }
+.qa-ring-total { fill:var(--ink); font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; }
+.qa-ring-center-label { fill:var(--muted); font-size:11px; }
+.qa-ring-annotation { pointer-events:none; }
+.qa-ring-annotation polyline { fill:none; stroke-width:1; opacity:.7; }
+.qa-ring-annotation text { fill:var(--ink); font-size:12px; font-weight:500; }
+.qa-ring-annotation .qa-ring-annotation-value { fill:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+.qa-ring-annotation.highlighted polyline { stroke-width:2; opacity:1; }
+.qa-ring-annotation.highlighted text { font-weight:650; }
+@media (min-width:981px) { .qa-charts-grid { grid-template-columns:minmax(0,1.65fr) minmax(340px,1fr); } }
+@media (max-width:600px) { .qa-ring-section { display:block; } .qa-ring-with-labels { max-width:380px; } .qa-ring-section .qa-legend small { display:block; } .qa-ring-section .qa-legend button { grid-template-columns:6px 1fr 30px 48px; } }
