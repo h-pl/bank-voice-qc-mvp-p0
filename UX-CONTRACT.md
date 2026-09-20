@@ -12,7 +12,7 @@
 | --- | --- | --- | --- | --- |
 | Select/Listbox | 原生 select | PRD / 本契约 | 接受系统弹层几何和键盘行为 | 浏览器打开与键盘检查 |
 | Date | 原生 date / datetime-local | PRD / 本契约 | 接受系统日历；标签与校验中文 | 范围错误检查 |
-| Form | ActionForm / RuleEditor | workflow 校验 + 本契约 | 业务动作弹窗 / 规则参数弹窗 / 资源独立编辑页 | 校验、取消、冲突、保存 |
+| Form | ActionForm / RuleEditor | workflow 校验 + 本契约 | 业务动作弹窗 / 规则参数弹窗 / 资源编辑弹窗 | 校验、取消、冲突、保存 |
 | Scrollbar | app/workspace-system.css | DESIGN.md | 全局主题；策略列表稳定 gutter | 宽窄屏、滚动检查 |
 | Toast | Home 单一 live region | 本契约 | 操作回执；错误仍保留表单中 | 保存与失败反馈 |
 | CRUD | Home go/open + workflow apply | PRD 第 7–9 节 | 就地草稿 / 新资源定位 / 版本化发布 | 业务回归测试 |
@@ -83,13 +83,13 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
 | Resource navigation | ResourceCatalog + Home go/open | 当前资源及规则快照 | 分类表格、resource 预览弹窗、Strategy detailOnly | 返回恢复分类；Escape 恢复触发者 |
-| Resource form | ActionForm + InlineFormSurface | workflow apply 的资源校验 | 独立页面；无新编辑校验副本 | 未保存导航阻止，返回明确放弃；保存后定位草稿 |
+| Resource form | ActionForm + Modal | workflow apply 的资源校验 | 居中弹窗；无新编辑校验副本 | 未保存导航阻止，关闭明确放弃；保存后定位草稿 |
 | Case documents | CaseDocuments + Modal | 案件当前轮次和绑定结论版本 | 结论/申诉/要求/材料/验收只读预览 | 原文可见，关闭回案，跨对象先关闭 |
 | Workbench | Workbench + notices/canSee | workflow 责任与阅读待办 | 当前身份、逾期、24h | 点击进入原任务，角色切换重算 |
 
 资源发布只创建不可变 ResourceVersion，不升级任何规则。switch_resource 必须显式选择规则并填写原因；逐项核对 rule.rev，资源 rev 和 requestId 仍由 apply 处理；任何规则存在参数草稿或版本冲突时整体拒绝，不产生半次切换。成功新增 RuleVersion 和逐规则日志；检测中的批次与历史快照保持不变。检查仍为演示预设，不宣称真实回归或审批。
 
-资源独立编辑页使用 qc:before-navigate 与 beforeunload 保护。保存失败保留字段；用户主动取消或返回时先显示放弃/继续编辑，禁止静默丢失长文本。恢复后版本冲突仍需重新核对。
+资源编辑弹窗使用 qc:before-navigate 与 beforeunload 保护。保存失败保留字段；用户主动取消或返回时先显示放弃/继续编辑，禁止静默丢失长文本。恢复后版本冲突仍需重新核对。
 
 当前记录：docs/reviews/6001迭代实施与验收-20260920.md。
 

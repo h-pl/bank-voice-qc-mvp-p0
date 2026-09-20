@@ -25,7 +25,7 @@ export function ResourceCatalog({state,focus,onOpen,onAction,onSubmit}: {state:S
   const act=(id:string,action:string)=>{if(["save_resource","create_resource"].includes(action))setEditing({id,action});else onAction(id,action);};
   const reset=()=>{setSearch("");setCategory("全部");setStatus("");setPage(1);};
   return <>
-    <div hidden={!!focus || !!editing} className="resource-catalog panel">
+    <div hidden={!!focus} className="resource-catalog panel">
       <header className="catalog-heading"><div><h2>业务资源库 <span>{state.resources.length}</span></h2><p>维护业务依据，查看哪些规则正在使用它。</p></div>{manager && state.resources[0] && <Button primary icon="plus" onClick={()=>act(state.resources[0].id,"create_resource")}>新增资源</Button>}</header>
       <Tabs label="资源分类" panelId="resource-results" value={category} options={["全部","业务知识","词库","SOP"].map(value=>({value,label:value,count:state.resources.filter(x=>value==="全部" || x.type===value).length}))} onChange={value=>{setCategory(value);setPage(1);}}/>
       <div role="tabpanel" id="resource-results" aria-labelledby={`resource-results-tab-${category}`}>
@@ -34,8 +34,8 @@ export function ResourceCatalog({state,focus,onOpen,onAction,onSubmit}: {state:S
         <Pagination page={currentPage} total={rows.length} size={size} onPage={setPage} onSize={value=>{setSize(value);setPage(1);}}/>
       </div>
     </div>
-    {focus && !editing && <Strategy detailOnly state={state} view="resources" focus={focus} onOpen={open} onAction={act} onSubmit={onSubmit}/>}
-    {editing && <ActionForm embedded key={`${editing.id}-${editing.action}`} state={state} id={editing.id} action={editing.action} onSubmit={onSubmit} onClose={()=>setEditing(undefined)}/>}
+    {focus && <Strategy detailOnly state={state} view="resources" focus={focus} onOpen={open} onAction={act} onSubmit={onSubmit}/>}
+    {editing && <ActionForm key={`${editing.id}-${editing.action}`} state={state} id={editing.id} action={editing.action} onSubmit={onSubmit} onClose={()=>setEditing(undefined)}/>}
     {resource && snapshot && <Modal variant="resource" title={resource.name} description={`${resource.id} · ${resource.type}`} onClose={()=>setPreview(undefined)} footer={<><Button onClick={()=>setPreview(undefined)}>关闭预览</Button><Button primary onClick={()=>open(resource.id)}>{actions(state,resource.id).includes("save_resource") ? "查看详情与维护" : "查看完整详情"}</Button></>}><div className="resource-preview-body"><div className="resource-preview-meta"><Badge tone={resource.versions.length ? "success" : "warning"}>{resource.versions.length ? `已发布 V${resource.versions.at(-1)!.version}` : "未发布草稿"}</Badge><span>{snapshot.scope}</span><span>{snapshot.role}</span></div><ResourceContent resource={resource} snapshot={{...snapshot,version:resource.versions.at(-1)?.version ?? 0,at:resource.versions.at(-1)?.at ?? ""}}/><section><h3>当前规则引用</h3>{state.rules.filter(rule=>resource.id in rule.versions.at(-1)!.resources).map(rule=><div className="preview-reference" key={rule.id}><span>{rule.name}</span><b>V{rule.versions.at(-1)!.resources[resource.id]}</b></div>)}{!state.rules.some(rule=>resource.id in rule.versions.at(-1)!.resources) && <p>尚未被规则引用。</p>}</section>{resource.draft && <p className="callout">有未发布草稿，可进入详情核对内容差异。</p>}</div></Modal>}
   </>;
 }

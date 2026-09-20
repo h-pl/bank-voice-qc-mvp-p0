@@ -876,3 +876,6 @@ dialog.modal.resource-dialog[open] { animation:b2b-dialog-enter 180ms ease-out; 
 @media(prefers-reduced-motion:reduce) { dialog.modal.resource-dialog[open] { animation:none; } }
 
 dialog.modal.navigation-dialog > .modal-body { padding:0; }
+
+/* Resource editing uses the shared modal; long source content keeps useful writing space. */
+.action-dialog .resource-content-input { min-height:132px; }

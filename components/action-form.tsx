@@ -145,9 +145,19 @@ export function ActionForm({
   const [busy, setBusy] = useState(false);
   const [initialInput] = useState(() => JSON.stringify(input));
   const committing = useRef(false);
-  const dirty = embedded && JSON.stringify(input) !== initialInput;
+  const resourceEditing = ["save_resource", "create_resource"].includes(action);
+  const formRef = useRef<HTMLFormElement>(null);
+  const dirty = (embedded || resourceEditing) && JSON.stringify(input) !== initialInput;
   const [discardPrompt,setDiscardPrompt] = useState(false);
-  const closeForm = () => { if (dirty) setDiscardPrompt(true); else onClose(); };
+  const closeForm = () => { if (busy) return; if (dirty) setDiscardPrompt(true); else onClose(); };
+  useEffect(()=>{
+    if(discardPrompt) formRef.current?.querySelector<HTMLButtonElement>("[data-continue-editing]")?.focus();
+  },[discardPrompt]);
+  useEffect(()=>{
+    if(!resourceEditing) return;
+    const frame = requestAnimationFrame(()=>formRef.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input:not([type=checkbox]), textarea")?.focus());
+    return ()=>cancelAnimationFrame(frame);
+  },[resourceEditing]);
   useEffect(()=>{
     if(!dirty) return;
     const guard=(event:Event)=>{if(committing.current)return;event.preventDefault();setError("资源内容尚未保存。请先保存草稿，或取消修改后再切换页面。");requestAnimationFrame(()=>errorRef.current?.focus());};
@@ -238,9 +248,10 @@ export function ActionForm({
     <EvidenceSelection transcript={call?.transcript ?? []} selected={selected} onChange={onChange}/>
   );
   return (
-    <Surface title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={embedded ? closeForm : onClose} {...(!embedded ? {variant:"action" as const, description: action === "create_resource" ? "保存后分配资源编号" : `${id} · ${isReview ? target.scope : "title" in target ? target.title : "name" in target ? target.name : person(state.identity).name}`} : {})}>
-      <form className="action-form" noValidate onSubmit={(e:FormEvent<HTMLFormElement>)=>{
+    <Surface title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={closeForm} {...(!embedded ? {variant:"action" as const, description: action === "create_resource" ? "保存后分配资源编号" : `${id} · ${isReview ? target.scope : "title" in target ? target.title : "name" in target ? target.name : person(state.identity).name}`} : {})}>
+      <form ref={formRef} className="action-form" noValidate onSubmit={(e:FormEvent<HTMLFormElement>)=>{
         e.preventDefault();
+        if (discardPrompt) return;
         const invalid = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select")).find(field => !field.disabled && !field.validity.valid);
         if (invalid) {
           setError(invalid.validity.valueMissing ? "请完成此必填项后再提交。" : invalid.validity.tooShort ? "填写内容过短，请补充完整说明。" : "此项格式或数值范围不正确，请检查后重新提交。");
@@ -256,7 +267,6 @@ export function ActionForm({
         if (field.dataset.formInvalid) { field.removeAttribute("aria-invalid"); field.removeAttribute("aria-describedby"); delete field.dataset.formInvalid; setError(""); }
       }}>
         <div className="action-form-body">
-        {discardPrompt && <div className="edit-warning" role="alert"><p>离开将放弃这次未保存的内容，已保存版本不受影响。</p><div className="editor-discard-actions"><Button onClick={()=>setDiscardPrompt(false)}>继续编辑</Button><Button intent="danger" onClick={onClose}>放弃修改并返回</Button></div></div>}
         {embedded && <div className="form-context">
           <b>
             {action === "create_resource" ? "新资源草稿" : "title" in target
@@ -719,7 +729,7 @@ export function ActionForm({
                   : resourceType === "词库"
                     ? "词条（每行一个）"
                     : "知识内容"}
-                <textarea className="resize-none"
+                <textarea className="resize-none resource-content-input"
                   rows={6}
                   required
                   value={input.content ?? ""}
@@ -827,13 +837,16 @@ export function ActionForm({
             {error}
           </p>
         )}
+        {discardPrompt && <p className="parameter-discard" role="alert">修改尚未保存，放弃后将恢复已保存的内容。</p>}
         <div className="modal-actions">
-          <Button onClick={embedded ? closeForm : onClose}>取消</Button>
+          {discardPrompt ? <><button type="button" className="btn" data-continue-editing onClick={()=>setDiscardPrompt(false)}>继续编辑</button><Button intent="danger" onClick={onClose}>放弃修改</Button></> : <>
+          <Button disabled={busy} onClick={closeForm}>取消</Button>
           {isAcceptance && <Button disabled={busy || target.rev !== formRev || staleAcceptanceDraft && !input.draftBasisConfirmed} onClick={()=>execute("save_acceptance")}>保存草稿</Button>}
           {["save_review","submit_review"].includes(action) && <Button disabled={busy} onClick={()=>execute("save_review")}>保存草稿</Button>}
           {(!isAcceptance || actions(state,id).includes("verify")) && <Button primary type="submit" disabled={busy || target.rev !== formRev || staleAcceptanceDraft && !input.draftBasisConfirmed || (["save_review","submit_review"].includes(action) && !call?.endedAt)}>
             {busy ? "保存中…" : isAcceptance ? "提交验收意见" : ["save_review","submit_review"].includes(action) ? "提交复核意见" : ["save_resource", "create_resource"].includes(action) ? "保存草稿" : actionTitle}
           </Button>}
+          </>}
         </div>
       </form>
     </Surface>
