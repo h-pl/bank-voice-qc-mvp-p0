@@ -4,7 +4,7 @@ import { useDemoClock } from '../lib/store';
 import { report, reportCsv, localDate, type Metric, type ReportFilter } from '../lib/reports';
 import { reportTrend, reportVisuals, periodMetric, visualMetric, type TrendPoint } from '../lib/report-visuals';
 import { people, type State } from '../lib/workflow';
-import { Button, Empty, MetricSummary, PageHeader } from './ui';
+import { Button, Empty, MetricSummary } from './ui';
 import { download, stamp, Pagination } from './workspace';
 import { TrendChart, RingChart, HorizontalBars, chartColors, formatNumber } from './report-charts';
 import './report-page.css';
@@ -59,7 +59,6 @@ export function ReportPage({ state, onOpen, module = "overview" }: { state: Stat
   const detailKeys = tab === 'overview' ? ['riskcalls', 'candidates', 'manual'] : tab === 'issues' ? ['riskappealing'] : tab === 'improvement' ? ['review-overdue', 'appeal-overdue', 'remedy-overdue', 'paused', 'materialpending', 'extended', 'everoverdue', 'sourcechanged', 'review-due', 'appeal-due', 'remedy-due', 'terminated'] : [];
   if (!metrics.length) return <Empty text="当前角色无质量报表权限"/>;
   return <div className="qa-analytics panel page-work-surface">
-    <PageHeader title={moduleInfo.title} description={moduleInfo.description}><span className="page-update">截至 {stamp(asOf)}</span></PageHeader>
     <div role="region" aria-label={moduleInfo.title}>
     <section className="qa-filter-panel" aria-label="报表筛选"><div className="qa-filter-fields">
       <label>开始日期<input name="report-start" aria-label="报表开始日期" type="date" value={filter.start} aria-invalid={invalid} aria-describedby={invalid ? 'report-date-error' : undefined} onChange={e => set('start', e.target.value)}/></label>
@@ -67,7 +66,7 @@ export function ReportPage({ state, onOpen, module = "overview" }: { state: Stat
       <label>业务<select name="report-business" aria-label="报表业务" value={filter.business} onChange={e => set('business', e.target.value)}><option value="">全部业务</option>{['账户查询', '信用卡', '转账汇款'].map(x => <option key={x}>{x}</option>)}</select></label>
       <label>班组<select name="report-group" aria-label="报表班组" value={filter.group} onChange={e => { setFilter(f => ({ ...f, group: e.target.value, agent: '' }));selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}><option value="">全部班组</option><option>客服一组</option><option>客服二组</option></select></label>
       <label>坐席<select name="report-agent" aria-label="报表坐席" value={filter.agent} onChange={e => set('agent', e.target.value)}><option value="">全部坐席</option>{people.filter(p => p.role === 'agent' && (!filter.group || state.calls.some(c => c.agentId === p.id && c.group === filter.group))).map(p => <option value={p.id} key={p.id}>{p.name}</option>)}</select></label>
-    </div><div className="qa-filter-footer"><span>北京时间</span><div className="qa-date-shortcuts">{[7, 14, 30].map(days => <button type="button" key={days} aria-pressed={filter.start === range(days).start && filter.end === today} onClick={() => { setFilter(f => ({ ...f, ...range(days) }));selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>近 {days} 天</button>)}<button type="button" onClick={() => { setFilter({ business: '', group: '', agent: '', ...range(7) });selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>重置筛选</button></div></div>
+    </div><div className="qa-filter-footer"><span>北京时间 · 截至 {stamp(asOf)}</span><div className="qa-date-shortcuts">{[7, 14, 30].map(days => <button type="button" key={days} aria-pressed={filter.start === range(days).start && filter.end === today} onClick={() => { setFilter(f => ({ ...f, ...range(days) }));selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>近 {days} 天</button>)}<button type="button" onClick={() => { setFilter({ business: '', group: '', agent: '', ...range(7) });selectMetric(tab === 'overview' ? trendKey : initialMetric(tab)); }}>重置筛选</button></div></div>
       {invalid && <p className="qa-date-error" id="report-date-error" role="alert">开始日期不能晚于结束日期。<button type="button" onClick={() => { setFilter(f => ({ ...f, start: f.end, end: f.start }));setPage(1); }}>交换日期</button></p>}
     </section>
     {!invalid && <>

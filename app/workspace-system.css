@@ -892,7 +892,7 @@ dialog.modal.navigation-dialog > .modal-body { padding:0; }
 
 .detail-back-actions > .btn { min-height:32px; height:32px; padding:6px 12px; }
 
-/* Shared page hierarchy: header, controls, summary, task-specific content. */
+/* Shared page hierarchy: controls, summary, task-specific sections. Page identity belongs to the topbar. */
 .page-work-surface { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-panel); overflow:clip; }
 .page-section-header { min-height:94px; }
 .page-section-header h2 { font-size:24px; font-weight:650; }
@@ -918,7 +918,6 @@ dialog.modal.navigation-dialog > .modal-body { padding:0; }
 .qa-analytics.page-work-surface .qa-context { margin:0; padding:12px 24px 0; }
 .qa-analytics.page-work-surface .qa-analysis-panel, .qa-analytics.page-work-surface .qa-secondary-panel, .qa-analytics.page-work-surface .qa-data-panel { margin:0; border:0; border-radius:0; box-shadow:none; }
 .qa-analytics.page-work-surface .qa-secondary-panel, .qa-analytics.page-work-surface .qa-data-panel { border-top:1px solid var(--line); }
-.qa-analytics.page-work-surface .page-section-header h2 { font-size:24px; }
 @media(max-width:900px) { .workbench.page-work-surface .workbench-columns { grid-template-columns:1fr; } .workbench.page-work-surface .workbench-events { border-left:0; border-top:1px solid var(--line); } }
 @media(max-width:700px) { .page-section-header { flex-wrap:wrap; gap:8px; } .metric-summary { padding:12px 16px; grid-template-columns:repeat(2,minmax(0,1fr)) !important; } .metric-summary > button { padding:12px; } .metric-summary > button + button::before { display:none; } .qa-analytics.page-work-surface .qa-tabs { padding-inline:16px; } .qa-analytics.page-work-surface .qa-filter-panel { padding:16px; } }
 
