@@ -92,3 +92,5 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 资源独立编辑页使用 qc:before-navigate 与 beforeunload 保护。保存失败保留字段；用户主动取消或返回时先显示放弃/继续编辑，禁止静默丢失长文本。恢复后版本冲突仍需重新核对。
 
 当前记录：docs/reviews/6001迭代实施与验收-20260920.md。
+
+- 图表浮层位移使用 400ms transform 过渡；整绘图区指针事件每帧合并，键盘操作取消旧鼠标帧。扇区强调与内容切换使用短过渡；减少动态效果偏好下即时更新，默认常驻及下钻行为不变。

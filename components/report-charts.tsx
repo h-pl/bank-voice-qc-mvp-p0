@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Metric } from '../lib/reports';
 import type { TrendPoint, VisualGroup } from '../lib/report-visuals';
 
@@ -7,6 +7,16 @@ export const chartColors = { orange: 'var(--orange)', green: 'var(--green)', red
 export const formatNumber = (n: number) => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 1 }).format(n);
 export function TrendChart({ points, stride, metric, onInspect }: { points: TrendPoint[]; stride: number; metric: Metric; onInspect: (p: TrendPoint) => void }) {
   const [cursor, setCursor] = useState<number>();
+  const [pointerY,setPointerY]=useState<number>();
+  const frame=useRef<number | null>(null);
+  const pending=useRef<{index:number;y:number} | null>(null);
+  useEffect(()=>()=>{if(frame.current!==null) cancelAnimationFrame(frame.current);},[]);
+  const selectWithKeyboard=(index:number)=>{
+    if(frame.current!==null) cancelAnimationFrame(frame.current);
+    frame.current=null;
+    setPointerY(undefined);
+    setCursor(index);
+  };
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const last = points.findLastIndex(p => p.value !== null), active = Math.min(cursor ?? Math.max(0, last), points.length - 1), point = points[active];
   const ratio = metric.key === 'coverage' || metric.key === 'fp', unit = ratio ? '%' : metric.key === 'calls' ? '通' : '项';
@@ -23,21 +33,24 @@ export function TrendChart({ points, stride, metric, onInspect }: { points: Tren
     <div className="qa-chart-scroll"><div className="qa-trend-canvas" style={{aspectRatio:`${width}/${height}`}} onPointerMove={event => {
       const bounds=event.currentTarget.getBoundingClientRect();
       const plotX=(event.clientX-bounds.left)/bounds.width*width;
-      setCursor(Math.max(0,Math.min(points.length-1,Math.round((plotX-left)/(width-left-right)*(points.length-1)))));
+      pending.current={index:Math.max(0,Math.min(points.length-1,Math.round((plotX-left)/(width-left-right)*(points.length-1)))),y:(event.clientY-bounds.top)/bounds.height*100};
+      if(frame.current===null) frame.current=requestAnimationFrame(()=>{
+        frame.current=null;
+        if(pending.current){setCursor(pending.current.index);setPointerY(pending.current.y);}
+      });
     }}>
-      <svg viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      <svg key={metric.key} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
         {[0, 1, 2, 3, 4].map(i => <g key={i}><line x1={left} y1={y(i * ceiling / 4)} x2={width - right} y2={y(i * ceiling / 4)} className="qa-gridline"/><text x={left - 10} y={y(i * ceiling / 4) + 5} textAnchor="end">{formatNumber(i * ceiling / 4)}</text></g>)}
-        {segments.map((segment, i) => { const path = segment.map((p, n) => `${n ? 'L' : 'M'}${p.x},${p.y}`).join(' ');return <g key={i}><path d={`${path} L${segment.at(-1)!.x},${y(0)} L${segment[0].x},${y(0)} Z`} fill="#fff0e5" opacity=".6"/><path d={path} fill="none" stroke={chartColors.orange} strokeWidth="2.5" strokeLinejoin="round"/>{segment.map((p, j) => <circle key={j} cx={p.x} cy={p.y} r="3" fill="white" stroke={chartColors.orange} strokeWidth="2"/>)}</g>;})}
-        {point?.value !== null && point && <line x1={x(active)} x2={x(active)} y1={top} y2={height - bottom} stroke="var(--line)"/>}
+        {segments.map((segment, i) => { const path = segment.map((p, n) => `${n ? 'L' : 'M'}${p.x},${p.y}`).join(' ');return <g key={i}><path d={`${path} L${segment.at(-1)!.x},${y(0)} L${segment[0].x},${y(0)} Z`} className="qa-trend-area" fill="#fff0e5" opacity=".6"/><path className="qa-trend-line" pathLength="1" d={path} fill="none" stroke={chartColors.orange} strokeWidth="2.5" strokeLinejoin="round"/>{segment.map((p, j) => <circle key={j} cx={p.x} cy={p.y} r="3" fill="white" stroke={chartColors.orange} strokeWidth="2"/>)}</g>;})}
+        {point?.value !== null && point && <g><g className="qa-chart-cursor" style={{transform:`translateX(${x(active)}px)`}}><line x1="0" x2="0" y1={top} y2={height-bottom} stroke="var(--line)"/></g><circle className="qa-chart-active-dot" cx="0" cy="0" r="5" style={{transform:`translate(${x(active)}px, ${y(point.value)}px)`}} fill={chartColors.orange} stroke="var(--surface)" strokeWidth="2"/></g>}
         {points.map((p,i)=>i===0 || i===points.length-1 || i%Math.max(1,Math.ceil(points.length/8))===0 ? <text key={p.start} x={x(i)} y={height-10} textAnchor="middle">{p.label}</text> : null)}
       </svg>
-      {points.map((p, i) => <button key={p.start} ref={el => { buttons.current[i] = el; }} className={`qa-point ${active === i ? 'selected' : ''}`} style={{ left: `${x(i) / width * 100}%`, top: `${y(p.value ?? 0) / height * 100}%` }} tabIndex={active === i ? 0 : -1} aria-label={`${p.start}${stride > 1 ? `至${p.end}` : ''}，${valueText(p)}，查看明细`} onMouseEnter={() => setCursor(i)} onFocus={() => setCursor(i)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? points.length - 1 : Math.max(0, Math.min(points.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1))); buttons.current[next]?.focus(); } }} onClick={() => onInspect(p)}><span className={p.value === null ? 'missing' : ''}/></button>)}
-      {point && <div className="qa-chart-callout qa-trend-float" style={{left:`clamp(8px, calc(${x(active)/width*100}% + ${active>points.length/2 ? -256 : 16}px), calc(100% - 248px))`,top:`clamp(8px, calc(${y(point.value??0)/height*100}% - 106px), calc(100% - 112px))`}}>
+      {points.map((p, i) => <button key={p.start} ref={el => { buttons.current[i] = el; }} className={`qa-point ${active === i ? 'selected' : ''}`} style={{ left: `${x(i) / width * 100}%`, top: `${y(p.value ?? 0) / height * 100}%` }} tabIndex={active === i ? 0 : -1} aria-label={`${p.start}${stride > 1 ? `至${p.end}` : ''}，${valueText(p)}，查看明细`} onFocus={() => selectWithKeyboard(i)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? points.length - 1 : Math.max(0, Math.min(points.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1))); buttons.current[next]?.focus(); } }} onClick={() => onInspect(p)}><span className={p.value === null ? 'missing' : ''}/></button>)}
+      {point && <div className="qa-callout-anchor" style={{transform:`translate3d(clamp(8px, calc(${x(active)/width*100}% + 16px), calc(100% - 248px)), clamp(8px, calc(${pointerY ?? y(point.value??0)/height*100}% - 100px), calc(100% - 112px)), 0)`}}><div className="qa-chart-callout qa-trend-float">
         <div>{point.start}{stride>1 ? ` — ${point.end}` : ' · 全天'}</div>
         <p style={{color:chartColors.orange}}>{metric.label}：{valueText(point)}</p>
         {ratio && point.denominator!==undefined && <small>样本 {point.count} / {point.denominator}</small>}
-      </div>}
-
+      </div></div>}
 
     </div></div>
     <div className="qa-chart-readout" aria-live="polite"><span>{point?.start}{stride > 1 && ` — ${point?.end}`}{ratio && point?.denominator !== undefined && <small>样本 {point.count} / {point.denominator}</small>}</span><strong>{point ? valueText(point) : '暂无数据'}</strong><button type="button" className="text-button" onClick={() => point && onInspect(point)}>查看该{stride > 1 ? '段' : '日'}明细</button></div>
@@ -56,14 +69,14 @@ export function RingChart({ title, note, groups, center, centerLabel, onSelect }
     <div className="qa-ring-stage">
       <svg viewBox="0 0 360 260" role="img" aria-label={groups.map(g=>`${g.label} ${g.count}，占比 ${percent(g.count)}`).join('；')}>
         <circle cx="150" cy="155" r="70" fill="none" stroke="var(--line)" strokeWidth="18"/>
-        {total>0 && groups.map(g=>{const start=offset;offset+=g.count/total*100;return g.count>0 && <circle key={g.key} cx="150" cy="155" r="70" fill="none" stroke={g.color} strokeWidth={selected?.key===g.key ? 23 : 18} pathLength="100" strokeDasharray={`${g.count/total*100} ${100-g.count/total*100}`} strokeDashoffset={-start} transform="rotate(-90 150 155)" onPointerEnter={()=>setHighlight(g.key)}/>;})}
+        {total>0 && groups.map(g=>{const start=offset;offset+=g.count/total*100;return g.count>0 && <circle className="qa-ring-segment" key={g.key} cx="150" cy="155" r="70" fill="none" stroke={g.color} strokeWidth={selected?.key===g.key ? 23 : 18} pathLength="100" strokeDasharray={`${g.count/total*100} ${100-g.count/total*100}`} strokeDashoffset={-start} transform="rotate(-90 150 155)" onPointerEnter={()=>setHighlight(g.key)}/>;})}
         <text x="150" y="153" className="qa-ring-total" textAnchor="middle">{center ?? formatNumber(total)}</text>
         <text x="150" y="174" className="qa-ring-center-label" textAnchor="middle">{centerLabel ?? '问题合计'}</text>
       </svg>
       <div className="qa-chart-callout qa-ring-float" aria-live="polite">
-        <div>{selected?.label ?? title}</div>
+        <div className="qa-callout-content" key={selected?.key}><div>{selected?.label ?? title}</div>
         <p><i className="qa-dot" style={{background:selected?.color}}/>数量：{formatNumber(selected?.count??0)}<span>占比：{percent(selected?.count??0)}</span></p>
-        {!total && <small>暂无样本，占比不计算</small>}
+        {!total && <small>暂无样本，占比不计算</small>}</div>
       </div>
     </div>
     <div className="qa-legend">{groups.map(g=><button key={g.key} className={selected?.key===g.key ? 'is-highlighted' : ''} onPointerEnter={()=>setHighlight(g.key)} onFocus={()=>setHighlight(g.key)} onClick={()=>onSelect(g.key)} aria-label={`${g.label} ${g.count}，占比 ${percent(g.count)}，查看明细`}><span className="qa-dot" style={{background:g.color}}/><span>{g.label}</span><b>{formatNumber(g.count)}</b><small>{percent(g.count)}</small></button>)}</div>

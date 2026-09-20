@@ -209,3 +209,21 @@
 .qa-legend .is-highlighted { background:var(--surface-subtle); }
 @media (min-width:981px) { .qa-charts-grid { grid-template-columns:minmax(0,1.9fr) minmax(300px,1fr); } }
 @media (max-width:600px) { .qa-ring-section { display:block; } .qa-ring-stage { max-width:380px; } .qa-ring-section .qa-legend small { display:block; } .qa-ring-section .qa-legend button { grid-template-columns:6px 1fr 30px 48px; } }
+
+/* Match the reference's transform-based 400 ms tooltip glide. */
+.qa-analytics { --qa-callout-duration:400ms; --qa-mark-duration:180ms; }
+.qa-callout-anchor { position:absolute; inset:0; pointer-events:none; z-index:3; transition:transform var(--qa-callout-duration) ease; will-change:transform; }
+.qa-callout-anchor .qa-trend-float { top:0; left:0; }
+.qa-chart-cursor, .qa-chart-active-dot { transition:transform var(--qa-mark-duration) ease-out; }
+.qa-point.selected span:not(.missing) { opacity:0; }
+.qa-ring-segment { transition:stroke-width 220ms ease-out, opacity 220ms ease-out; }
+.qa-callout-content { animation:qa-callout-enter 160ms ease-out; }
+.qa-trend-line { stroke-dasharray:1; animation:qa-trend-draw 650ms ease-out both; }
+.qa-trend-area { animation:qa-area-enter 450ms ease-out both; }
+@keyframes qa-callout-enter { from { opacity:.5; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+@keyframes qa-trend-draw { from { stroke-dashoffset:1; } to { stroke-dashoffset:0; } }
+@keyframes qa-area-enter { from { opacity:0; } to { opacity:.6; } }
+@media (prefers-reduced-motion:reduce) {
+  .qa-callout-anchor, .qa-chart-cursor, .qa-chart-active-dot, .qa-ring-segment { transition:none; }
+  .qa-callout-content, .qa-trend-line, .qa-trend-area { animation:none; }
+}

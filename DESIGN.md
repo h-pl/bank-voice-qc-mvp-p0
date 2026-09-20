@@ -79,7 +79,7 @@ spacing:
 | control / panel | --radius-control / --radius-panel | Button、SearchField、面板、Modal |
 | scrollbar | --scrollbar-thumb / --scrollbar-track / --scrollbar-hover / --scrollbar-active | 所有应用滚动区域 |
 
-共同组件与交互见 UX-CONTRACT.md。SearchField 保留清除按钮空间；Tabs 在焦点与选中间区分；Modal 使用原生 dialog 的焦点与 inert 行为。仅 Toast 淡入，reduced-motion 禁止动画；强制色模式保留系统滚动条与选中轮廓。
+共同组件与交互见 UX-CONTRACT.md。SearchField 保留清除按钮空间；Tabs 在焦点与选中间区分；Modal 使用原生 dialog 的焦点与 inert 行为。Toast 淡入；图表浮层按下述动效规范过渡，reduced-motion 禁止动画；强制色模式保留系统滚动条与选中轮廓。
 
 ## Do's and Don'ts
 
@@ -118,3 +118,6 @@ UI 公共组件承载焦点、禁用、忙碌和状态表达，业务分区承�
 ## 图表浮层 callout · 2026-09-20
 
 用户以 Moss API usage3 截图纠正上一轮解释：callout 是带日期、指标与数值的白色浮层，不是每点数值标签或环图引线。趋势默认选择最后一个有样本日期；整个绘图区按鼠标横向位置吸附最近日期，无须精准命中点，移开后保留。环形图默认选择第一个非零分类，扇区/图例悬停与键盘焦点切换浮层内容，移开后保留。一次一个浮层，沿用原橙色系、细边框与浅色面积；点击明确下钻，零分母显示 —。
+
+
+图表动效以实际 usage3 页面为依据（DOM 显示 tooltip 为 transform 400ms）：浮层通过 transform 平滑位移 400ms，参考线和选中点 180ms，环图扇区强调 220ms、浮层内容 160ms；趋势首次展示/指标切换描线 650ms、面积淡入 450ms。鼠标更新经 requestAnimationFrame 每帧合并，键盘选择取消待处理的鼠标帧；不在悬停时重启动画或改变数据。prefers-reduced-motion 关闭上述动画和过渡。
