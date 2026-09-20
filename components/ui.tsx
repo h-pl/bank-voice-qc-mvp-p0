@@ -76,7 +76,7 @@ export function Modal({
   title: string;
   children: ReactNode;
   onClose: () => void;
-  variant?: "default" | "notification" | "navigation";
+  variant?: "default" | "notification" | "navigation" | "evidence";
   description?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -129,7 +129,7 @@ export function Tabs<T extends string>({ value, options, onChange, label, panelI
   value: T; options: ReadonlyArray<{value:T; label:ReactNode; count?:number}>;
   onChange:(value:T) => void; label:string; panelId:string; className?:string;
 }) {
-  return <div className={className} role="tablist" aria-label={label}>
+  return <div className={`ui-tabs ${className}`} role="tablist" aria-label={label}>
     {options.map((option, index) => <button type="button" role="tab" key={option.value}
       id={`${panelId}-tab-${option.value}`} aria-controls={panelId} aria-selected={value === option.value}
       tabIndex={value === option.value ? 0 : -1} className={value === option.value ? "active" : ""}

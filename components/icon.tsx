@@ -27,9 +27,11 @@ export type IconName =
   | "refresh"
   | "eye"
   | "mic"
+  | "info"
   | "edit";
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, ReactNode> = {
+    info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></>,
     edit: <><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></>,
     grid: (
       <>

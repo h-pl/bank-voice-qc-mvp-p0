@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { localDate } from "../lib/reports";
 import { useDemoClock } from "../lib/store";
-import { Badge, Button, Empty, SearchField, Tabs } from "./ui";
+import { Badge, Button, Empty, Modal, SearchField, Tabs } from "./ui";
 import { Icon } from "./icon";
 import {
   actions,
@@ -22,6 +22,7 @@ import {
   latest,
   person,
   roleOf,
+  roleNames,
   statusNames,
   verdictNames,
   detection,
@@ -31,6 +32,8 @@ import {
   type View,
   type Call,
   type Finding,
+  type Appeal,
+  type Remedy,
 } from "../lib/workflow";
 export const stamp = (s?: string) =>
   s
@@ -63,6 +66,12 @@ export const label = (e: Entity) =>
             : "business" in e
               ? e.business
               : "申诉核查";
+// Use the underlying issue as the case title; preserve the submitted reason in the body.
+export const caseTitle = (state: State, item: Entity) =>
+  "findingId" in item
+    ? state.findings.find(f => f.id === item.findingId)?.title ?? label(item)
+    : label(item);
+
 export const stateLabel = (e: Entity, s?: State) =>
   s && "conclusions" in e && roleOf(s) === "agent" && e.reminder && !latest(e) ? (e.reminder.feedback ? "已反馈执行" : e.reminder.dissent ? "已提出异议" : e.reminder.readAt ? "提醒已读" : "提醒待阅读") :
   s && s.appeals.some(a => a.id === e.id && a.status === "supplement") ? (s.supplements.some(sp => sp.target === e.id && sp.status === "submitted") ? "待主管接收补证" : "等待坐席补证") :
@@ -123,6 +132,7 @@ export function Workspace({
 }) {
   const [tab, setTab] = useState(view === "calls" ? "all" : "mine"),
     [kind,setKind] = useState(""),
+    [moreFilters, setMoreFilters] = useState(false),
     [startDate,setStartDate] = useState(""), [endDate,setEndDate] = useState(""),
     [agent,setAgent] = useState(""), [group,setGroup] = useState(""), [execution,setExecution] = useState(""),
     [search, setSearch] = useState(""),
@@ -223,12 +233,13 @@ export function Workspace({
               <option key={x}>{x}</option>
             ))}
           </select>
-          {view === "calls" && <>
+          {view === "calls" && <button className="btn" aria-expanded={moreFilters} aria-controls="call-more-filters" onClick={()=>setMoreFilters(!moreFilters)}><Icon name="filter" size={16}/>筛选条件{[startDate,endDate,agent,group,execution].filter(Boolean).length ? ` · ${[startDate,endDate,agent,group,execution].filter(Boolean).length}` : ""}</button>}
+          {view === "calls" && <div id="call-more-filters" className="advanced-filters" hidden={!moreFilters}>
             <label>开始日期<input aria-label="通话开始日期" type="date" aria-invalid={invalidDates} aria-describedby={invalidDates ? "call-date-error" : undefined} value={startDate} onChange={e=>{setStartDate(e.target.value);setPage(1);onOpen("");}}/></label>
             <label>结束日期<input aria-label="通话结束日期" type="date" aria-invalid={invalidDates} aria-describedby={invalidDates ? "call-date-error" : undefined} value={endDate} onChange={e=>{setEndDate(e.target.value);setPage(1);onOpen("");}}/></label>
             <select aria-label="通话坐席" value={agent} onChange={e=>{setAgent(e.target.value);setPage(1);onOpen("");}}><option value="">全部坐席</option>{people.filter(p=>p.role==="agent" && (role!=="agent" || p.id===state.identity)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
             <div className="additional-filters"><select aria-label="通话班组" value={group} onChange={e=>{setGroup(e.target.value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</select><select aria-label="检测状态" value={execution} onChange={e=>{setExecution(e.target.value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</select></div>
-          </>}
+          </div>}
           <div className="filter-actions">
           {view !== "calls" && <span className={`queue-overdue ${overdue ? "has-overdue" : ""}`}>当前结果逾期 <b>{overdue}</b></span>}
           {(search || business || startDate || endDate || agent || group || execution || view === "improvement" && kind) && <Button onClick={()=>{setSearch("");setBusiness("");setKind("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>重置筛选</Button>}
@@ -273,6 +284,7 @@ export function Workspace({
           </Button>
           </div>
         </div>
+        {(search || business || kind || startDate || endDate || agent || group || execution) && <div className="active-filter-list" aria-label="已生效筛选条件"><span>已筛选</span>{[{value:search,label:`关键词：${search}`,clear:()=>setSearch("")},{value:business,label:business,clear:()=>setBusiness("")},{value:kind,label:kind === "appeal" ? "申诉" : "整改",clear:()=>setKind("")},{value:startDate,label:`起：${startDate}`,clear:()=>setStartDate("")},{value:endDate,label:`止：${endDate}`,clear:()=>setEndDate("")},{value:agent,label:person(agent)?.name ?? agent,clear:()=>setAgent("")},{value:group,label:group,clear:()=>setGroup("")},{value:execution,label:execution,clear:()=>setExecution("")}].filter(x=>x.value).map((x,i)=><button key={i} aria-label={`移除筛选：${x.label}`} onClick={()=>{x.clear();setPage(1);onOpen("");}}>{x.label}<Icon name="close" size={12}/></button>)}</div>}
         {invalidDates ? <p className="filter-error" id="call-date-error" role="alert">开始日期不能晚于结束日期，请调整日期范围。<button className="text-button" onClick={() => { setStartDate(endDate); setEndDate(startDate); }}>交换日期</button></p> : null}
         {view === "calls" ? (
           <>
@@ -395,7 +407,7 @@ export function Workspace({
                                     : "申诉"}
                           </Badge>
                         </div>
-                        <b>{label(e)}</b>
+                        <b>{caseTitle(state, e)}</b>
                         <p>
                           {c && person(c.agentId)?.name} · {c?.business}
                         </p>
@@ -515,10 +527,15 @@ export function Detail({
   onOpen: (id: string) => void;
   onAction: (id: string, action: string) => void;
 }) {
-  const [tab, setTab] = useState("evidence");
+  const [tab, setTab] = useState("overview");
+  const [preview, setPreview] = useState<"evidence" | "materials" | null>(null);
+  const [previewFinding, setPreviewFinding] = useState<string>();
   const call = callFor(state, item.id),
     allowed = actions(state, item.id).filter((a) => !["sample_calls","accept_appeal","save_review","save_acceptance"].includes(a));
   const mainAction = primaryAction(state,item.id);
+  const closure = "conclusionVersion" in item;
+  const now = useDemoClock();
+  const assignedReview = "reviewId" in item ? state.reviews.find(r => r.id === item.reviewId && r.owner === state.identity && !["done", "cancelled"].includes(r.status) && canSee(state, r.id)) : undefined;
   const supplements = state.supplements.filter(sp=>sp.target===item.id && canSee(state,sp.id));
   const owner = person(currentOwner(state, item));
   const associated = call
@@ -532,6 +549,7 @@ export function Detail({
         : "findingIds" in item
           ? state.findings.find((f) => item.findingIds.includes(f.id))
           : associated[0];
+  const otherFindings = associated.filter(x => x.id !== item.id && x.id !== primary?.id);
   const related = call
     ? [
         ...state.reviews,
@@ -553,14 +571,19 @@ export function Detail({
     )
     .slice()
     .reverse();
-  return (
-    <>
+  const showEvidence = (findingId?: string) => { setPreviewFinding(findingId); setPreview("evidence"); };
+  const verdict = primary ? closure ? primary.conclusions.find(c => c.version === item.conclusionVersion) : latest(primary) : undefined;
+  const caseNote = "standardVersion" in item ? item.goal : "conclusionVersion" in item ? item.note : "findingIds" in item ? item.scope : "executor" in item ? item.note : primary?.reminder?.text ?? verdict?.note;
+  return <>
+    <div className="case-shell">
+      <div className="case-main">
+        <div className="detail-overview">
       <header className="detail-heading">
         <div>
           <div className="overline">
             {item.id}{call && call.id !== item.id ? <span> / {call.id}</span> : null}
           </div>
-          <h2>{label(item)}</h2>
+          <h2>{caseTitle(state, item)}</h2>
           <div className="detail-badges">
             <Badge
               tone={
@@ -585,9 +608,9 @@ export function Detail({
         </div>
         {!("batches" in item) && <button
           className="icon-button"
-          title="查看通话"
-          aria-label="查看关联通话"
-          onClick={() => call && onOpen(call.id)}
+          title="预览录音与证据"
+          aria-label="预览录音与证据"
+          onClick={() => { setPreviewFinding(undefined); setPreview("evidence"); }}
         >
           <Icon name="headset" />
         </button>}
@@ -606,39 +629,181 @@ export function Detail({
           </span>
         )}
       </div>
-      {"conclusions" in item && latest(item) && (
-        <div className="result-banner">
-          <Icon name="shield" />
-          <div>
-            <b>
-              {verdictNames[latest(item)!.value]}{" "}
-              <span>第 {latest(item)!.version} 版</span>
-            </b>
-            <p>{latest(item)!.note}</p>
-            {latest(item)!.noRemedy && (
-              <p>无需整改：{latest(item)!.noRemedy}</p>
-            )}
-          </div>
+
         </div>
-      )}
-      {"pause" in item && item.pause && (
-        <div className="callout">
-          整改暂停于 {stamp(item.pause.startedAt)}，保留原阶段“
-          {statusNames[item.pause.phase]}
-          ”。允许补充材料，验收通过与结案暂不可用。
-          {item.pause.wasOverdue ? "暂停前已逾期，历史标记保留。" : ""}
+        <Tabs value={tab} label="事项详情" className="subtabs case-tabs" panelId={`detail-${item.id}`} options={[{value:"overview",label:"办理概览"},{value:"history",label:"处理记录"},{value:"related",label:`关联事项 ${related.length + otherFindings.length}`}]} onChange={setTab}/>
+        <div className="case-content" role="tabpanel" id={`detail-${item.id}`} aria-labelledby={`detail-${item.id}-tab-${tab}`}>
+          {tab === "overview" && <>
+            <section className="case-section" aria-label="案件摘要">
+              <div className="case-section-title"><h3>{"batches" in item ? "通话概况" : "案件事实"}</h3><Badge>{"standardVersion" in item ? `整改 · 第 ${item.round} 轮` : "conclusionVersion" in item ? "申诉核查" : "findingIds" in item ? item.type === "spotcheck" ? "人工抽查" : "逐项复核" : "executor" in item ? "补充材料" : "问题核对"}</Badge></div>
+              <dl className="case-facts"><div><dt>来源通话</dt><dd>{call?.id ?? "—"}</dd></div><div><dt>{closure ? "原结论" : "当前结论"}</dt><dd>{verdict ? `${verdictNames[verdict.value]} · V${verdict.version}` : "尚未形成"}</dd></div><div><dt>关联问题</dt><dd>{"findingIds" in item ? `${item.findingIds.length} 项` : primary ? primary.indicator : "暂无问题"}</dd></div></dl>
+              {caseNote && <div className="case-summary-note"><span>{"standardVersion" in item ? "整改目标" : "conclusionVersion" in item ? "申诉理由" : "findingIds" in item ? "检查范围" : "处理摘要"}</span><p>{caseNote}</p><button className="text-button" onClick={()=>setPreview("materials")}>查看完整材料</button></div>}
+              {"pause" in item && item.pause && <p className="case-pause">申诉处理中，整改暂停。可以补充材料，暂不能验收通过或结案。</p>}
+              {"standardVersion" in item && <div className="case-progress"><span>本轮样例 <b>{new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount}</b></span><span>完成标准 V{item.standardVersion}</span></div>}
+            </section>
+            <section className="case-section" aria-label="证据与材料"><div className="case-section-title"><h3>证据与材料</h3><span>按需预览 · 保留当前案件</span></div>
+              {call && <button className="case-document" onClick={()=>showEvidence()}><span className="case-document-icon"><Icon name="headset"/></span><span><b>录音、转写与命中证据</b><small>{call.id} · {call.audio ? `${clock(call.duration)} · 可回听与定位片段` : "未附录音 · 可查看转写及判断依据"}</small></span><span className="case-preview-label"><Icon name="eye" size={15}/>预览</span></button>}
+              <button className="case-document" onClick={()=>setPreview("materials")}><span className="case-document-icon"><Icon name="file"/></span><span><b>{"standardVersion" in item ? "整改要求、提交材料与验收" : "conclusionVersion" in item ? "申诉材料与原结论" : "findingIds" in item ? "复核范围与逐项意见" : "办理材料与结论"}</b><small>{"standardVersion" in item ? `${item.materials.length} 份材料 · 标准 V${item.standardVersion}` : "完整内容与版本依据"}</small></span><span className="case-preview-label"><Icon name="eye" size={15}/>预览</span></button>
+              {supplements.map(sp=><div className="case-supplement" key={sp.id}><button className="case-document" onClick={()=>setPreview("materials")}><span className="case-document-icon"><Icon name="file"/></span><span><b>{openSupplement(sp) ? "待补材料" : "补件记录"} · {stateLabel(sp,state)}</b><small>{person(sp.executor)?.name} · {stamp(sp.dueAt)}</small></span><span className="case-preview-label">预览</span></button><div>{actions(state,sp.id).map(action=><Button key={action} onClick={()=>onAction(sp.id,action)}>{actionNames[action]}</Button>)}</div></div>)}
+              {primary && activeAppeal(state,primary.id) && activeAppeal(state,primary.id)!.id !== item.id && <Button onClick={()=>onOpen(activeAppeal(state,primary.id)!.id)}>查看当前申诉</Button>}
+            </section>
+            {"findingIds" in item && item.findingIds.length > 0 && <section className="case-section" aria-label="问题与意见"><div className="case-section-title"><h3>问题与意见</h3><span>{item.findingIds.length} 项</span></div><div className="case-findings">{item.findingIds.map(id=>{const f=state.findings.find(x=>x.id===id);return f && <div key={id}><div><b>{f.title}</b><p>{item.opinions[id] ? `${verdictNames[item.opinions[id].value]} · ${item.opinions[id].note}` : "待填写复核意见"}</p></div><Button onClick={()=>showEvidence(id)}>查看证据</Button></div>;})}</div></section>}
+          </>}
+          {tab === "history" && (
+            <div className="timeline">
+              {logs.length ? (
+                logs.map((l) => (
+                  <article key={l.id}>
+                    <span />
+                    <div>
+                      <b>{l.action}</b>
+                      <small>
+                        {person(l.actor)?.name} · {stamp(l.at)}
+                      </small>
+                      <p>{l.note}</p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <Empty
+                  text="暂无本轮操作记录"
+                  hint="该示例从当前阶段开始，后续操作会按时间追加。"
+                />
+              )}
+              {item.deadlineChanges?.map((h,n)=><article key={`deadline${n}`}><span/><div><b>期限调整（北京时间）</b><p>{stamp(h.from)} → {stamp(h.to)}</p><small>{stamp(h.at)} · {h.reason}</small></div></article>)}
+              {primary?.conclusions.map((c) => (
+                <article key={`v${c.version}`}>
+                  <span />
+                  <div>
+                    <b>
+                      结论 V{c.version} · {verdictNames[c.value]}
+                    </b>
+                    <small>{stamp(c.at)}</small>
+                    <p>{c.note}</p>
+                  </div>
+                </article>
+              ))}
+              {"standardVersion" in item &&
+                item.standards.map((v) => (
+                  <article key={`std${v.version}`}>
+                    <span />
+                    <div>
+                      <b>完成标准 V{v.version}</b>
+                      <p>{v.standard}</p>
+                      <small>{v.note}</small>
+                    </div>
+                  </article>
+                ))}
+              {"standardVersion" in item &&
+                item.pauseHistory.map((p, n) => (
+                  <article key={`pause${n}`}>
+                    <span />
+                    <div>
+                      <b>暂停恢复 · 顺延 {Math.round(p.duration / 1000)} 秒</b>
+                      <small>
+                        {stamp(p.start)} → {stamp(p.end)}
+                      </small>
+                    </div>
+                  </article>
+                ))}
+            </div>
+          )}
+          {tab === "related" && (
+            <div className="related-list">
+              {otherFindings.length > 0 && <h3>同通话其他问题</h3>}
+              {otherFindings.map((f) => (
+                  <button key={f.id} onClick={() => onOpen(f.id)}>
+                    <Icon name="shield" />
+                    <div>
+                      <b>{f.title}</b>
+                      <small>
+                        {f.id} · {stateLabel(f, state)}
+                      </small>
+                    </div>
+                    <Icon name="chevron" />
+                  </button>
+                ))}
+              {related.length > 0 && <h3>关联处理记录</h3>}
+              {related.map((r) => (
+                <button key={r.id} onClick={() => onOpen(r.id)}>
+                  <Icon name="file" />
+                  <div>
+                    <b>{caseTitle(state, r)}</b>
+                    <small>
+                      {r.id} · {stateLabel(r, state)}
+                    </small>
+                  </div>
+                  <Icon name="chevron" />
+                </button>
+              ))}
+              {!related.length && !otherFindings.length && (
+                <Empty text="暂无关联事项" hint="当前通话没有其他可查看的问题或处理记录。" />
+              )}
+            </div>
+          )}
         </div>
-      )}
-      {"findingIds" in item && item.evidenceRequest && <div className="callout"><b>补证申请 · 待主管协调</b><p>{item.evidenceRequest.note}</p></div>}
-      {primary && activeAppeal(state,primary.id) && activeAppeal(state,primary.id)!.id !== item.id && <div className="case-links"><span>本问题申诉处理中，新证据回当前申诉。</span><Button onClick={()=>onOpen(activeAppeal(state,primary.id)!.id)}>查看当前申诉</Button></div>}
-      <div className="case-links"><span>本问题关联</span>{related.filter(r=>!("executor" in r) && ("findingId" in r ? r.findingId===primary?.id : "findingIds" in r && r.findingIds.includes(primary?.id??""))).map(r=><Button key={r.id} onClick={()=>onOpen(r.id)}>{"standardVersion" in r ? "整改" : "findingIds" in r ? "复核" : "申诉"} · {stateLabel(r, state)}</Button>)}</div>
-      {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{openSupplement(sp) ? "待补材料" : "补件记录"} <Badge>{stateLabel(sp, state)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} {openSupplement(sp) ? ` · 下一接收人：${"standardVersion" in item ? person(item.inspector)?.name : "主管"}` : ""}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason} · {stamp(sp.cancelledAt)}</p>}{actions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionNames[a]}</Button>)}</div>)}
-      <div className="detail-body">
-        <div className="evidence-main">
-          <Tabs value={tab} label="事项详情" className="subtabs" panelId={`detail-${item.id}`} options={[{value:"evidence",label:"通话证据"},{value:"history",label:"处理记录"},{value:"related",label:`关联事项 ${related.length}`}]} onChange={setTab}/>
-          <div role="tabpanel" id={`detail-${item.id}`} aria-labelledby={`detail-${item.id}-tab-${tab}`}>
-          {tab === "evidence" && (
+      </div>
+      <aside className="case-rail" aria-label="当前责任与下一步操作">
+        <CaseResponsibility state={state} item={item} now={now}/>
+        <section className="case-next-action"><h3>{"batches" in item ? "通话操作" : "下一步操作"}</h3>
+          {closure && <p className="case-action-hint">{closureInstruction(state,item,mainAction)}</p>}
+          <div className="case-action-buttons">
+          {allowed.length || actions(state,item.id).includes("save_acceptance") ? (
             <>
+            {[...allowed.filter(a => a === mainAction), ...allowed.filter(a => a !== mainAction)].map(a => (
+              <Button key={a} primary={a === mainAction} onClick={() => onAction(item.id, a)}>{a === "verify" ? "验收处理" : actionNames[a]}</Button>
+            ))}
+            {actions(state,item.id).includes("save_review") && !allowed.includes("submit_review") && <Button onClick={()=>onAction(item.id,"save_review")}>编辑复核草稿</Button>}
+            {actions(state,item.id).includes("save_acceptance") && !allowed.includes("verify") && <Button onClick={()=>onAction(item.id,"save_acceptance")}>继续验收草稿</Button>}
+            {!mainAction && !("batches" in item) && <p className="subtle">当前等待{owner?.name ?? "后续处理"}，无需重复提交。</p>}
+            </>
+          ) : assignedReview ? (
+            <Button primary onClick={() => onOpen(assignedReview.id)}>打开核查工单</Button>
+          ) : (
+            <p className="subtle">
+              当前身份无需处理此阶段，相关结果与记录可继续查看。
+            </p>
+          )}
+          </div>
+        </section>
+        <section className="case-recent"><div className="case-section-title"><h3>最近处理</h3><button className="text-button" onClick={()=>{setTab("history");document.getElementById(`detail-${item.id}-tab-history`)?.focus();}}>全部记录</button></div>
+          {logs.filter(l=>l.target===item.id).slice(0,2).map(l=><article key={l.id}><b>{l.action}</b><small>{person(l.actor)?.name ?? "系统"} · {stamp(l.at)}</small><p>{l.note}</p></article>)}
+          {!logs.some(l=>l.target===item.id) && <p className="subtle">暂无本案处理记录</p>}
+        </section>
+          {call &&
+            !call.endedAt &&
+            roleOf(state) === "supervisor" &&
+            item.id !== call.id && (
+              <div className="scenario">
+                <p className="scenario-label">演示辅助</p>
+                <Button onClick={() => onAction(call.id, "end_call")}>
+                  模拟通话结束
+                </Button>
+              </div>
+            )}
+          {"standardVersion" in item &&
+            !["done", "terminated"].includes(item.status) &&
+            roleOf(state) === "agent" && (
+              <div className="scenario">
+                <p className="scenario-label">演示辅助</p>
+                <Button onClick={() => onAction(item.id, "sample_calls")}>
+                  生成整改后样例
+                </Button>
+              </div>
+            )}
+
+        {"firstOverdueAt" in item && item.firstOverdueAt && <p className="case-overdue-history">首次逾期：{stamp(item.firstOverdueAt)}</p>}
+      </aside>
+    </div>
+    {preview && <Modal title={preview === "evidence" ? "录音与证据" : "案件材料"} description={`${item.id} · ${caseTitle(state,item)}`} variant="evidence" onClose={()=>setPreview(null)}>
+      {preview === "evidence" && call ? <Evidence state={state} call={call} findings={"batches" in item || "findingIds" in item ? associated : primary ? [primary] : []} primary={associated.find(f=>f.id===previewFinding) ?? primary} pinnedVersion={closure ? item.conclusionVersion : undefined}/> : <CaseMaterials state={state} item={item} primary={primary} onOpen={id=>{setPreview(null);onOpen(id);}} onAction={(id,action)=>{setPreview(null);onAction(id,action);}}/>}
+    </Modal>}
+  </>;
+}
+function CaseMaterials({state,item,primary,onOpen,onAction}: {state:State;item:Entity;primary?:Finding;onOpen:(id:string)=>void;onAction:(id:string,action:string)=>void}) {
+  const supplements=state.supplements.filter(sp=>sp.target===item.id && canSee(state,sp.id));
+  return <div className="case-materials">
+    {primary && <section className="case-section"><h3>结论依据</h3>{primary.conclusions.length ? primary.conclusions.map(c=><div key={c.version}><b>V{c.version} · {verdictNames[c.value]}</b><p>{c.note}</p>{c.noRemedy && <p>无需整改：{c.noRemedy}</p>}</div>) : <p>尚未形成正式结论。</p>}</section>}
               {"standardVersion" in item && (
                 <div className="requirements">
                   <h3>
@@ -781,164 +946,45 @@ export function Detail({
                   )}
                 </div>
               )}
-              {call && (
-                <Evidence
-                  state={state}
-                  call={call}
-                  key={item.id}
-                  findings={"batches" in item || "findingIds" in item ? associated : primary ? [primary] : []}
-                  primary={primary}
-                  pinnedVersion={"conclusionVersion" in item ? item.conclusionVersion : undefined}
-                />
-              )}
-            </>
-          )}
-          {tab === "history" && (
-            <div className="timeline">
-              {logs.length ? (
-                logs.map((l) => (
-                  <article key={l.id}>
-                    <span />
-                    <div>
-                      <b>{l.action}</b>
-                      <small>
-                        {person(l.actor)?.name} · {stamp(l.at)}
-                      </small>
-                      <p>{l.note}</p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <Empty
-                  text="暂无本轮操作记录"
-                  hint="该示例从当前阶段开始，后续操作会按时间追加。"
-                />
-              )}
-              {item.deadlineChanges?.map((h,n)=><article key={`deadline${n}`}><span/><div><b>期限调整（北京时间）</b><p>{stamp(h.from)} → {stamp(h.to)}</p><small>{stamp(h.at)} · {h.reason}</small></div></article>)}
-              {primary?.conclusions.map((c) => (
-                <article key={`v${c.version}`}>
-                  <span />
-                  <div>
-                    <b>
-                      结论 V{c.version} · {verdictNames[c.value]}
-                    </b>
-                    <small>{stamp(c.at)}</small>
-                    <p>{c.note}</p>
-                  </div>
-                </article>
-              ))}
-              {"standardVersion" in item &&
-                item.standards.map((v) => (
-                  <article key={`std${v.version}`}>
-                    <span />
-                    <div>
-                      <b>完成标准 V{v.version}</b>
-                      <p>{v.standard}</p>
-                      <small>{v.note}</small>
-                    </div>
-                  </article>
-                ))}
-              {"standardVersion" in item &&
-                item.pauseHistory.map((p, n) => (
-                  <article key={`pause${n}`}>
-                    <span />
-                    <div>
-                      <b>暂停恢复 · 顺延 {Math.round(p.duration / 1000)} 秒</b>
-                      <small>
-                        {stamp(p.start)} → {stamp(p.end)}
-                      </small>
-                    </div>
-                  </article>
-                ))}
-            </div>
-          )}
-          {tab === "related" && (
-            <div className="related-list">
-              <h3>同通话其他问题</h3>
-              {associated
-                .filter((x) => x.id !== item.id && x.id !== primary?.id)
-                .map((f) => (
-                  <button key={f.id} onClick={() => onOpen(f.id)}>
-                    <Icon name="shield" />
-                    <div>
-                      <b>{f.title}</b>
-                      <small>
-                        {f.id} · {stateLabel(f, state)}
-                      </small>
-                    </div>
-                    <Icon name="chevron" />
-                  </button>
-                ))}
-              <h3>关联处理记录</h3>
-              {related.map((r) => (
-                <button key={r.id} onClick={() => onOpen(r.id)}>
-                  <Icon name="file" />
-                  <div>
-                    <b>{label(r)}</b>
-                    <small>
-                      {r.id} · {stateLabel(r, state)}
-                    </small>
-                  </div>
-                  <Icon name="chevron" />
-                </button>
-              ))}
-              {!related.length && !associated.length && (
-                <Empty text="暂无关联事项" />
-              )}
-            </div>
-          )}
-          </div>
-        </div>
-        <aside className="action-rail">
-          <h3>{"batches" in item ? "通话操作" : "处理"}</h3>
-          {!("batches" in item) && <div className="case-owner"><span>当前处理人</span><b>{owner?.name ?? "当前无待办"}</b></div>}
-          {allowed.length || actions(state,item.id).includes("save_acceptance") ? (
-            <>
-            {[...allowed.filter(a => a === mainAction), ...allowed.filter(a => a !== mainAction)].map(a => (
-              <Button key={a} primary={a === mainAction} onClick={() => onAction(item.id, a)}>{a === "verify" ? "验收处理" : actionNames[a]}</Button>
-            ))}
-            {actions(state,item.id).includes("save_review") && !allowed.includes("submit_review") && <Button onClick={()=>onAction(item.id,"save_review")}>编辑复核草稿</Button>}
-            {actions(state,item.id).includes("save_acceptance") && !allowed.includes("verify") && <Button onClick={()=>onAction(item.id,"save_acceptance")}>继续验收草稿</Button>}
-            {!mainAction && !("batches" in item) && <p className="subtle">当前等待{owner?.name ?? "后续处理"}，无需重复提交。</p>}
-            </>
-          ) : (
-            <p className="subtle">
-              当前身份无需处理此阶段，相关结果与记录可继续查看。
-            </p>
-          )}
-          {call &&
-            !call.endedAt &&
-            roleOf(state) === "supervisor" &&
-            item.id !== call.id && (
-              <div className="scenario">
-                <p className="scenario-label">演示辅助</p>
-                <Button onClick={() => onAction(call.id, "end_call")}>
-                  模拟通话结束
-                </Button>
-              </div>
-            )}
-          {"standardVersion" in item &&
-            !["done", "terminated"].includes(item.status) &&
-            roleOf(state) === "agent" && (
-              <div className="scenario">
-                <p className="scenario-label">演示辅助</p>
-                <Button onClick={() => onAction(item.id, "sample_calls")}>
-                  生成整改后样例
-                </Button>
-              </div>
-            )}
-          <div className="rail-note">
-            <Icon name="file" size={16} />
-            <p>操作将同步更新相关队列、待办和质量报表，刷新后保留进度。</p>
-          </div>
-          {"firstOverdueAt" in item && item.firstOverdueAt && (
-            <p className="red">首次逾期：{stamp(item.firstOverdueAt)}</p>
-          )}
-        </aside>
-      </div>
-    </>
-  );
+      {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{openSupplement(sp) ? "待补材料" : "补件记录"} <Badge>{stateLabel(sp, state)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} {openSupplement(sp) ? ` · 下一接收人：${"standardVersion" in item ? person(item.inspector)?.name : "主管"}` : ""}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason} · {stamp(sp.cancelledAt)}</p>}{actions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionNames[a]}</Button>)}</div>)}
+    {"findingIds" in item && item.evidenceRequest && <div className="requirements"><h3>补证申请</h3><p>{item.evidenceRequest.note}</p></div>}
+  </div>;
 }
+
+function closureInstruction(state: State, item: Appeal | Remedy, mainAction?: string) {
+  if ("pause" in item && item.pause) return "申诉处理中，本案保留当前责任与材料；暂停期间不能验收通过或结案。";
+  const owner = person(currentOwner(state, item));
+  if (owner && owner.id !== state.identity) return `当前由${owner.name}负责${stateLabel(item, state)}。如需补充信息，可使用下方可用操作。`;
+  if (owner?.id === state.identity && "reviewId" in item && item.reviewId && roleOf(state) === "inspector") return "打开关联核查工单，核对原音与申诉材料并提交核查意见，之后由主管裁定。";
+  const hints: Record<string, string> = {
+    accept_assign: "核对申诉理由与证据，分派质检员核查；材料充分时也可直接裁定。",
+    decide: "结合原结论、申诉材料及核查意见完成裁定。",
+    accept_remedy: "确认整改目标、完成标准与期限后接收任务。",
+    material: "按本轮完成标准补充说明与样例，提交后交质检员验收。",
+    verify: "核对整改材料与样例，提交本轮验收意见。",
+    close_remedy: "核对质检员验收意见后结案，记录保留供后续追溯。",
+    return_remedy: "依据验收意见明确需要补做的内容，再退回坐席整改。",
+    receive_supplement: "核对补充材料，接收后交回原处理环节。",
+    supplement: "列明缺失材料与办理期限，交坐席补充后由主管接收。",
+    reply: "补齐要求的材料，提交后交指定责任人核对。",
+  };
+  if (mainAction && hints[mainAction]) return hints[mainAction];
+  return owner ? `当前由${owner.name}处理${stateLabel(item, state)}事项。可查看材料及历史记录。` : "本案已结束，可继续查看结论、材料与处理记录。";
+}
+
+function CaseResponsibility({ state, item, now }: { state: State; item: Entity; now: number }) {
+  const owner = person(currentOwner(state, item));
+  const paused = "pause" in item && !!item.pause;
+  const due = "dueAt" in item ? item.dueAt : "assignment" in item ? item.assignment?.dueAt : undefined;
+  const overdue = !!owner && !paused && !!due && Date.parse(due) < now;
+  const hours = due ? Math.max(1, Math.ceil(Math.abs(Date.parse(due) - now) / 3600000)) : 0;
+  return <section className="case-responsibility-card">
+    <div className="case-section-title"><h3>{"batches" in item ? "通话状态" : "当前责任"}</h3><Badge tone={!owner ? "neutral" : paused || owner.id === state.identity ? "warning" : "neutral"}>{paused ? "申诉暂停" : owner?.id === state.identity ? isTodo(state,item) ? "轮到我处理" : "当前负责" : owner ? "等待他人" : "无待办"}</Badge></div>
+    <div className="case-person"><span aria-hidden="true">{owner?.name.slice(-1) ?? "✓"}</span><div><b>{owner?.name ?? ("batches" in item ? item.endedAt ? "通话已结束" : "通话进行中" : "当前无待办")}</b><small>{owner ? roleNames[owner.role] : "结果与记录可继续查看"}</small></div></div>
+    <dl><div><dt>当前阶段</dt><dd>{stateLabel(item,state)}</dd></div><div><dt>完成期限</dt><dd>{stamp(due)}{due && owner && <small className={overdue ? "red" : ""}>{paused ? "暂停计时" : overdue ? `已逾期约 ${hours} 小时` : `剩余约 ${hours} 小时`}</small>}</dd></div></dl>
+  </section>;
+}
+
 function Evidence({
   state,
   call,

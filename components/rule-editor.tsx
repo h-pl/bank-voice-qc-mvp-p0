@@ -22,6 +22,7 @@ export function RuleEditor({ rule, onSubmit, onDone }: { rule: Rule; onSubmit: (
   const [warning, setWarning] = useState("");
   const [busy, setBusy] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => { formRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>("input,select")?.focus({preventScroll:true}); }, []);
   const changed = value !== String(initial[field]);
   const dirty = changed || note.length > 0;
   useEffect(() => {
