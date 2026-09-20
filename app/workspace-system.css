@@ -616,3 +616,134 @@ dialog.resource-dialog[open] { display:flex; flex-direction:column; }
 
 .resource-table { min-width:940px; }
 @media (max-width:700px) { .catalog-toolbar .search-box { flex:1 0 100%; min-width:0; } }
+
+
+/* B2B refinement: readable operational hierarchy, shared across 6001 workflows. */
+:root { --control-height:40px; --section-title-size:16px; }
+.sidebar { background:#fafafa; }
+.sidebar nav a { font-size:14px; min-height:46px; }
+.nav-label { font-size:12px; }
+.brand small { font-size:11px; }
+.breadcrumb h1 { font-size:19px; }
+.btn, input, select, textarea, .search-box input { font-size:14px; }
+.ui-tabs > button { font-size:14px; }
+.ui-tabs > button span { font-size:12px; }
+.badge { font-size:12px; }
+.text-button, .table-link, .pagination, .pagination select { font-size:13px; }
+.workspace-tabs-row { display:flex; align-items:center; gap:16px; border-bottom:1px solid var(--line); flex-shrink:0; }
+.workspace-tabs-row > .tabs { flex:1; min-width:0; border-bottom:0; margin-bottom:0; }
+.workspace-navigation { display:flex; align-items:center; gap:6px; padding-right:20px; flex-shrink:0; }
+.workspace-navigation > span { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; padding:0 8px; border-left:1px solid var(--line); margin-left:6px; }
+.queue-toggle { display:flex; align-items:center; gap:8px; padding:8px 10px; font-size:13px; border-radius:var(--radius-control); }
+.queue-toggle:hover { background:var(--surface-subtle); }
+.previous-case svg { transform:rotate(180deg); }
+.workspace-navigation button:disabled { opacity:.35; cursor:default; }
+.queue-heading { position:sticky; top:0; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:16px; background:var(--surface); border-bottom:1px solid var(--line); }
+.queue-heading b { font-size:14px; font-weight:600; }
+.queue-heading span { color:var(--muted); font-size:12px; }
+.work-layout .queue-card { padding:18px 16px; min-height:140px; }
+.queue-card > b { font-size:15px; line-height:1.65; }
+.queue-card > p { font-size:13px; margin-block:8px 12px; }
+.queue-top > span, .queue-bottom { font-size:12px; }
+.queue-bottom { flex-wrap:wrap; gap:5px; }
+.queue-time { margin-left:auto; }
+.case-main .detail-heading { padding:24px 24px 0; gap:20px; }
+.case-main .detail-heading h2 { font-size:24px; line-height:1.45; margin-top:8px; }
+.case-main .detail-heading .overline { font-size:12px; }
+.case-main .detail-meta { padding:16px 24px 20px; font-size:13px; gap:12px 24px; }
+.case-main .detail-badges { margin-top:12px; }
+.case-main .detail-badges > span:not(.badge) { font-size:13px; }
+.evidence-entry { flex-shrink:0; align-self:flex-start; white-space:nowrap; }
+.case-tabs { padding-inline:24px; gap:24px; }
+.case-tabs.ui-tabs > button { min-height:48px; font-size:14px; }
+.case-section-title { padding:16px 24px; }
+.case-section-title h3, .case-next-action h3 { font-size:16px; font-weight:600; }
+.case-section-title > span:not(.badge) { font-size:12px; }
+.case-summary-note { padding:14px 24px; font-size:14px; line-height:1.7; }
+.case-facts > div { padding:16px 24px; }
+.case-facts dt, .case-responsibility-card dt { font-size:12px; }
+.case-facts dd, .case-responsibility-card dd { font-size:14px; }
+.case-findings > div { padding:18px 24px; gap:20px; align-items:flex-start; }
+.case-findings b { font-size:15px; line-height:1.6; }
+.finding-verdict { margin-top:8px; display:flex; align-items:flex-start; gap:10px; }
+.finding-verdict .badge { flex-shrink:0; }
+.case-findings p { margin:0; font-size:14px; line-height:1.7; -webkit-line-clamp:3; }
+.case-findings .btn { font-size:13px; min-height:36px; }
+.case-document { padding:16px 24px; gap:14px; }
+.case-document b { font-size:14px; }
+.case-document small { font-size:12px; line-height:1.7; }
+.case-preview-label { font-size:13px; }
+.case-responsibility-card .case-section-title { padding:14px 16px; }
+.case-responsibility-card .case-person { padding:14px 16px; }
+.case-person b { font-size:15px; } .case-person small { font-size:12px; margin-top:3px; }
+.case-responsibility-card dl > div { padding:12px 16px; }
+.case-responsibility-card dd small { font-size:12px; }
+.case-responsibility-card .responsibility-next { padding:12px 16px; }
+.responsibility-next span { font-size:12px; }
+.case-responsibility-card .responsibility-next p { font-size:13px; line-height:1.7; margin-top:6px; }
+.case-next-action > h3 { padding:14px 16px; }
+.case-action-hint { padding:12px 16px 0; font-size:13px; line-height:1.7; }
+.case-action-buttons { padding:14px 16px; gap:8px; }
+.case-action-buttons .btn { min-height:40px; font-size:13px; }
+.case-action-buttons .btn.primary { min-height:44px; font-size:14px; }
+.case-recent .case-section-title { padding:14px 16px; }
+.policy-list-filters { padding:20px; gap:14px; }
+.policy-list-filters .search-box input, .policy-category select { font-size:13px; }
+.policy-item { padding:18px 20px; }
+.policy-item > strong { font-size:15px; line-height:1.65; }
+.policy-item-top > small, .policy-item-bottom, .policy-version { font-size:12px; }
+.policy-heading h2 { font-size:24px; }
+.policy-heading p, .policy-heading-status > span:not(.badge) { font-size:13px; }
+.policy-section h3 { font-size:16px; }
+.policy-facts dd, .policy-reference b, .policy-readonly { font-size:14px; }
+.policy-reference small, .policy-facts dt { font-size:12px; }
+.catalog-heading h2 { font-size:24px; }
+.catalog-heading p, .catalog-toolbar { font-size:13px; }
+.resource-table td, .resource-name b { font-size:14px; }
+.resource-name small, .resource-table td > small, .resource-table th { font-size:12px; }
+.resource-table td { padding-block:20px; }
+.work-panel td { font-size:14px; padding-block:18px; }
+.work-panel td small { font-size:12px; }
+.workbench-heading h2 { font-size:28px; }
+.workbench-task b, .workbench-events b { font-size:14px; }
+.workbench-task small, .workbench-events small { font-size:12px; }
+.workbench-events p { font-size:13px; line-height:1.7; }
+.modal label, .modal label > input:not([type=checkbox]), .modal label > select, .modal label > textarea { font-size:14px; }
+.utterance { font-size:14px; line-height:1.8; }
+.btn, .queue-card, .policy-item, .case-document, .resource-table td, .queue-toggle { transition:background-color 140ms ease, border-color 140ms ease, color 140ms ease; }
+dialog.modal[open] { animation:b2b-dialog-enter 180ms ease-out; }
+dialog.modal.resource-dialog[open] { animation:b2b-drawer-enter 220ms cubic-bezier(.2,.8,.2,1); }
+@keyframes b2b-dialog-enter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes b2b-drawer-enter { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:translateX(0); } }
+@media (min-width:1151px) {
+ .work-layout { grid-template-columns:270px minmax(0,1fr); padding:16px; gap:16px; background:var(--surface-subtle); }
+ .case-shell { grid-template-columns:minmax(0,1fr) 290px; gap:16px; }
+ .work-panel.queue-collapsed .work-layout { grid-template-columns:minmax(0,1fr); }
+ .work-panel.queue-collapsed .work-layout > .queue { display:none; }
+ .policy-layout { grid-template-columns:310px minmax(0,1fr); gap:20px; }
+}
+@media (min-width:1600px) { .work-layout { grid-template-columns:290px minmax(0,1fr); } .case-shell { grid-template-columns:minmax(0,1fr) 310px; } }
+@media (min-width:1151px) and (max-width:1399px) {
+ .work-layout { grid-template-columns:230px minmax(0,1fr); padding:12px; gap:12px; }
+ .case-shell { grid-template-columns:minmax(0,1fr) 260px; gap:12px; }
+ .case-main .detail-heading { padding:18px 18px 0; flex-wrap:wrap; gap:12px; }
+ .case-main .detail-heading h2 { font-size:21px; }
+ .case-main .detail-meta { padding:12px 18px 16px; }
+ .case-section-title, .case-document, .case-findings > div { padding:14px 18px; }
+ .case-summary-note { padding:12px 18px; }
+}
+@media (max-width:1150px) { .queue-toggle { display:none; } .workspace-navigation { padding-right:12px; } .workspace-tabs-row { flex-wrap:wrap; gap:0; } .workspace-tabs-row > .tabs { flex-basis:100%; } .workspace-navigation { margin-left:auto; padding-bottom:8px; } }
+@media (max-width:700px) { .case-main .detail-heading { padding:18px 16px 0; flex-wrap:wrap; gap:12px; } .case-main .detail-heading h2 { font-size:21px; } .case-main .detail-meta { padding:14px 16px; } .case-summary-note { grid-template-columns:1fr; padding:14px 16px; } .case-section-title, .case-findings > div, .case-document { padding:14px 16px; } .finding-verdict { flex-wrap:wrap; } }
+@media (prefers-reduced-motion:reduce) { .btn, .queue-card, .policy-item, .case-document, .resource-table td, .queue-toggle { transition:none; } dialog.modal[open], dialog.modal.resource-dialog[open] { animation:none; } }
+
+.case-next-action { display:flex; flex-direction:column; }
+.case-action-hint { order:2; padding:0 16px 14px; }
+.case-route { padding:14px 16px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-panel); }
+.case-route h3 { font-size:13px; color:var(--muted); font-weight:500; }
+.case-route p { font-size:13px; line-height:1.7; margin-top:6px; }
+@media (min-width:1151px) and (max-height:850px) {
+ .case-responsibility-card .case-section-title, .case-responsibility-card .case-person { padding:10px 14px; }
+ .case-responsibility-card dl > div { padding:10px 14px; }
+ .case-next-action > h3 { padding:10px 14px; }
+ .case-action-buttons { padding:10px 14px; }
+}

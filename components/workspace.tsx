@@ -132,6 +132,7 @@ export function Workspace({
   onOpen: (id: string) => void;
   onAction: (id: string, action: string) => void;
 }) {
+  const [queueCollapsed,setQueueCollapsed]=useState(false);
   const [tab, setTab] = useState(view === "calls" ? "all" : "mine"),
     [kind,setKind] = useState(""),
     [moreFilters, setMoreFilters] = useState(false),
@@ -206,6 +207,13 @@ export function Workspace({
     setSelection(id);
     onOpen(id);
   };
+  const selectedIndex=filtered.findIndex(x=>x.id===(selected ? selected.id : undefined));
+  const adjacent=(direction:number)=>{
+    const next=selectedIndex+direction;
+    if(next<0 || next>=filtered.length) return;
+    setPage(Math.floor(next/size)+1);
+    click(filtered[next].id);
+  };
   if (view === "calls" && focused && "batches" in focused) {
     const index = filtered.findIndex(x => x.id === focused.id);
     return <section className="panel call-focus" aria-label="通话详情">
@@ -215,8 +223,11 @@ export function Workspace({
   }
   return (
     <>
-      <div className={`panel work-panel ${focus ? "has-focus" : ""}`}>
+      <div className={`panel work-panel ${focus ? "has-focus" : ""} ${queueCollapsed ? "queue-collapsed" : ""}`}>
+        <div className="workspace-tabs-row">
         <Tabs value={tab} label="记录分类" panelId={`workspace-${view}`} options={tabs.map(([value,label]) => ({value,label,count:searched.filter(x => match(x,value)).length}))} onChange={value => { setTab(value); setPage(1); onOpen(""); }}/>
+        {view!=="calls" && <div className="workspace-navigation" aria-label="事项浏览"><button type="button" className="queue-toggle" aria-expanded={!queueCollapsed} aria-controls={`queue-${view}`} onClick={()=>setQueueCollapsed(!queueCollapsed)}><Icon name="menu" size={16}/>{queueCollapsed ? '展开队列' : '专注办理'}</button><span>{selectedIndex>=0 ? selectedIndex+1 : '—'} / {filtered.length}</span><button type="button" className="icon-button previous-case" aria-label="上一事项" title="上一事项" disabled={selectedIndex<=0} onClick={()=>adjacent(-1)}><Icon name="chevron" size={16}/></button><button type="button" className="icon-button" aria-label="下一事项" title="下一事项" disabled={selectedIndex<0 || selectedIndex>=filtered.length-1} onClick={()=>adjacent(1)}><Icon name="chevron" size={16}/></button></div>}
+        </div>
         <div role="tabpanel" id={`workspace-${view}`} aria-labelledby={`workspace-${view}-tab-${tab}`}>
         <div className="filters">
           {view === "improvement" && <select aria-label="事项类型" value={kind} onChange={e=>{setKind(e.target.value);setPage(1);onOpen("");}}><option value="">全部类型</option><option value="appeal">申诉</option><option value="remedy">整改</option></select>}
@@ -372,7 +383,7 @@ export function Workspace({
         ) : (
           <>
             <div className="work-layout">
-              <section className="queue" aria-label="事项队列">
+              <section id={`queue-${view}`} className="queue" aria-label="事项队列"><header className="queue-heading"><b>事项队列</b><span>优先显示待办</span></header>
                 {rows.length ? (
                   rows.map((e) => {
                     const c = callFor(state, e.id);
@@ -609,12 +620,12 @@ export function Detail({
           </div>
         </div>
         {!("batches" in item) && <button
-          className="icon-button"
+          className="btn evidence-entry"
           title="预览录音与证据"
           aria-label="预览录音与证据"
           onClick={() => { setPreviewFinding(undefined); setPreview("evidence"); }}
         >
-          <Icon name="headset" />
+          <Icon name="headset" /><span>录音与证据</span>
         </button>}
       </header>
       <div className="detail-meta">
@@ -643,7 +654,7 @@ export function Detail({
               {"pause" in item && item.pause && <p className="case-pause">申诉处理中，整改暂停。可以补充材料，暂不能验收通过或结案。</p>}
               {"standardVersion" in item && <div className="case-progress"><span>本轮样例 <b>{new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount}</b></span><span>完成标准 V{item.standardVersion}</span></div>}
             </section>
-            {"findingIds" in item && item.findingIds.length > 0 && <section className="case-section" aria-label="问题与意见"><div className="case-section-title"><h3>问题与意见</h3><span>{item.findingIds.length} 项</span></div><div className="case-findings">{item.findingIds.map(id=>{const f=state.findings.find(x=>x.id===id);return f && <div key={id}><div><b>{f.title}</b><p>{item.opinions[id] ? `${verdictNames[item.opinions[id].value]} · ${item.opinions[id].note}` : "待填写复核意见"}</p></div><Button onClick={()=>showEvidence(id)}>查看证据</Button></div>;})}</div></section>}
+            {"findingIds" in item && item.findingIds.length > 0 && <section className="case-section" aria-label="问题与意见"><div className="case-section-title"><h3>问题与意见</h3><span>{item.findingIds.length} 项</span></div><div className="case-findings">{item.findingIds.map(id=>{const f=state.findings.find(x=>x.id===id);return f && <div key={id}><div><b>{f.title}</b><div className="finding-verdict">{item.opinions[id] ? <><Badge tone={item.opinions[id].value==='risk' ? 'danger' : item.opinions[id].value==='false_positive' ? 'success' : 'warning'}>{verdictNames[item.opinions[id].value]}</Badge><p>{item.opinions[id].note}</p></> : <span>待填写复核意见</span>}</div></div><Button onClick={()=>showEvidence(id)}>查看证据</Button></div>;})}</div></section>}
             <section className="case-section" aria-label="证据与材料"><div className="case-section-title"><h3>证据与材料</h3><span>按需预览 · 保留当前案件</span></div>
               {call && <button className="case-document" onClick={()=>showEvidence()}><span className="case-document-icon"><Icon name="headset"/></span><span><b>录音、转写与命中证据</b><small>{call.id} · {call.audio ? `${clock(call.duration)} · 可回听与定位片段` : "未附录音 · 可查看转写及判断依据"}</small></span><span className="case-preview-label"><Icon name="eye" size={15}/>预览</span></button>}
               <CaseDocuments item={item} primary={primary} onOpen={onOpen}/>
@@ -769,6 +780,7 @@ export function Detail({
           )}
           </div>
         </section>
+        <section className="case-route"><h3>处理后去向</h3><p>{nextResponsibility(item)}</p></section>
         <section className="case-recent"><div className="case-section-title"><h3>最近处理</h3><button className="text-button" onClick={()=>{setTab("history");document.getElementById(`detail-${item.id}-tab-history`)?.focus();}}>全部记录</button></div>
           {logs.filter(l=>l.target===item.id).slice(0,2).map(l=><article key={l.id}><b>{l.action}</b><small>{person(l.actor)?.name ?? "系统"} · {stamp(l.at)}</small><p>{l.note}</p></article>)}
           {!logs.some(l=>l.target===item.id) && <p className="subtle">暂无本案处理记录</p>}
@@ -984,7 +996,7 @@ function CaseResponsibility({ state, item, now }: { state: State; item: Entity; 
   return <section className="case-responsibility-card">
     <div className="case-section-title"><h3>{"batches" in item ? "通话状态" : "当前责任"}</h3><Badge tone={!owner ? "neutral" : paused || owner.id === state.identity ? "warning" : "neutral"}>{paused ? "申诉暂停" : owner?.id === state.identity ? isTodo(state,item) ? "轮到我处理" : "当前负责" : owner ? "等待他人" : "无待办"}</Badge></div>
     <div className="case-person"><span aria-hidden="true">{owner?.name.slice(-1) ?? "✓"}</span><div><b>{owner?.name ?? ("batches" in item ? item.endedAt ? "通话已结束" : "通话进行中" : "当前无待办")}</b><small>{owner ? roleNames[owner.role] : "结果与记录可继续查看"}</small></div></div>
-    <dl><div><dt>当前阶段</dt><dd>{stateLabel(item,state)}</dd></div><div><dt>完成期限</dt><dd>{stamp(due)}{due && owner && <small className={overdue ? "red" : ""}>{paused ? "暂停计时" : overdue ? `已逾期约 ${hours} 小时` : `剩余约 ${hours} 小时`}</small>}</dd></div></dl><div className="responsibility-next"><span>后续去向</span><p>{nextResponsibility(item)}</p></div>
+    <dl><div><dt>当前阶段</dt><dd>{stateLabel(item,state)}</dd></div><div><dt>完成期限</dt><dd>{stamp(due)}{due && owner && <small className={overdue ? "red" : ""}>{paused ? "暂停计时" : overdue ? `已逾期约 ${hours} 小时` : `剩余约 ${hours} 小时`}</small>}</dd></div></dl>
   </section>;
 }
 
