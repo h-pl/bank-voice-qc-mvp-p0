@@ -6,6 +6,8 @@ import dynamic from "next/dynamic";
 import { allowNavigation } from "../components/rule-editor";
 const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
 import { Workspace, label, stateLabel, viewFor } from "../components/workspace";
+import { Workbench } from "../components/workbench";
+import { ResourceCatalog } from "../components/resource-catalog";
 import { Strategy } from "../components/strategy";
 import { ReportPage } from "../components/report-page";
 import {
@@ -33,13 +35,14 @@ const pages: Record<
   View,
   { title: string; icon: IconName; group: string }
 > = {
+  overview: {title:"工作台",icon:"grid",group:"工作区"},
   alerts: {
     title: "风险预警",
     icon: "bell",
     group: "质检作业",
   },
   workorders: {
-    title: "质检工单",
+    title: "复核工单",
     icon: "package",
     group: "质检作业",
   },
@@ -173,7 +176,7 @@ export default function Home() {
     }
     setToast(
       saved
-        ? `${({save_rule:"参数草稿已保存，当前生效版本未改变",check_rule:"草稿检查已完成",publish_rule:"新规则版本已生效",save_resource:"资源草稿已保存",publish_resource:"资源新版本已生效"} as Record<string,string>)[command.action] ?? `${actionNames[command.action] ?? "操作"}已完成`}`
+        ? `${({save_rule:"参数草稿已保存，当前生效版本未改变",check_rule:"草稿检查已完成",publish_rule:"新规则版本已生效",save_resource:"资源草稿已保存",publish_resource:"资源版本已发布，规则引用保持不变",switch_resource:"所选规则引用已切换，历史检测保持原版本"} as Record<string,string>)[command.action] ?? `${actionNames[command.action] ?? "操作"}已完成`}`
         : "本次已更新，但浏览器存储不可用，刷新可能恢复示例",
     );
   };
@@ -230,7 +233,7 @@ export default function Home() {
         </div>
         <div className="workspace-name">银行客服中心</div>
         <nav aria-label="主导航">
-          {["质检作业", "策略与资源", "分析"].map(
+          {["工作区", "质检作业", "策略与资源", "分析"].map(
             (group) =>
               allowedNav.some((v) => pages[v].group === group) && (
                 <div key={group}>
@@ -265,7 +268,7 @@ export default function Home() {
         </nav>
         <div className="sidebar-utilities">
           <button onClick={() => setResetOpen(true)} aria-label="重置演示数据"><Icon name="refresh" size={14} /><span>重置演示</span></button>
-          <small>v0.2.4</small>
+          <small>6001 · 对比迭代</small>
         </div>
       </aside>
   );
@@ -329,7 +332,7 @@ export default function Home() {
                   onOpen={open}
                   onAction={handleAction}
                 />
-              ) : v === "rules" || v === "resources" ? (
+              ) : v === "overview" ? <Workbench state={state} onOpen={open} onNavigate={go}/> : v === "resources" ? <ResourceCatalog state={state} focus={state.view === v ? focus : undefined} onOpen={open} onAction={handleAction} onSubmit={submit}/> : v === "rules" ? (
                 <Strategy
                   state={state}
                   view={v}

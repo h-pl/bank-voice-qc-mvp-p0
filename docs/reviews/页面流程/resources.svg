@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 630"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#637d88"/></marker></defs><rect width="1040" height="630" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 795"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#637d88"/></marker></defs><rect width="1040" height="795" fill="white"/>
 <text x="520.0" y="32" text-anchor="middle" font-family="sans-serif" font-size="24" fill="#243d46">业务资源 · 页面内流程</text>
 <rect x="250" y="60" width="540" height="60" rx="12" fill="#eef5f7" stroke="#97afb9"/>
 <text x="520.0" y="96.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520.0" dy="0">选择条目，核对当前或引用版本</tspan></text>
@@ -21,5 +21,9 @@
 <polyline points="520,481 520,524" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
 <text x="554" y="509" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#243d46"><tspan x="554" dy="0">确认</tspan></text>
 <rect x="260" y="529" width="520" height="80" rx="12" fill="#e9f3ee" stroke="#97afb9"/>
-<text x="520.0" y="563.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520.0" dy="0">发布新版本，后续检测引用</tspan><tspan x="520.0" dy="26">历史与在途案件保留原快照</tspan></text>
+<text x="520.0" y="563.0" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520.0" dy="0">仅发布资源新版本，规则引用保持不变</tspan><tspan x="520.0" dy="26">另行选择规则，核对版本与参数草稿</tspan></text>
+<polyline points="520,609 520,654" fill="none" stroke="#637d88" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="555" y="637" font-family="sans-serif" font-size="16" fill="#243d46">确认切换</text>
+<rect x="180" y="660" width="680" height="90" rx="12" fill="#e9f3ee" stroke="#97afb9"/>
+<text x="520" y="697" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#243d46"><tspan x="520">所选规则新增引用版本，后续检测使用</tspan><tspan x="520" dy="28">历史及在途保留原快照；冲突则整次拒绝并重新核对</tspan></text>
 </svg>

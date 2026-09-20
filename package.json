@@ -7,9 +7,9 @@
     "node": ">=22 <27"
   },
   "scripts": {
-    "dev": "next dev --webpack -p 5001",
+    "dev": "next dev --webpack -p 6001",
     "build": "next build --webpack",
-    "start": "next start -p 5001",
+    "start": "next start -p 6001",
     "lint": "eslint . --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
     "test:workflow": "node --experimental-strip-types --test scripts/*.test.mjs",

@@ -1,5 +1,8 @@
+import { pendingResourceRules, switchResourceReferences } from "./resource-publication.ts";
+
 export type Role = "supervisor" | "inspector" | "agent";
 export type View =
+  | "overview"
   | "alerts"
   | "workorders"
   | "improvement"
@@ -22,6 +25,7 @@ export const people = [
 export const person = (id: string) => people.find((p) => p.id === id)!;
 export const nav: Record<Role, View[]> = {
   supervisor: [
+    "overview",
     "alerts",
     "workorders",
     "improvement",
@@ -30,8 +34,8 @@ export const nav: Record<Role, View[]> = {
     "resources",
     "reports",
   ],
-  inspector: ["workorders", "improvement", "calls", "rules", "resources"],
-  agent: ["workorders", "improvement", "calls"],
+  inspector: ["overview", "workorders", "improvement", "calls", "rules", "resources"],
+  agent: ["overview", "workorders", "improvement", "calls"],
 };
 export type Verdict = "risk" | "false_positive" | "insufficient";
 export const verdictNames: Record<Verdict, string> = {
@@ -461,7 +465,8 @@ export const actionNames: Record<string, string> = {
   discard_rule: "放弃参数草稿",
   save_resource: "保存资源草稿",
   check_resource: "查看资源预设检查",
-  publish_resource: "确认模拟发布",
+  publish_resource: "发布资源版本",
+  switch_resource: "切换规则引用",
   discard_resource: "放弃资源草稿",
   followup: "登记补证跟进",
 };
@@ -610,6 +615,7 @@ export function actions(s: State, id: string): string[] {
       }
     } else {
       out.push("create_resource", "save_resource");
+      if (pendingResourceRules(s, e as Resource).some(rule => !rule.draft)) out.push("switch_resource");
       if (e.draft)
         out.push(
           "check_resource",
@@ -621,6 +627,7 @@ export function actions(s: State, id: string): string[] {
   return [...new Set(out)];
 }
 export type Input = {
+  referenceRevs?: Record<string, number>;
   findingId?: string;
   dispositions?: Record<string, { remedy: boolean; noRemedy?: string; goal?: string; standard?: string; owner?: string; dueAt?: string; sampleCount?: number; observation?: string }>;
   refs?: string[];
@@ -1739,22 +1746,8 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     r.versions.push({ ...r.draft, version, at });
     r.draft = undefined;
     r.checked = false;
-    for (const rule of s.rules) {
-      const old = rule.versions.at(-1)!;
-      if (r.id in old.resources || r.draftRuleIds?.includes(rule.id)) {
-        rule.versions.push({
-          ...structuredClone(old),
-          version: old.version + 1,
-          at,
-          resources: { ...old.resources, [r.id]: version },
-        });
-        rule.rev++;
-        rule.checked = false;
-        if (rule.draft)
-          rule.draft.resources = { ...rule.draft.resources, [r.id]: version };
-      }
-    }
   }
+  if (a === "switch_resource") switchResourceReferences(s, e as Resource, i, at);
   if (a === "discard_resource") {
     const r = e as Resource;
     if (!r.versions.length)

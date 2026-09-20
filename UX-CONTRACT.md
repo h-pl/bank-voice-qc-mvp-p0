@@ -2,7 +2,7 @@
 
 ## Business sources and scope
 
-权威业务来源：docs/reviews/PRD-银行语音质检-MVP-P0.md 第 7–9 节；版本、权限、状态、幂等由 lib/workflow.ts 承载。当前为浏览器内高保真原型，未接入真实模型、银行系统或服务端身份权限。此次 UI 迭代不改变业务状态机、权限、财务、隐私或规则结构。无支付流程。
+权威业务来源：docs/reviews/PRD-银行语音质检-MVP-P0.md 第 7–9 节；版本、权限、状态、幂等由 lib/workflow.ts 承载。当前为浏览器内高保真原型，未接入真实模型、银行系统或服务端身份权限。6001 按已采纳方案增加工作台并将资源发布与规则引用切换分开；案件状态机、权限范围及规则结构不变。无支付流程。
 
 视觉与 token 所有者见 DESIGN.md。zh-CN，Asia/Shanghai；示例日期保留既有定义，日期范围以 YYYY-MM-DD 表达。
 
@@ -12,18 +12,18 @@
 | --- | --- | --- | --- | --- |
 | Select/Listbox | 原生 select | PRD / 本契约 | 接受系统弹层几何和键盘行为 | 浏览器打开与键盘检查 |
 | Date | 原生 date / datetime-local | PRD / 本契约 | 接受系统日历；标签与校验中文 | 范围错误检查 |
-| Form | ActionForm / RuleEditor | workflow 校验 + 本契约 | 业务动作弹窗 / 规则就地编辑 | 校验、取消、冲突、保存 |
+| Form | ActionForm / RuleEditor | workflow 校验 + 本契约 | 业务动作弹窗 / 规则就地编辑 / 资源独立编辑页 | 校验、取消、冲突、保存 |
 | Scrollbar | app/workspace-system.css | DESIGN.md | 全局主题；策略列表稳定 gutter | 宽窄屏、滚动检查 |
 | Toast | Home 单一 live region | 本契约 | 操作回执；错误仍保留表单中 | 保存与失败反馈 |
 | CRUD | Home go/open + workflow apply | PRD 第 7–9 节 | 就地草稿 / 新资源定位 / 版本化发布 | 业务回归测试 |
 | Search | components/ui.tsx SearchField | 本契约 | 本地即时筛选 | 清除、IME、无结果 |
 | Tabs | components/ui.tsx Tabs | 本契约 | 主分类 / 详情 / 报表 / 通知 | 方向键、Home/End、焦点 |
-| Dialog | components/ui.tsx Modal | 本契约 | default / notification / navigation / evidence | Escape、焦点恢复、inert |
+| Dialog | components/ui.tsx Modal | 本契约 | default / notification / navigation / evidence / resource | Escape、焦点恢复、inert |
 | Table Selection | Workspace 单条上下文选择 | PRD 第 7.1 节 | 无批量选择；保留原型单条浏览 | aria-pressed、选中与详情一致 |
 
 ## Dataset navigation and search
 
-作业与通话列表沿用 5/10/20 分页，筛选重置页码，当前页越界自动夹紧。规则目录固定 10 项、资源示例量小，桌面使用有界滚动目录，移动端自然滚动。
+作业与通话列表沿用 5/10/20 分页，筛选重置页码，当前页越界自动夹紧。规则目录固定 10 项，桌面有界滚动。资源使用分类表格与 5/10/20 分页；空结果保留搜索和分类重置入口。
 
 查询状态遵循现有 Activity 页面缓存：同身份跨页面返回保留分类、筛选、页码；当前 view/id 在 URL，搜索与其他筛选仅存本次页面内存。当前原型搜索可含坐席名及通话内容，不写 URL，不新增持久化或分享范围；刷新恢复业务状态但筛选回默认。这是敏感、非分享型搜索的明确例外，不声称支持分享筛选链接。
 
@@ -57,7 +57,7 @@
 
 ## Consistency and content layout
 
-全部七个页面共享 Button、SearchField、Tabs、Modal、Pagination 和 runtime tokens。业务页允许改变列数、信息顺序与密度，禁止单独定义另一套选中、焦点、危险或成功语义。报表保留独立图表布局，页签、表格、控件和颜色沿用公共语言。
+全部八个页面共享 Button、SearchField、Tabs、Modal、Pagination 和 runtime tokens。业务页允许改变列数、信息顺序与密度，禁止单独定义另一套选中、焦点、危险或成功语义。报表保留独立图表布局，页签、表格、控件和颜色沿用公共语言。
 
 详情关联页签计数包含同通话其他问题及关联处理记录，仅在有内容时显示对应标题；没有可查看关联对象时显示说明，不提示不存在的筛选操作。风险、工单和申诉整改共用 case-shell；案件与责任栏顶部对齐，案件内部切换办理概览、处理记录和关联事项，不影响责任与操作位置。
 
@@ -77,3 +77,18 @@ pnpm typecheck、pnpm lint、pnpm test:workflow、pnpm verify:mvp、pnpm build�
 - 规则 info 入口打开原有完整指标说明，关闭恢复入口焦点。参数继续就地展开，不新增编辑弹窗。
 
 本轮桌面操作验收见 docs/reviews/桌面作业交互重构-20260913.md。
+
+## 6001 interaction contracts · 2026-09-20
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+| --- | --- | --- | --- | --- |
+| Resource navigation | ResourceCatalog + Home go/open | 当前资源及规则快照 | 分类表格、resource 抽屉、Strategy detailOnly | 返回恢复分类；Escape 恢复触发者 |
+| Resource form | ActionForm + InlineFormSurface | workflow apply 的资源校验 | 独立页面；无新编辑校验副本 | 未保存导航阻止，返回明确放弃；保存后定位草稿 |
+| Case documents | CaseDocuments + Modal | 案件当前轮次和绑定结论版本 | 结论/申诉/要求/材料/验收只读预览 | 原文可见，关闭回案，跨对象先关闭 |
+| Workbench | Workbench + notices/canSee | workflow 责任与阅读待办 | 当前身份、逾期、24h | 点击进入原任务，角色切换重算 |
+
+资源发布只创建不可变 ResourceVersion，不升级任何规则。switch_resource 必须显式选择规则并填写原因；逐项核对 rule.rev，资源 rev 和 requestId 仍由 apply 处理；任何规则存在参数草稿或版本冲突时整体拒绝，不产生半次切换。成功新增 RuleVersion 和逐规则日志；检测中的批次与历史快照保持不变。检查仍为演示预设，不宣称真实回归或审批。
+
+资源独立编辑页使用 qc:before-navigate 与 beforeunload 保护。保存失败保留字段；用户主动取消或返回时先显示放弃/继续编辑，禁止静默丢失长文本。恢复后版本冲突仍需重新核对。
+
+当前记录：docs/reviews/6001迭代实施与验收-20260920.md。

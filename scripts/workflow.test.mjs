@@ -300,10 +300,10 @@ test("T11: multi-risk counts separate from calls, zero denominators show dash, C
   assert.equal(output.split("\r\n").length, risk.rows.length + 1);
   assert.match(csv([["=1+2"]]), /"'=1\+2"/);
 });
-test("T12: 3 roles, 7 routes, identity-scoped objects and actions, stale version rejected", () => {
+test("T12: 3 roles, 8 routes, identity-scoped objects and actions, stale version rejected", () => {
   const s = start();
-  assert.equal(nav.supervisor.length, 7);
-  assert.equal(nav.agent.length, 3);
+  assert.equal(nav.supervisor.length, 8);
+  assert.equal(nav.agent.length, 4);
   const agent = as(s, "A1048");
   assert.equal(canSeeCall(agent, s.calls[3]), false);
   assert.equal(canSee(agent, "REC-1034"), false);
@@ -421,6 +421,8 @@ test("T17: resource publish during running detection preserves in-flight rule/re
   s = run(s, "RES-WORD", "check_resource", { checkPass: true });
   s = run(s, "RES-WORD", "publish_resource");
   assert.equal(entity(s, "R-COM-012").versions[0].resources["RES-WORD"], 1);
+  assert.equal(entity(s, "R-COM-012").versions.length, 1);
+  s = run(s, "RES-WORD", "switch_resource", {refs:["R-COM-012"],referenceRevs:{"R-COM-012":entity(s,"R-COM-012").rev}});
   assert.equal(entity(s, "R-COM-012").versions[1].resources["RES-WORD"], 2);
   assert.deepEqual(s.calls[0].batches[0], old);
   s = run(s, "CALL-1041", "finish_detection");
@@ -513,6 +515,8 @@ test("Resources: creating an item requires references; draft/publish updates fut
   s = run(s, id, "check_resource");
   s = run(s, id, "publish_resource");
   assert.equal(entity(s, id).versions.length, 1);
+  assert.equal(entity(s, "R-KW-018").versions.at(-1).resources[id], undefined);
+  s = run(s,id,"switch_resource",{refs:["R-KW-018"],referenceRevs:{"R-KW-018":entity(s,"R-KW-018").rev}});
   assert.equal(entity(s, "R-KW-018").versions.at(-1).resources[id], 1);
   assert.equal(entity(s, "R-KW-018").versions[0].resources[id], undefined);
 });

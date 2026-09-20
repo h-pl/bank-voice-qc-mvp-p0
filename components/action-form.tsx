@@ -1,6 +1,7 @@
 "use client";
-import { useRef, useState, type FormEvent } from "react";
-import { Modal, Button } from "./ui";
+import { pendingResourceRules } from "../lib/resource-publication";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Modal, Button, InlineFormSurface } from "./ui";
 import {
   actionNames,
   actions,
@@ -25,18 +26,21 @@ const localInput = (d: Date) =>
     .toISOString()
     .slice(0, 16);
 export function ActionForm({
+  embedded = false,
   state,
   id,
   action: requestedAction,
   onClose,
   onSubmit,
 }: {
+  embedded?: boolean;
   state: State;
   id: string;
   action: string;
   onClose: () => void;
   onSubmit: (command: Command) => void;
 }) {
+  const Surface = embedded ? InlineFormSurface : Modal;
   const actionTitle = ({check_rule:"检查草稿",check_resource:"检查草稿",publish_rule:"发布新版本",publish_resource:"发布新版本",save_resource:"编辑资源",create_resource:"新增资源"} as Record<string,string>)[requestedAction] ?? actionNames[requestedAction];
   const isAcceptance = ["save_acceptance", "verify"].includes(requestedAction);
   const action = isAcceptance ? "verify" : requestedAction === "accept_assign" ? "assign_appeal" : requestedAction === "accept_decide" ? "decide" : requestedAction;
@@ -80,6 +84,7 @@ export function ActionForm({
       noRemedy: "",
       samples: [],
       refs: [],
+      referenceRevs: Object.fromEntries(state.rules.map(rule=>[rule.id,rule.rev])),
       resourceType:
         "type" in target ? (target.type as Resource["type"]) : "词库",
       checkPass: true,
@@ -138,6 +143,18 @@ export function ActionForm({
   );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [initialInput] = useState(() => JSON.stringify(input));
+  const committing = useRef(false);
+  const dirty = embedded && JSON.stringify(input) !== initialInput;
+  const [discardPrompt,setDiscardPrompt] = useState(false);
+  const closeForm = () => { if (dirty) setDiscardPrompt(true); else onClose(); };
+  useEffect(()=>{
+    if(!dirty) return;
+    const guard=(event:Event)=>{if(committing.current)return;event.preventDefault();setError("资源内容尚未保存。请先保存草稿，或取消修改后再切换页面。");requestAnimationFrame(()=>errorRef.current?.focus());};
+    const unload=(event:BeforeUnloadEvent)=>{if(!committing.current)event.preventDefault();};
+    window.addEventListener("qc:before-navigate",guard);window.addEventListener("beforeunload",unload);
+    return()=>{window.removeEventListener("qc:before-navigate",guard);window.removeEventListener("beforeunload",unload);};
+  },[dirty]);
   const [requestId] = useState(() => crypto.randomUUID());
   const set = <K extends keyof Input>(key: K, value: Input[K]) =>
     setInput((x) => ({ ...x, [key]: value }));
@@ -204,9 +221,11 @@ export function ActionForm({
         ...input,
         dueAt: date ? new Date(date).toISOString() : undefined,
       };
+      committing.current = true;
       onSubmit({ id, action: override ?? (["save_review","submit_review"].includes(action) ? "submit_review" : isAcceptance ? "verify" : requestedAction), rev: formRev, requestId, input: data });
       onClose();
     } catch (e) {
+      committing.current = false;
       setError(e instanceof Error ? e.message : "操作失败");
       setBusy(false);
       requestAnimationFrame(() => errorRef.current?.focus());
@@ -242,7 +261,7 @@ export function ActionForm({
     </div>
   );
   return (
-    <Modal title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={onClose}>
+    <Surface title={isAcceptance ? "整改验收" : ["save_review","submit_review"].includes(action) ? "复核处理" : actionTitle} onClose={embedded ? closeForm : onClose}>
       <form noValidate onSubmit={(e:FormEvent<HTMLFormElement>)=>{
         e.preventDefault();
         const invalid = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select")).find(field => !field.disabled && !field.validity.valid);
@@ -259,6 +278,7 @@ export function ActionForm({
         const field = event.target as HTMLElement;
         if (field.dataset.formInvalid) { field.removeAttribute("aria-invalid"); field.removeAttribute("aria-describedby"); delete field.dataset.formInvalid; setError(""); }
       }}>
+        {discardPrompt && <div className="edit-warning" role="alert"><p>离开将放弃这次未保存的内容，已保存版本不受影响。</p><div className="editor-discard-actions"><Button onClick={()=>setDiscardPrompt(false)}>继续编辑</Button><Button intent="danger" onClick={onClose}>放弃修改并返回</Button></div></div>}
         <div className="form-context">
           <b>
             {action === "create_resource" ? "新资源草稿" : "title" in target
@@ -779,13 +799,14 @@ export function ActionForm({
             </label>
           </>
         )}
+        {action === "switch_resource" && isResource && <section className="reference-adoption"><p className="callout">将所选规则切换到资源 V{(target as Resource).versions.at(-1)?.version}。只影响后续检测，历史证据和已开始的检测保持原快照。</p><fieldset><legend>选择需要切换的规则</legend>{pendingResourceRules(state,target as Resource).map(rule=><label key={rule.id}><input type="checkbox" disabled={!!rule.draft} checked={input.refs?.includes(rule.id) ?? false} onChange={e=>set("refs",e.target.checked ? [...(input.refs ?? []),rule.id] : (input.refs ?? []).filter(id=>id!==rule.id))}/><span><b>{rule.name}</b><small>{rule.draft ? "存在参数草稿，需先处理草稿" : `规则 V${rule.versions.at(-1)!.version} · 资源 ${rule.versions.at(-1)!.resources[id] ? `V${rule.versions.at(-1)!.resources[id]}` : "未引用"} → V${(target as Resource).versions.at(-1)?.version}`}</small></span></label>)}</fieldset></section>}
         {["publish_rule", "publish_resource"].includes(action) && (
           <>
             <p className="callout">
-              确认后生成新版本。新检测使用新版，已开始的检测与历史结论保留原快照。
+              {isResource ? "确认后发布资源新版本，已有规则引用保持不变。发布后选择规则并确认切换，才会用于后续检测。" : "确认后生成新规则版本。新检测使用新版，已开始的检测与历史结论保留原快照。"}
             </p>
             <div className="change-preview">
-              <b>影响范围</b>
+              <b>{isResource ? "相关规则（本次发布不切换引用）" : "影响范围"}</b>
               <p>
                 {isResource
                   ? state.rules
@@ -795,7 +816,7 @@ export function ActionForm({
                   : (target as Rule).name}
               </p>
               <b>草稿差异</b>
-              <table className="diff-table"><thead><tr><th>字段</th><th>当前生效</th><th>待发布</th></tr></thead><tbody>
+              <table className="diff-table"><thead><tr><th>字段</th><th>{isResource ? "最新发布版本" : "当前生效"}</th><th>待发布</th></tr></thead><tbody>
               {(isRule ? ((target as Rule).editable === "threshold" ? [["静默阈值（秒）",(target as Rule).versions.at(-1)!.threshold,(target as Rule).draft?.threshold]] : (target as Rule).editable === "scope" ? [["适用业务",(target as Rule).versions.at(-1)!.scope,(target as Rule).draft?.scope]] : [["提醒触发",(target as Rule).versions.at(-1)!.trigger,(target as Rule).draft?.trigger]]) : [["内容",(target as Resource).versions.at(-1)?.content,(target as Resource).draft?.content],["业务范围",(target as Resource).versions.at(-1)?.scope,(target as Resource).draft?.scope],["适用角色",(target as Resource).versions.at(-1)?.role,(target as Resource).draft?.role],["例外说明",(target as Resource).versions.at(-1)?.exception,(target as Resource).draft?.exception]]).map(([name,oldValue,newValue])=><tr key={String(name)}><th>{name}</th><td>{oldValue || "—"}</td><td>{newValue || "—"}{oldValue === newValue && <small>（未变化）</small>}</td></tr>)}
               {isResource && <tr><th>引用规则</th><td>{state.rules.filter(r=>target.id in r.versions.at(-1)!.resources).map(r=>r.name).join("、") || "尚未引用"}</td><td>{state.rules.filter(r=>target.id in r.versions.at(-1)!.resources || (target as Resource).draftRuleIds?.includes(r.id)).map(r=>r.name).join("、")}</td></tr>}
               </tbody></table>
@@ -829,7 +850,7 @@ export function ActionForm({
         )}
         {target.rev !== formRev && <p className="callout">当前记录已更新，输入已保留。请核对最新阶段与要求。<Button onClick={()=>{setFormRev(target.rev);setError("");}}>已核对，使用最新记录</Button></p>}
         <div className="modal-actions">
-          <Button onClick={onClose}>取消</Button>
+          <Button onClick={embedded ? closeForm : onClose}>取消</Button>
           {isAcceptance && <Button disabled={busy || target.rev !== formRev || staleAcceptanceDraft && !input.draftBasisConfirmed} onClick={()=>execute("save_acceptance")}>保存草稿</Button>}
           {["save_review","submit_review"].includes(action) && <Button disabled={busy} onClick={()=>execute("save_review")}>保存草稿</Button>}
           {(!isAcceptance || actions(state,id).includes("verify")) && <Button primary type="submit" disabled={busy || target.rev !== formRev || staleAcceptanceDraft && !input.draftBasisConfirmed || (["save_review","submit_review"].includes(action) && !call?.endedAt)}>
@@ -837,7 +858,7 @@ export function ActionForm({
           </Button>}
         </div>
       </form>
-    </Modal>
+    </Surface>
   );
 }
 

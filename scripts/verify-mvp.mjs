@@ -11,8 +11,8 @@ const indicators = read("lib/official-indicators.ts").match(
 assert.equal(indicators.length, 16, "完整指标目录必须为 16 项");
 const pkg = JSON.parse(read("package.json"));
 assert.ok(
-  pkg.scripts.dev.endsWith("-p 5001") && pkg.scripts.start.endsWith("-p 5001"),
-  "使用独立 5001 端口",
+  pkg.scripts.dev.endsWith("-p 6001") && pkg.scripts.start.endsWith("-p 6001"),
+  "使用独立 6001 端口",
 );
 for (const file of [
   "app/globals.css",
@@ -30,7 +30,7 @@ for (const file of fs
   assert.ok(!read("docs/reviews/流程图/" + file).includes("待确认"));
 const result = spawnSync(
   process.execPath,
-  ["--experimental-strip-types", "--test", "scripts/workflow.test.mjs", "scripts/refinement.test.mjs", "scripts/lifecycle.test.mjs", "scripts/report-visuals.test.mjs"],
+  ["--experimental-strip-types", "--test", "scripts/workflow.test.mjs", "scripts/refinement.test.mjs", "scripts/lifecycle.test.mjs", "scripts/report-visuals.test.mjs", "scripts/resource-publication.test.mjs"],
   { cwd: root, stdio: "inherit" },
 );
 assert.equal(result.status, 0, "工作流回归必须通过");

@@ -6,3 +6,5 @@ node_modules/
 draft_*/
 artifacts/
 playwright-report/
+
+/node_modules

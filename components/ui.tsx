@@ -76,7 +76,7 @@ export function Modal({
   title: string;
   children: ReactNode;
   onClose: () => void;
-  variant?: "default" | "notification" | "navigation" | "evidence";
+  variant?: "default" | "notification" | "navigation" | "evidence" | "resource";
   description?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -141,4 +141,10 @@ export function Tabs<T extends string>({ value, options, onChange, label, panelI
         (e.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus();
       }}>{option.label}{option.count !== undefined && <span>{option.count}</span>}</button>)}
   </div>;
+}
+
+export function InlineFormSurface({title, children, onClose}: {title:string;children:ReactNode;onClose:()=>void}) {
+  const heading=useRef<HTMLHeadingElement>(null);
+  useEffect(()=>{heading.current?.focus();},[]);
+  return <section className="inline-editor panel" aria-label={title}><header><div><p>业务资源 / 内容维护</p><h2 ref={heading} tabIndex={-1}>{title}</h2></div><Button onClick={onClose}>返回资源</Button></header>{children}</section>;
 }
