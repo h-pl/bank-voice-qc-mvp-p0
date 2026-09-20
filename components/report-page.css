@@ -191,20 +191,21 @@
 .qa-filter-panel { padding:14px 20px; }
 .qa-filter-footer { margin-top:10px; }
 
-/* Callouts are data labels, visible before pointer or keyboard interaction. */
-.qa-trend-callout { pointer-events:none; }
-.qa-trend-callout rect { fill:var(--surface); stroke:var(--line); }
-.qa-trend-callout path { stroke:var(--line); fill:none; }
-.qa-trend-canvas .qa-trend-callout text { fill:var(--ink); font-size:13px; font-weight:600; }
-.qa-ring-with-labels { width:100%; max-width:440px; margin:0 auto 12px; }
-.qa-ring-with-labels svg { display:block; width:100%; height:auto; overflow:visible; }
+/* Persistent inspection cards: one selected datum per chart, matching usage3. */
+.qa-chart-callout { position:absolute; z-index:3; border:1px solid var(--line); border-radius:var(--radius-panel); background:var(--surface); padding:14px 16px; pointer-events:none; font-size:13px; line-height:1.6; font-variant-numeric:tabular-nums; box-shadow:0 1px 3px rgb(32 37 43 / 3%); }
+.qa-chart-callout > div { color:var(--ink); font-weight:500; }
+.qa-chart-callout p { margin-top:5px; }
+.qa-chart-callout small { color:var(--muted); display:block; margin-top:3px; }
+.qa-trend-float { width:240px; }
+.qa-point.selected span { width:12px; height:12px; background:var(--orange); border:2px solid var(--surface); box-shadow:none; }
+.qa-point.selected span.missing { background:var(--surface-subtle); border-color:var(--muted); }
+.qa-ring-stage { position:relative; width:100%; max-width:400px; margin:0 auto 12px; }
+.qa-ring-stage svg { display:block; width:100%; height:auto; }
 .qa-ring-total { fill:var(--ink); font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; }
 .qa-ring-center-label { fill:var(--muted); font-size:11px; }
-.qa-ring-annotation { pointer-events:none; }
-.qa-ring-annotation polyline { fill:none; stroke-width:1; opacity:.7; }
-.qa-ring-annotation text { fill:var(--ink); font-size:12px; font-weight:500; }
-.qa-ring-annotation .qa-ring-annotation-value { fill:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
-.qa-ring-annotation.highlighted polyline { stroke-width:2; opacity:1; }
-.qa-ring-annotation.highlighted text { font-weight:650; }
-@media (min-width:981px) { .qa-charts-grid { grid-template-columns:minmax(0,1.65fr) minmax(340px,1fr); } }
-@media (max-width:600px) { .qa-ring-section { display:block; } .qa-ring-with-labels { max-width:380px; } .qa-ring-section .qa-legend small { display:block; } .qa-ring-section .qa-legend button { grid-template-columns:6px 1fr 30px 48px; } }
+.qa-ring-float { right:0; top:0; min-width:200px; }
+.qa-ring-float p { display:flex; align-items:center; gap:8px; }
+.qa-ring-float p span { margin-left:6px; color:var(--muted); }
+.qa-legend .is-highlighted { background:var(--surface-subtle); }
+@media (min-width:981px) { .qa-charts-grid { grid-template-columns:minmax(0,1.9fr) minmax(300px,1fr); } }
+@media (max-width:600px) { .qa-ring-section { display:block; } .qa-ring-stage { max-width:380px; } .qa-ring-section .qa-legend small { display:block; } .qa-ring-section .qa-legend button { grid-template-columns:6px 1fr 30px 48px; } }
