@@ -1,0 +1,418 @@
+/* Moss: quiet page surfaces, paired field rows and shared policy configuration. */
+@font-face{font-family:StrategySora;src:url('/fonts/strategy/Sora-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:StrategySora;src:url('/fonts/strategy/Sora-SemiBold.woff2') format('woff2');font-weight:500 700;font-display:swap}
+@font-face{font-family:StrategyMiSans;src:url('/fonts/strategy/MiSans-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:StrategyMiSans;src:url('/fonts/strategy/MiSans-Demibold.woff2') format('woff2');font-weight:500 700;font-display:swap}
+.strategy-nav,.strategy-redesign,.modal:has(.shared-policy-editor),.modal:has(.indicator-association-editor){font-family:var(--font-body);color:var(--ink)}
+.strategy-redesign :is(h2,h3,h4){font-family:var(--font-heading)}
+.strategy-nav .strategy-mode-toolbar{align-items:center;margin-bottom:0;border:0;padding-bottom:10px}
+.strategy-nav .tabs-root{flex:1}.strategy-nav .ui-tabs{border:0;margin:0}
+.strategy-page-intro{margin:18px 0 24px;color:#676767;font-size:14px;line-height:1.7}
+/* Match review-workspace2: persistent queue and detail surfaces. */
+.strategy-redesign.policy-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;height:calc(100dvh - 232px);min-height:440px;align-items:stretch}
+.strategy-redesign>.policy-list,.strategy-redesign>.policy-detail{border:0;border-radius:12px;background:var(--surface);box-shadow:none;min-height:0;min-width:0}
+.strategy-redesign>.policy-detail{display:block;max-width:none;margin:0;overflow-y:auto;scrollbar-gutter:stable;overscroll-behavior:contain}
+.strategy-redesign .policy-list{position:static;display:flex;flex-direction:column;overflow:hidden}
+.strategy-redesign .policy-list-actions{padding:16px 16px 0}.strategy-redesign .policy-list-actions .btn{width:100%}
+.strategy-redesign .policy-list-filters{padding:16px;display:grid;gap:12px;border:0;background:transparent}
+.strategy-redesign .policy-list-filters .search-box{width:100%;max-width:none;min-width:0}
+.strategy-redesign .policy-category{display:flex;align-items:center;gap:10px;min-width:0;margin:0}
+.strategy-redesign .policy-category>span{white-space:nowrap;font-size:12px}.strategy-redesign .policy-category>[data-slot=select-trigger]{flex:1;min-width:0}
+.strategy-redesign .policy-items{display:flex;flex-direction:column;gap:4px;padding:0 8px;flex:1;min-height:0;max-height:none;overflow-y:auto;scrollbar-gutter:auto}
+.strategy-redesign .policy-item{display:flex;flex-direction:column;flex-shrink:0;align-items:stretch;justify-content:flex-start;height:auto;min-height:0;padding:14px 12px;border:0;border-radius:8px;background:transparent;box-shadow:none;text-align:left;gap:0;white-space:normal;min-width:0}
+.strategy-redesign .policy-item.selected{background:var(--selection-bg);box-shadow:none}
+.strategy-redesign .policy-item.selected>strong{color:var(--accent-ink)}
+.strategy-redesign .policy-item:hover{background:var(--surface-subtle)}
+.strategy-redesign .policy-item.selected:hover{background:var(--selection-bg)}
+.strategy-redesign .policy-item:focus-visible{outline:2px solid var(--focus);outline-offset:-3px}
+.strategy-redesign .policy-item-top{font-size:12px;color:#777;display:flex;justify-content:space-between;gap:12px;margin:0 0 8px}
+.strategy-redesign .policy-item-top small{font-family:inherit;font-size:12px;color:inherit}
+.strategy-redesign .policy-item>strong{font-size:14px;line-height:1.65;font-weight:600;margin:0 0 8px;color:#252525}
+.rule-card-category{font-size:12px;color:#777;margin-bottom:8px}.rule-card-primary{font-size:14px;line-height:1.8;margin:2px 0 16px;color:#444}
+.rule-card-facts{display:grid;gap:6px;font-size:12px;color:#555;margin-bottom:10px;line-height:1.7}
+.rule-card-facts>span{display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px;overflow-wrap:anywhere}.rule-card-facts small{font-size:12px;color:#888}
+.rule-card-bindings{display:grid;gap:6px;margin-bottom:10px;font-size:12px;line-height:1.65;color:#555}
+.rule-card-bindings>span{display:flex;justify-content:space-between;gap:12px}.rule-card-bindings>span>span:last-child{text-align:right;color:#777;overflow-wrap:anywhere}.rule-card-bindings>small{color:#888;font-size:12px}
+.rule-card-footer{margin-top:2px;border:0;padding-top:4px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#777}
+.rule-card-footer>span:first-child{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.rule-card-footer>span:last-child{display:none}.rule-card-footer [data-slot=badge]{font-size:11px}
+.strategy-redesign .policy-list-count{background:transparent;border:0;padding:12px 16px;font-size:12px;flex-shrink:0;margin:0}.strategy-redesign .policy-list-count>span{font-size:12px}
+.strategy-redesign .policy-heading{padding:22px 24px 16px;position:static;gap:16px}.strategy-redesign .policy-heading h2{font-size:21px;line-height:1.5}.strategy-redesign .policy-heading-status{margin-top:12px}
+.strategy-redesign .policy-section{padding:24px;background:transparent;border-color:#e9e9e9}.strategy-redesign .policy-section h3{font-size:15px}.strategy-redesign .policy-version-summary{padding-inline:24px;color:#777}
+.strategy-redesign .indicator-ownership{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:20px}.strategy-redesign .indicator-ownership>div:last-child{grid-column:auto}
+.strategy-redesign .policy-reference{border:0;border-radius:8px;background:#f7f7f6;padding:18px 20px}.strategy-redesign .indicator-resource-caption{padding-inline:20px}
+.strategy-redesign .binding-read{gap:0}.binding-read-head{display:grid;grid-template-columns:180px 1fr;padding:12px 16px;font-size:12px;background:#f7f7f6;color:#777;border-radius:8px 8px 0 0}
+.strategy-redesign .binding-read-row{display:grid;grid-template-columns:164px minmax(0,1fr) auto;align-items:start;gap:16px;border:0;border-bottom:1px solid #eee;border-radius:0;padding:20px 16px;font-size:14px}
+.binding-feature{display:grid;gap:8px}.binding-feature small,.binding-policy small{font-size:12px;color:#777;line-height:1.8}.binding-policy-name{display:flex;align-items:center;gap:10px}.binding-policy-name>span{font-size:12px;color:#888}.binding-policy p{font-size:13px;color:#666;line-height:1.8;margin:6px 0}
+.strategy-redesign .configuration-read-groups{gap:0}.strategy-redesign .configuration-read-groups>section{display:grid;grid-template-columns:160px 1fr;gap:20px;padding:24px 0;border-bottom:1px solid #eee}.strategy-redesign .configuration-read-groups h4{color:#333;font-size:15px;margin:0}.strategy-redesign .indicator-config-grid{margin:0;gap:20px 32px}.strategy-redesign .indicator-config-grid dt{font-size:12px}.strategy-redesign .indicator-config-grid dd{font-size:14px}
+.modal[data-slot=dialog-content]:has(.shared-policy-editor),.modal[data-slot=dialog-content]:has(.indicator-association-editor){width:min(800px,calc(100vw - 48px));max-width:800px;border-radius:16px}
+.shared-policy-editor .action-form-body,.indicator-association-editor .action-form-body{padding:0 28px 24px}
+.shared-policy-editor .editor-intro,.indicator-association-editor .editor-intro{font-size:13px;color:#777;line-height:1.8;margin:0 0 24px}
+.shared-policy-editor .configuration-fieldset,.indicator-association-editor .configuration-fieldset{margin:24px 0 0;padding:18px 0 0;border-color:#e8e8e8}
+.shared-policy-editor .configuration-fieldset legend,.indicator-association-editor .configuration-fieldset legend{font-size:16px;font-weight:600}
+.shared-policy-editor .configuration-fieldset>p{font-size:12px;margin:0 0 8px}
+.shared-policy-editor .indicator-config-form,.indicator-association-editor .indicator-config-form{gap:20px 24px;margin:12px 0 18px}
+.shared-policy-editor .config-field,.indicator-association-editor .config-field{gap:8px;font-size:14px}
+.shared-policy-editor .config-field>small{font-size:12px}
+.shared-policy-editor .config-field:has(.config-checkboxes){grid-column:1/-1}
+.shared-policy-editor :is(input,textarea,[data-slot=select-trigger]),.indicator-association-editor :is(input,textarea,[data-slot=select-trigger]){font-family:inherit;font-size:14px;min-height:40px}
+.shared-policy-editor .editor-reason,.indicator-association-editor label:has(textarea){border-top:1px solid #eee;padding-top:24px;margin-top:24px;font-size:14px}
+.indicator-association-editor .binding-editor-row{display:grid;grid-template-columns:1fr;gap:10px}.indicator-association-editor .binding-editor-row>label{font-size:12px;color:#777;margin:0}.indicator-association-editor .binding-editor-row>.indicator-policy-actions{margin-top:0}
+.linked-policy-preview{background:#f7f7f6;padding:14px 16px;border-radius:8px;margin:12px 0 0;font-size:13px;line-height:1.8}.linked-policy-preview>span{display:block;color:#888;font-size:12px;margin-bottom:6px}.linked-policy-preview p{margin:4px 0;color:#555}
+@media(max-width:760px){.strategy-redesign .policy-items{grid-template-columns:1fr;gap:16px}.strategy-redesign .policy-item{padding:20px;min-height:0}.strategy-redesign .policy-category{width:100%;min-width:0}.strategy-redesign .policy-list-filters .search-box{max-width:none}.strategy-redesign .policy-heading{padding-top:20px;gap:20px}.strategy-redesign .indicator-ownership{grid-template-columns:1fr}.binding-read-head{display:none}.strategy-redesign .binding-read-row{grid-template-columns:1fr;gap:10px;padding:20px 0}.strategy-redesign .binding-read-row>.btn{justify-self:start}.strategy-redesign .configuration-read-groups>section{grid-template-columns:1fr;gap:16px}.strategy-redesign .policy-heading h2{font-size:24px}.shared-policy-editor .indicator-config-form,.indicator-association-editor .indicator-config-form{grid-template-columns:1fr}.shared-policy-editor .action-form-body,.indicator-association-editor .action-form-body{padding-inline:20px}.modal[data-slot=dialog-content]:has(.shared-policy-editor),.modal[data-slot=dialog-content]:has(.indicator-association-editor){width:calc(100vw - 24px)}.strategy-nav .strategy-mode-toolbar{gap:8px}.strategy-nav .strategy-mode-toolbar>.btn{font-size:12px}}
+
+
+.strategy-nav .ui-tabs [data-slot=tabs-trigger][data-state=active]{background:var(--selection-bg);color:var(--accent-ink);box-shadow:none}
+.strategy-nav .ui-tabs [data-slot=tabs-trigger]::after{background:transparent}
+.strategy-redesign .policy-mobile-back{display:none;padding:12px 16px;border-bottom:1px solid #eee}
+.strategy-redesign .policy-detail:has(>.detail-backbar)>.policy-mobile-back{display:none}
+.indicator-association-editor .binding-editor-row>.indicator-config-form:empty{display:none}
+
+/* Embedded rule dialogs keep their existing single-detail contract. */
+.strategy-redesign.policy-full-detail{display:block;height:auto;min-height:0}
+.strategy-redesign.policy-full-detail>.policy-detail{display:block;height:auto;overflow:visible}
+@media(min-width:851px) and (max-width:1250px){
+ .strategy-redesign.policy-layout:not(.policy-full-detail){grid-template-columns:230px minmax(0,1fr)}
+ .strategy-redesign .indicator-ownership{grid-template-columns:1fr;gap:14px}
+ .strategy-redesign .configuration-read-groups>section{grid-template-columns:1fr;gap:14px}
+ .strategy-redesign .binding-read-row{grid-template-columns:120px minmax(0,1fr);gap:12px}
+ .strategy-redesign .binding-read-row>.btn{grid-column:2;justify-self:start}
+ .strategy-redesign .binding-read-head{grid-template-columns:136px minmax(0,1fr)}
+}
+@media(max-width:850px){
+ .strategy-redesign.policy-layout{display:block;height:auto;min-height:0}
+ .strategy-redesign:not(.has-selection):not(.policy-full-detail)>.policy-detail{display:none}
+ .strategy-redesign.has-selection>.policy-list{display:none}
+ .strategy-redesign.has-selection>.policy-detail{display:block;overflow:visible}
+ .strategy-redesign .policy-items{max-height:none;overflow:visible;gap:4px}
+ .strategy-redesign .policy-list{overflow:visible}
+ .strategy-redesign .policy-mobile-back{display:block}
+ .strategy-redesign.policy-full-detail .policy-mobile-back{display:none}
+ .strategy-redesign .policy-heading,.strategy-redesign .policy-section{padding:20px 16px}
+ .strategy-redesign .policy-version-summary{padding-inline:16px}
+ .strategy-redesign .indicator-ownership{grid-template-columns:1fr}
+ .strategy-redesign .configuration-read-groups>section{grid-template-columns:1fr}
+ .strategy-redesign .binding-read-head{display:none}
+ .strategy-redesign .binding-read-row{grid-template-columns:1fr;padding-inline:0}
+}
+
+.strategy-redesign .policy-version-picker>span{white-space:nowrap}
+
+/* Screenshot baseline: tabs, shared toolbar, then independent work surfaces. */
+.strategy-nav .ui-tabs [data-slot=tabs-trigger]{min-height:36px;padding:8px 12px}
+.strategy-filters{display:flex;align-items:center;gap:12px;padding:12px 0 18px;min-width:0}
+.strategy-filters .search-box{width:360px;flex:0 1 360px;min-width:180px;height:40px;background:var(--surface)}
+.strategy-filters .search-box input{font-size:13px;width:100%}
+.strategy-filters .policy-category{display:flex;align-items:center;gap:10px;margin:0;min-width:0}
+.strategy-filters .policy-category>span{display:none}
+.strategy-filters .policy-category>[data-slot=select-trigger]{min-width:140px;height:40px}
+.strategy-filter-actions{display:flex;align-items:center;gap:12px;margin-left:auto}
+.strategy-filter-actions>span{font-size:12px;color:var(--muted);white-space:nowrap}
+.strategy-filter-actions .btn{height:40px}
+.strategy-redesign .policy-queue-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 14px;flex-shrink:0;font-size:14px}
+.strategy-redesign .policy-queue-heading>span{font-size:11px;color:var(--muted)}
+.strategy-redesign .policy-queue-end{margin:0;padding:18px 8px;text-align:center;font-size:12px;color:var(--muted);flex-shrink:0}
+.strategy-redesign .policy-item-top{font-family:var(--font-data);font-size:11px}
+.strategy-redesign .policy-section{border:0}
+.strategy-redesign .policy-section+.policy-section{padding-top:12px}
+.strategy-redesign .policy-version-summary{background:transparent;font-size:12px}
+.strategy-redesign .indicator-ownership{background:transparent;border:0;padding:0}
+.strategy-redesign .policy-reference{background:var(--surface-subtle)}
+@media(min-width:1600px){.strategy-redesign.policy-layout:not(.policy-full-detail){grid-template-columns:264px minmax(0,1fr)}}
+@media(max-width:850px){
+ .strategy-filters{flex-wrap:wrap}
+ .strategy-filters .search-box{flex:1 1 100%;width:100%;min-width:0}
+ .strategy-filters .policy-category>[data-slot=select-trigger]{min-width:120px}
+ .strategy-filter-actions{flex-wrap:wrap;gap:8px}
+ .strategy-redesign .policy-item{padding:14px 12px}
+ .strategy-redesign .policy-heading h2{font-size:21px}
+}
+
+.strategy-nav .ui-tabs{padding:0;height:36px}
+.strategy-nav .strategy-mode-toolbar>.btn{height:36px;min-height:36px}
+@media(max-width:700px){.strategy-filters .search-box,.strategy-filters .policy-category>[data-slot=select-trigger],.strategy-filter-actions .btn{height:44px}}
+
+/* Indicator cards: identity, useful context, active associations, exceptions. */
+.strategy-redesign .indicator-rule-card { gap: 0; padding: 16px 12px; }
+.indicator-rule-card .indicator-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.indicator-rule-card .indicator-card-heading .indicator-card-indicator { flex-shrink: 0; max-width: 45%; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,.04); color: var(--muted); font-size: 11px; line-height: 1.65; font-weight: 400; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+.indicator-rule-card .indicator-card-heading strong { min-width: 0; font-size: 15px; line-height: 1.55; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.indicator-rule-card.selected .indicator-card-heading strong { color: var(--accent-ink); }
+.indicator-rule-card .indicator-card-field { display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 8px; font-size: 12px; line-height: 1.75; color: var(--text-secondary, #555); overflow-wrap: anywhere; }
+.indicator-rule-card .indicator-card-label { color: var(--muted); }
+.indicator-rule-card .indicator-card-alerts { margin-top: 8px; }
+.indicator-rule-card .indicator-card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.indicator-rule-card .indicator-card-footer [data-slot=badge] { font-size: 11px; }
+
+.indicator-rule-card .indicator-card-alert-summary { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+
+/* Rule details explain the check before resources and warning decisions. */
+.rule-context{display:flex;flex-wrap:wrap;gap:12px 32px;margin:16px 0;color:var(--text-secondary,#555);font-size:13px}
+.rule-context>div{display:flex;gap:12px}.rule-context dt,.rule-explanation dt{color:var(--muted)}
+.rule-context dd,.rule-explanation dd{margin:0;min-width:0}
+.rule-check-list{padding-left:22px;margin:18px 0;font-size:14px;line-height:1.9}
+.rule-check-list li+li{margin-top:5px}
+.rule-explanation{display:grid;gap:12px;margin:18px 0 0;font-size:13px;line-height:1.8}
+.rule-explanation>div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:16px}
+.rule-peer-note{font-size:12px;color:var(--muted);line-height:1.8;margin:18px 0 0}
+.rule-basis{padding:16px 0}.rule-basis+.rule-basis{border-top:1px solid var(--line,#eee)}
+.rule-basis-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.rule-basis-heading strong{font-size:14px}.rule-basis-heading strong span{font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}
+.rule-basis-heading p{font-size:12px;line-height:1.8;color:var(--muted);margin:6px 0 0}
+.rule-basis-actions{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}
+.rule-basis-entries{display:grid;gap:14px;margin-top:18px;padding:16px 20px;background:var(--surface-subtle,#f7f8fa);border-radius:8px}
+.rule-basis-entries>div{display:grid;grid-template-columns:140px minmax(0,1fr);gap:16px;font-size:13px;line-height:1.8}
+.rule-basis-entries strong{font-weight:500}.rule-basis-entries p{margin:0}
+.rule-warning-intro{font-size:13px;color:var(--muted);line-height:1.8;margin:0 0 16px}
+.rule-warning-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px}
+.rule-warning-footer p{margin:0}.rule-warning-footer .btn{flex-shrink:0}
+@media(max-width:850px){.rule-basis-heading,.rule-warning-footer{flex-direction:column}.rule-basis-entries>div{grid-template-columns:1fr;gap:4px}.rule-explanation>div{gap:12px}.rule-basis-entries{padding:14px}}
+
+/* Both association views read the same versioned rule bindings. */
+.policy-reference-count{margin-left:8px;color:var(--muted);font-size:12px;font-weight:400}
+.policy-association-empty{padding:18px 20px;background:var(--surface-subtle,#f7f8fa);border-radius:8px}
+.policy-association-empty>strong{font-size:14px;font-weight:500}
+.policy-association-empty>p,.policy-reference-info>p{font-size:13px;line-height:1.8;color:var(--muted);margin:6px 0}
+.policy-association-empty>.btn{margin-top:8px}
+.policy-reference-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0}
+.policy-reference-row+.policy-reference-row{border-top:1px solid var(--line,#e5e5e5)}
+.policy-reference-info{min-width:0;overflow-wrap:anywhere}
+.policy-reference-name{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px}
+.policy-reference-name strong{font-size:14px;font-weight:500}
+.policy-reference-name>span,.policy-reference-info>small{font-size:12px;color:var(--muted)}
+.policy-reference-row>.btn{flex-shrink:0}
+.policy-reference-draft{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+@media(max-width:700px){.policy-reference-row{align-items:flex-start;gap:12px}.policy-reference-count{display:block;margin:4px 0 0}}
+
+/* In-place associations: choose features once, stay on the policy page. */
+.association-selection-summary{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:14px 0 4px;font-size:12px;color:var(--muted)}
+.association-selection-summary>[role=status]{color:var(--ink);font-weight:500}
+.association-rule-groups{display:grid;gap:12px}
+.association-rule-group{min-width:0;margin:0;padding:16px;border:1px solid var(--line,#e5e5e5);border-radius:8px}
+.association-rule-group legend{padding:0 6px;font-size:14px;font-weight:600;max-width:100%;overflow-wrap:anywhere}
+.association-rule-group legend>span{margin-left:10px;font-size:12px;font-weight:400;color:var(--muted)}
+.association-feature-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px}
+.association-feature{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.association-feature>[data-slot=checkbox]{margin-top:4px;flex-shrink:0}
+.association-feature label{cursor:pointer;display:flex;flex-direction:column;gap:3px;font-size:14px;line-height:1.7;overflow-wrap:anywhere;min-width:0}
+.association-feature label>small{font-size:12px;color:var(--muted);font-weight:400}
+.association-feature.is-unavailable{color:var(--muted)}
+.association-form-footer{display:flex!important;flex-direction:column;align-items:stretch!important;gap:10px}
+.association-form-footer>div{display:flex;justify-content:flex-end;gap:10px}
+.association-form-footer>p{margin:0;font-size:13px}
+.association-publish-actions{flex-shrink:0}
+@media(max-width:700px){.association-feature-options{grid-template-columns:1fr;gap:12px}.policy-reference-row:has(.association-publish-actions){flex-direction:column;align-items:stretch}.association-publish-actions{align-self:flex-end}.association-rule-group{padding:12px}.association-selection-summary{line-height:1.8}}
+
+.action-dialog .policy-association-form .association-rule-group{margin:0;padding:12px 16px 16px;border:1px solid var(--line,#e5e5e5);border-radius:8px}
+.action-dialog .policy-association-form .association-rule-group legend{padding:0 6px;font-size:14px}
+.action-dialog .policy-association-form .association-feature label{margin:0;font-weight:400;line-height:1.7}
+.action-dialog .policy-association-form .association-feature label>span{font-weight:500}
+.action-dialog .policy-association-form .association-selection-summary{margin-bottom:12px}
+.action-dialog .policy-association-form .editor-intro{margin-bottom:12px}
+
+/* New policies select indicator, rule and feature within the creation form. */
+.new-policy-scope{margin-top:24px;padding-top:20px;border-top:1px solid var(--line,#e5e5e5)}
+.new-policy-scope>h3{font-size:16px;margin:0 0 16px}.new-policy-scope>h3>span{font-size:12px;color:var(--muted);font-weight:400;margin-left:8px}
+.policy-scope-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;gap:16px}
+.action-dialog .policy-scope-filters>label{margin:0;font-size:13px;display:grid;gap:8px}
+.policy-scope-filters .search-box{min-width:0;width:100%}
+.policy-scope-prompt{padding:14px 16px;background:var(--surface-subtle,#f7f8fa);border-radius:6px;font-size:13px;color:var(--muted);line-height:1.8;margin:0}
+.policy-scope-selected{display:grid;gap:6px;margin-bottom:16px;padding:10px 12px;background:var(--surface-subtle,#f7f8fa);border-radius:6px}
+.policy-scope-selected>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:12px;line-height:1.8}
+.policy-scope-selected>div>span{min-width:0;overflow-wrap:anywhere}.policy-scope-selected b{font-weight:500}
+.policy-scope-selected button{font-size:12px;flex-shrink:0;color:var(--accent-ink);text-decoration:underline;text-underline-offset:3px;border:0;background:none;padding:3px 4px;cursor:pointer}
+.policy-scope-selected button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.action-dialog .shared-policy-editor .association-rule-group{min-width:0;margin:0;padding:12px 16px 16px;border:1px solid var(--line,#e5e5e5);border-radius:8px}
+.action-dialog .shared-policy-editor .association-rule-group legend{padding:0 6px;font-size:14px}
+.action-dialog .shared-policy-editor .association-feature label{margin:0;font-size:14px;font-weight:400;line-height:1.7}
+.action-dialog .shared-policy-editor .association-feature label>span{font-weight:500}
+.action-dialog .shared-policy-editor .association-selection-summary{margin-bottom:12px}
+.scope-rule-warning{font-size:12px;color:var(--muted);line-height:1.7;margin:4px 0 12px}
+.scope-update-notice{font-size:13px;line-height:1.8;padding:12px;background:var(--accent-soft,#fff3e9);margin-top:14px;border-radius:6px}
+.scope-update-notice>p{margin:0 0 8px}.scope-update-notice>label{display:flex;align-items:center;gap:8px}
+.policy-config-footer{display:flex!important;flex-direction:column;align-items:stretch!important;gap:10px}
+.policy-config-footer>div{display:flex;justify-content:flex-end;gap:10px}.policy-config-footer>p{margin:0;font-size:13px}
+.pending-policy-associations{padding:14px 16px;margin-bottom:16px;background:var(--surface-subtle,#f7f8fa);border-radius:8px;font-size:13px}
+.pending-policy-associations h4{margin:0 0 12px;font-size:14px}.pending-policy-associations>div+div{margin-top:12px}
+.pending-policy-associations>div>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.pending-policy-associations p{margin:6px 0;line-height:1.8}
+.pending-policy-scope>.btn{margin-top:12px}.new-policy-publish-scope{margin:18px 0}
+@media(max-width:700px){.policy-scope-filters{grid-template-columns:1fr;gap:12px}.policy-scope-selected>div{align-items:flex-start}.action-dialog .shared-policy-editor .association-rule-group{padding:12px}}
+
+/* Indicator details and association editors share label/value alignment. */
+.rule-detail-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 28px;margin:0;font-size:13px;line-height:1.8}
+.rule-detail-fields>div{display:grid;grid-template-columns:72px minmax(0,1fr);gap:16px;align-items:baseline;min-width:0}
+.rule-detail-fields dt{color:var(--muted);font-weight:400}
+.rule-detail-fields dd{margin:0;min-width:0;overflow-wrap:anywhere;color:var(--ink)}
+.rule-detail-wide{grid-column:1/-1}
+.rule-detail-checks{margin:0;padding-left:18px;list-style:disc}
+.rule-detail-checks li+li{margin-top:6px}
+.rule-detail-checks li:only-child{list-style:none;margin-left:-18px}
+.rule-basis-heading>.rule-detail-fields{flex:1;min-width:0}
+.rule-basis-heading .rule-detail-fields strong{font-size:13px;font-weight:500}
+.strategy-redesign .indicator-resource-fields .rule-basis{padding:0}
+.strategy-redesign .indicator-resource-fields .rule-basis+.rule-basis{margin-top:20px;padding-top:20px}
+.binding-policy{min-width:0}
+.binding-policy-name{flex-wrap:wrap}
+.binding-policy-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px;margin:14px 0 0;font-size:13px;line-height:1.8}
+.binding-policy-fields>div{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:baseline;min-width:0}
+.binding-policy-fields>div:first-child,.binding-policy-fields>div:nth-child(2){grid-column:1/-1}
+.binding-policy-fields dt{color:var(--muted);font-weight:400}
+.binding-policy-fields dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.binding-mobile-label{display:none}
+.linked-policy-preview .binding-policy-fields{margin-top:8px}
+@media(min-width:851px) and (max-width:1250px){
+ .binding-policy-fields{grid-template-columns:1fr}
+ .rule-basis-heading{flex-wrap:wrap}
+ .rule-basis-heading>.rule-detail-fields{flex-basis:100%}
+}
+@media(max-width:850px){
+ .rule-basis-heading>.rule-detail-fields{width:100%}
+ .binding-mobile-label{display:block;color:var(--muted);font-size:12px;font-weight:400}
+ .strategy-redesign .binding-read-row>.btn{grid-column:1;justify-self:start}
+ .binding-policy-name{margin-top:4px}
+}
+@media(max-width:560px){
+ .rule-detail-fields,.binding-policy-fields{grid-template-columns:1fr;gap:12px}
+ .rule-detail-fields>div{grid-template-columns:64px minmax(0,1fr);gap:12px}
+}
+
+/* Configuration task: local previews and direct, validated saves. Version UI is P2. */
+.strategy-redesign .binding-read-row{grid-template-columns:164px minmax(0,1fr)}
+.binding-policy-preview .binding-policy-fields{grid-template-columns:1fr;gap:8px;margin-top:12px}
+.binding-policy-preview .binding-policy-fields>div{grid-column:auto;grid-template-columns:88px minmax(0,1fr)}
+/* Button-triggered dialogs keep the rule page and its scroll position stable. */
+.rule-section-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-left:auto;min-width:0}
+.rule-section-actions .rule-basis-actions{align-items:center;justify-content:flex-end;flex-shrink:1}
+.binding-policy-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.binding-policy-heading>strong{min-width:0;overflow-wrap:anywhere}
+.binding-policy-heading>.policy-details-button{margin:0;flex-shrink:0}
+@media(max-width:560px){.binding-policy-heading{flex-wrap:wrap;gap:8px}.binding-policy-heading>.policy-details-button{margin-left:auto}.rule-section-actions{max-width:100%}}
+.warning-dialog-form,.resource-dialog-form{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.warning-dialog-body,.resource-dialog-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:4px 28px 16px}
+.warning-dialog-body>.subtle{margin-bottom:20px;line-height:1.8}
+.warning-dialog-form .binding-editor-row{margin:0 0 20px;padding:20px;border:1px solid var(--line);border-radius:8px;min-width:0}
+.warning-dialog-form .binding-editor-row legend{font-size:14px;font-weight:500;padding:0 6px}
+.binding-select-row{display:flex;gap:16px;align-items:end}
+.binding-select-row>div{flex:1;min-width:0;display:grid;gap:8px}
+.binding-select-row label{font-size:13px;color:var(--muted)}
+.warning-dialog-form .indicator-policy-actions{margin-top:12px}
+.warning-dialog-footer{display:flex;gap:12px;justify-content:flex-end;align-items:center;flex-wrap:wrap;padding:18px 28px 24px;flex-shrink:0}
+.warning-dialog-footer>span,.warning-dialog-footer>p{margin-right:auto}
+.modal[data-slot="dialog-content"].action-dialog:has(>.warning-dialog-form),.modal[data-slot="dialog-content"].action-dialog:has(>.resource-dialog-form){width:min(880px,calc(100vw - 48px));max-width:880px}
+.resource-dialog-impact{padding:12px 16px;margin-bottom:20px;font-size:13px;background:var(--surface-subtle,#f8f8f8);border-radius:8px}
+.resource-dialog-impact p{margin:6px 0 0;line-height:1.8;color:var(--muted)}
+.resource-dialog-body>.search-box{width:100%;margin-bottom:20px}
+.resource-dialog-scope{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;font-size:13px}
+.resource-dialog-footer{padding:18px 28px 24px;background:var(--surface,#fff);flex-shrink:0}
+.resource-dialog-footer>div{display:flex;justify-content:flex-end;gap:12px;align-items:center;flex-wrap:wrap}
+.resource-dialog-footer .subtle{margin-right:auto}
+.resource-dialog-footer>p{margin:0 0 12px}
+.resource-dialog-body .structured-record{min-width:0}
+.resource-dialog-body .indicator-config-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+.resource-dialog-body .indicator-config-form label{min-width:0}
+@media(max-width:760px){
+ .strategy-redesign .binding-read-row{grid-template-columns:1fr}
+ .warning-dialog-form .binding-editor-row{padding:14px}
+ .binding-select-row{flex-wrap:wrap}.binding-select-row>div{flex-basis:100%}
+ .warning-dialog-footer>span,.warning-dialog-footer>p{flex-basis:100%;margin:0}
+ .modal[data-slot="dialog-content"].action-dialog:has(>.warning-dialog-form),.modal[data-slot="dialog-content"].action-dialog:has(>.resource-dialog-form){width:calc(100vw - 24px)}
+ .warning-dialog-body,.resource-dialog-body{padding:4px 20px 8px}
+ .warning-dialog-footer,.resource-dialog-footer{padding:16px 20px 20px}
+ .resource-dialog-body .indicator-config-form{grid-template-columns:1fr}
+ .resource-dialog-footer .subtle{flex-basis:100%}
+}
+
+.warning-dialog-body .binding-config-label{margin:20px 0 8px;font-size:13px;font-weight:500;color:var(--ink)}
+
+/* Reviewed TXT layout: shared parameters before dependent rules. */
+.shared-policy-description{margin:0 0 22px;font-size:13px;line-height:1.8;color:var(--muted)}
+.strategy-redesign .shared-policy-config-read .configuration-read-groups{gap:0}
+.strategy-redesign .shared-policy-config-read .configuration-read-groups>section{display:block;padding:0;border:0}
+.strategy-redesign .shared-policy-config-read .configuration-read-groups>section+section{margin-top:24px}
+.strategy-redesign .shared-policy-config-read .configuration-read-groups h4{font-size:13px;margin:0 0 12px;font-weight:600}
+.strategy-redesign .shared-policy-config-read .indicator-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 28px}
+.shared-policy-config-read .indicator-config-grid>div{padding:0;border:0;display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;align-items:baseline;min-width:0}
+.strategy-redesign .shared-policy-config-read .indicator-config-grid dt{margin:0;font-size:13px;line-height:1.8}
+.strategy-redesign .shared-policy-config-read .indicator-config-grid dd{font-weight:400;font-size:13px;line-height:1.8;margin:0;overflow-wrap:anywhere}
+.shared-policy-parameters .parameter-effect{font-size:12px;margin:24px 0 0;color:var(--muted);line-height:1.8}
+.shared-policy-reference-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1.5fr);gap:20px;align-items:start;padding:14px 16px;border-bottom:1px solid var(--line);font-size:13px;line-height:1.8}
+.shared-policy-reference-row:last-child{border-bottom:0}
+.shared-policy-reference-row>[role=cell]{min-width:0;overflow-wrap:anywhere}
+.shared-policy-reference-head{background:var(--surface-subtle);border:0;border-radius:8px 8px 0 0;color:var(--muted);font-size:12px}
+.shared-policy-reference-row strong{font-weight:500}
+.strategy-redesign .shared-policy-card-facts{margin:2px 0 0;gap:7px}
+@media(max-width:1100px){.strategy-redesign .shared-policy-config-read .indicator-config-grid{grid-template-columns:1fr}}
+@media(max-width:600px){
+ .shared-policy-reference-head{display:none}
+ .shared-policy-reference-row{grid-template-columns:1fr;gap:6px;padding:16px 0}
+ .shared-policy-reference-row>[role=cell]{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px}
+ .shared-policy-reference-row>[role=cell]::before{content:attr(data-label);color:var(--muted);font-weight:400}
+ .shared-policy-config-read .indicator-config-grid>div{grid-template-columns:96px minmax(0,1fr)}
+}
+
+/* Secondary dialogs share reading order, compact fields and fixed actions. */
+.dialog-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px}
+.dialog-section-heading h3{font-size:15px;margin:0}.dialog-section-heading>span{font-size:12px;color:var(--muted)}
+.dialog-impact-note{font-size:13px;line-height:1.8;color:var(--muted);margin:0 0 24px}
+.resource-dialog-references{margin-top:28px}.resource-dialog-references ul{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:13px}
+.resource-dialog-settings{margin-top:24px}
+.resource-dialog-body .structured-record{border:0;padding:0;margin:24px 0 0}
+.structured-record-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
+.structured-record-heading h4{font-size:14px;margin:0}
+.resource-dialog-body .indicator-config-form{gap:20px 24px;margin:0}
+.resource-dialog-body .indicator-config-form>label{display:flex;flex-direction:column;gap:8px;margin:0;font-size:13px}
+.resource-dialog-body .resource-import-heading p{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.resource-dialog-body .structured-resource-table{max-width:100%;overflow-x:auto}
+.resource-dialog-body .structured-resource-table tr:last-child{border-bottom:0}
+.policy-parameter-groups{display:grid;gap:24px}
+.policy-parameter-groups h3{font-size:14px;margin:0 0 14px}
+.policy-parameter-groups .rule-detail-fields>div{grid-template-columns:112px minmax(0,1fr);gap:12px}
+.modal:has(.policy-parameter-groups):not(.action-dialog){width:min(880px,calc(100vw - 48px));max-width:880px}
+.shared-policy-editor .configuration-fieldset{padding:0;border:0;margin:24px 0 0}
+.shared-policy-editor .configuration-fieldset legend{margin-bottom:8px;padding:0;font-size:15px}
+.shared-policy-editor .indicator-config-form{gap:20px 24px;margin:16px 0 0}
+.shared-policy-editor .editor-intro{margin:0 0 24px}
+@media(max-width:760px){
+ .resource-dialog-body .indicator-config-form,.policy-parameter-groups .rule-detail-fields{grid-template-columns:1fr}
+ .modal:has(.policy-parameter-groups):not(.action-dialog){width:calc(100vw - 24px)}
+ .policy-parameter-groups .rule-detail-fields>div{grid-template-columns:96px minmax(0,1fr)}
+}
+.resource-dialog-body .structured-resource-table tbody tr:last-child>td{border-bottom:0}
+.action-dialog .shared-policy-editor .config-field>label,.action-dialog .shared-policy-editor .config-checkboxes label{margin:0}
+
+/* Shared policy forms: one reading order and a flat association list. */
+.modal[data-slot=dialog-content]:has(.policy-association-form){width:min(800px,calc(100vw - 48px));max-width:800px}
+.action-dialog .shared-policy-editor .action-form-body,.action-dialog .policy-association-form .action-form-body{padding-bottom:20px}
+.action-dialog .shared-policy-editor .policy-name-field{margin:4px 0 24px;display:block}
+.action-dialog .shared-policy-editor .configuration-fieldset{margin:0 0 28px;padding:0;border:0}
+.action-dialog .shared-policy-editor .configuration-fieldset legend{margin:0 0 12px}
+.action-dialog .shared-policy-editor .configuration-fieldset>p{margin:0 0 12px;line-height:1.7}
+.action-dialog .shared-policy-editor .indicator-config-form{margin:0;gap:18px 24px}
+.policy-fixed-value{display:flex;align-items:center;min-height:40px;font-size:14px;color:var(--ink)}
+.action-dialog .new-policy-scope{border:0;padding:0;margin:8px 0 0}
+.action-dialog .policy-save-impact{font-size:12px;line-height:1.7;color:var(--muted);margin:0}
+.policy-view-context{font-size:13px;color:var(--muted);line-height:1.8;margin:0 0 24px}
+.action-dialog .association-selection-summary{margin:16px 0 0;padding:10px 12px;background:var(--surface-subtle);border-radius:6px;align-items:center}
+.action-dialog .association-selected-filter{display:flex;align-items:center;gap:8px;margin:0;font-size:12px;font-weight:400;cursor:pointer}
+.action-dialog .association-rule-groups{gap:0}
+.association-rule-choice{display:grid;grid-template-columns:minmax(140px,.8fr) minmax(0,1.5fr);gap:24px;padding:18px 0;min-width:0}
+.association-rule-choice+.association-rule-choice{border-top:1px solid var(--line)}
+.association-rule-title{min-width:0;overflow-wrap:anywhere}
+.association-rule-title h4{font-size:14px;font-weight:600;margin:0 0 4px;line-height:1.7}
+.association-rule-title>span{font-size:12px;color:var(--muted)}
+.action-dialog .association-rule-choice .association-feature-options{gap:12px 16px;align-content:start}
+.action-dialog .association-rule-choice .association-feature label{margin:0;font-weight:400;font-size:13px}
+@media(max-width:760px){
+ .modal[data-slot=dialog-content]:has(.policy-association-form){width:calc(100vw - 24px)}
+ .association-rule-choice{grid-template-columns:1fr;gap:12px;padding:18px 0}
+ .action-dialog .association-rule-choice .association-feature-options{grid-template-columns:1fr}
+ .action-dialog .association-selection-summary{align-items:flex-start}
+}
+.policy-field-guide dl{margin:0}
+.policy-field-guide dl>div{display:grid;grid-template-columns:140px minmax(0,1fr);gap:24px;padding:16px 0}
+.policy-field-guide dl>div+div{border-top:1px solid var(--line)}
+.policy-field-guide dt{font-size:14px;font-weight:500}
+.policy-field-guide dd{margin:0;min-width:0;font-size:14px;line-height:1.8}
+.policy-field-guide dd p{margin:0 0 4px}.policy-field-guide small{color:var(--muted);font-size:12px}
+.policy-field-guide section{margin-top:24px}.policy-field-guide h3{font-size:15px}.policy-field-guide section p{font-size:13px;line-height:1.8;color:var(--muted)}
+@media(max-width:760px){.policy-field-guide dl>div{grid-template-columns:1fr;gap:8px}}

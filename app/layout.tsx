@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./workspace-system.css";
+import "./shadcn.css";
+import "./review-workspace2.css";
+import "./strategy-design.css";
+import "./catalog-report-design.css";
 export const metadata: Metadata = {
   description: "三核心角色、七个业务模块的银行呼入客服质检高保真原型",
 };

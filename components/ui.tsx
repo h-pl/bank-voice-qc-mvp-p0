@@ -1,14 +1,19 @@
 "use client";
-import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
+import { Button as ShadcnButton } from "./ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Badge as ShadcnBadge } from "./ui/badge";
+import { Tabs as TabsRoot, TabsList, TabsTrigger } from "./ui/tabs";
 import { Icon, type IconName } from "./icon";
 export function PageHeader({title, description, children}: {title:ReactNode; description:string; children?:ReactNode}) {
   return <header className="catalog-heading page-section-header"><div><h2>{title}</h2><p>{description}</p></div>{children}</header>;
 }
 export function MetricSummary({items, selected, onSelect, label}: {items:{key:string;label:string;value:ReactNode;hint:string}[];selected:string;onSelect:(key:string)=>void;label:string}) {
-  return <div className="metric-summary" role="group" aria-label={label} style={{gridTemplateColumns:`repeat(${items.length}, minmax(0, 1fr))`}}>{items.map(item=><button type="button" key={item.key} aria-pressed={selected===item.key} onClick={()=>onSelect(item.key)}><span>{item.label}</span><strong>{item.value}</strong><small>{item.hint}</small></button>)}</div>;
+  return <div className="metric-summary" role="group" aria-label={label} style={{gridTemplateColumns:`repeat(${items.length}, minmax(0, 1fr))`}}>{items.map(item=><ShadcnButton variant="ghost" className="metric-button" type="button" key={item.key} aria-pressed={selected===item.key} onClick={()=>onSelect(item.key)}><span>{item.label}</span><strong>{item.value}</strong><small>{item.hint}</small></ShadcnButton>)}</div>;
 }
 export function DetailNavigation({label, onBack, children}: {label:string; onBack:()=>void; children?:ReactNode}) {
-  return <nav className="detail-backbar" aria-label="详情导航"><button type="button" className="detail-back-link" onClick={onBack}><Icon name="arrow" size={16}/><span>{label}</span></button>{children && <div className="detail-back-actions">{children}</div>}</nav>;
+  return <nav className="detail-backbar" aria-label="详情导航"><ShadcnButton variant="ghost" type="button" className="detail-back-link" onClick={onBack}><Icon name="arrow" size={16}/><span>{label}</span></ShadcnButton>{children && <div className="detail-back-actions">{children}</div>}</nav>;
 }
 export function Button({
   children,
@@ -30,7 +35,8 @@ export function Button({
   busy?: boolean;
 }) {
   return (
-    <button
+    <ShadcnButton
+      variant={intent === "danger" ? "destructive" : primary ? "default" : "outline"}
       type={type}
       className={`btn ${primary ? "primary" : ""} ${intent === "danger" ? "danger" : ""}`}
       onClick={onClick}
@@ -40,7 +46,7 @@ export function Button({
       {busy && <span className="button-spinner" aria-hidden="true" />}
       {icon && !busy && <Icon name={icon} size={15} />}
       <span>{children}</span>
-    </button>
+    </ShadcnButton>
   );
 }
 export function Badge({
@@ -51,10 +57,10 @@ export function Badge({
   tone?: string;
 }) {
   return (
-    <span className={`badge ${tone}`}>
+    <ShadcnBadge variant="secondary" className={`badge ${tone}`}>
       <i />
       {children}
-    </span>
+    </ShadcnBadge>
   );
 }
 export function Empty({
@@ -90,27 +96,19 @@ export function Modal({
   description?: string;
   footer?: ReactNode;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const close = useEffectEvent(onClose);
-  useEffect(() => {
-    const dialog = ref.current!;
-    const prior = document.activeElement as HTMLElement | null;
-    dialog.showModal();
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const cancel = (event: Event) => { event.preventDefault(); close(); };
-    dialog.addEventListener("cancel", cancel);
-    return () => {
-      dialog.removeEventListener("cancel", cancel);
-      dialog.close();
-      document.body.style.overflow = overflow;
-      prior?.focus();
-    };
-  }, []);
-  return <dialog ref={ref} className={`modal ${variant}-dialog`} aria-label={title}>
-    <header><div><h2>{title}</h2>{description && <p className="modal-description">{description}</p>}</div><button type="button" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></button></header>
-    {variant === "action" ? children : <><div className="modal-body">{children}</div>{variant !== "navigation" && <div className="modal-actions">{footer ?? <Button onClick={onClose}>关闭</Button>}</div>}</>}
-  </dialog>;
+  const descriptionId = useId();
+  const prior = useRef<HTMLElement | null>(null);
+  useEffect(() => { prior.current = document.activeElement as HTMLElement | null; }, []);
+  return <Dialog open onOpenChange={open=>{if(!open)onClose();}}>
+    <DialogContent showCloseButton={false} className={`modal ${variant}-dialog`} aria-describedby={description ? descriptionId : undefined} onCloseAutoFocus={event=>{event.preventDefault();prior.current?.focus();}} onPointerDownOutside={event=>event.preventDefault()} onEscapeKeyDown={event=>{
+      // Base UI popups handle Escape after Radix's capture listener. Keep the parent open.
+      const target=event.target;
+      if(target instanceof Element && target.closest('[role="dialog"]')?.querySelector('[data-slot="combobox-chip-input"][aria-expanded="true"]')) event.preventDefault();
+    }}>
+      <header><div><DialogTitle>{title}</DialogTitle>{description && <DialogDescription id={descriptionId} className="modal-description">{description}</DialogDescription>}</div><ShadcnButton type="button" variant="ghost" size="icon" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></ShadcnButton></header>
+      {variant === "action" ? children : <><div className="modal-body">{children}</div>{variant !== "navigation" && <div className="modal-actions">{footer ?? <Button onClick={onClose}>关闭</Button>}</div>}</>}
+    </DialogContent>
+  </Dialog>;
 }
 
 
@@ -127,12 +125,12 @@ export function SearchField({ value, onValueChange, label, placeholder, name }: 
   };
   return <div className="search-box">
     <Icon name="search" size={17}/>
-    <input ref={input} type="search" name={name} aria-label={label} autoComplete="off" placeholder={placeholder} defaultValue={value}
+    <Input ref={input} type="search" name={name} aria-label={label} autoComplete="off" placeholder={placeholder} defaultValue={value}
       onCompositionStart={() => { composing.current = true; }}
       onCompositionEnd={e => { composing.current = false; commit(e.currentTarget.value); }}
       onChange={e => { if (!composing.current) commit(e.currentTarget.value); }}
       onKeyDown={e => { if (e.key === "Escape" && !e.nativeEvent.isComposing && !composing.current) { e.preventDefault(); commit(""); } }}/>
-    <button className="search-clear" type="button" aria-label={`清除${label}`} title={`清除${label}`} disabled={!value} style={{visibility:value ? "visible" : "hidden"}} onClick={() => { composing.current = false; commit(""); input.current?.focus(); }}><Icon name="close" size={15}/></button>
+    <ShadcnButton variant="ghost" size="icon-sm" className="search-clear" type="button" aria-label={`清除${label}`} title={`清除${label}`} disabled={!value} style={{visibility:value ? "visible" : "hidden"}} onClick={() => { composing.current = false; commit(""); input.current?.focus(); }}><Icon name="close" size={15}/></ShadcnButton>
   </div>;
 }
 
@@ -140,18 +138,15 @@ export function Tabs<T extends string>({ value, options, onChange, label, panelI
   value: T; options: ReadonlyArray<{value:T; label:ReactNode; count?:number}>;
   onChange:(value:T) => void; label:string; panelId:string; className?:string;
 }) {
-  return <div className={`ui-tabs ${className}`} role="tablist" aria-label={label}>
-    {options.map((option, index) => <button type="button" role="tab" key={option.value}
-      id={`${panelId}-tab-${option.value}`} aria-controls={panelId} aria-selected={value === option.value}
-      tabIndex={value === option.value ? 0 : -1} className={value === option.value ? "active" : ""}
-      onClick={() => onChange(option.value)} onKeyDown={e => {
-        if (e.nativeEvent.isComposing || !["ArrowLeft","ArrowRight","Home","End"].includes(e.key)) return;
-        e.preventDefault();
-        const next = e.key === "Home" ? 0 : e.key === "End" ? options.length - 1 : (index + (e.key === "ArrowRight" ? 1 : -1) + options.length) % options.length;
-        onChange(options[next].value);
-        (e.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus();
-      }}>{option.label}{option.count !== undefined && <span>{option.count}</span>}</button>)}
-  </div>;
+  return <TabsRoot value={value} onValueChange={next=>onChange(next as T)} className="tabs-root">
+    <TabsList variant="line" className={`ui-tabs ${className}`} aria-label={label}>
+      {options.map(option=><TabsTrigger key={option.value} value={option.value}
+        id={`${panelId}-tab-${option.value}`} aria-controls={panelId}
+        className={value === option.value ? "active" : ""}>
+        {option.label}{option.count !== undefined && <span>{option.count}</span>}
+      </TabsTrigger>)}
+    </TabsList>
+  </TabsRoot>;
 }
 
 export function InlineFormSurface({title, children, onClose}: {title:string;children:ReactNode;onClose:()=>void}) {

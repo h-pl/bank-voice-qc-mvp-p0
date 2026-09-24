@@ -1,41 +1,64 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { indicatorName, indicatorRuleCategories, resourceSchemas } from "../lib/strategy-schema";
+import { resourceRows } from "../lib/resource-import";
+import { Button as ShadcnButton } from "./ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./ui/table";
+import { SelectField } from "./select-field";
+import { useRef, useState } from "react";
 import { actions, roleOf, type State, type Command } from "../lib/workflow";
-import { pendingResourceRules } from "../lib/resource-publication";
-import { PageHeader, Badge, Button, Empty, Modal, SearchField, Tabs } from "./ui";
-import { ResourceContent } from "./policy-content";
-import { Strategy } from "./strategy";
+import { readSopRules } from "../lib/sop-rules";
+import { resourceDeletionBlockers } from "../lib/resource-publication";
+import { Badge, Button, Empty, Modal, SearchField, Tabs } from "./ui";
+import { ResourceDialog } from "./rule-resource-dialog";
 import { ActionForm } from "./action-form";
 import { Pagination, stamp } from "./workspace";
 import { Icon } from "./icon";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+
+function ResourceFieldInfo({name, fields}: {name:string; fields:string[]}) {
+  const [open, setOpen] = useState(false);
+  return <TooltipProvider><Tooltip open={open} onOpenChange={setOpen}><TooltipTrigger asChild><ShadcnButton type="button" variant="ghost" size="icon-xs" className="resource-field-info" aria-label={`${name}字段说明`} onClick={()=>setOpen(true)}><Icon name="info" size={15}/></ShadcnButton></TooltipTrigger><TooltipContent side="top" align="start" sideOffset={6} className="resource-fields-tooltip"><b>包含字段</b><p>{fields.join("、")}</p></TooltipContent></Tooltip></TooltipProvider>;
+}
 
 export function ResourceCatalog({state,focus,onOpen,onAction,onSubmit}: {state:State;focus?:string;onOpen:(id:string)=>void;onAction:(id:string,action:string)=>void;onSubmit:(cmd:Command)=>void}) {
+  const [source,setSource]=useState("current");
   const [category,setCategory]=useState("全部"),[search,setSearch]=useState(""),[status,setStatus]=useState("");
-  const [page,setPage]=useState(1),[size,setSize]=useState(10),[preview,setPreview]=useState<string>();
+  const [page,setPage]=useState(1),[size,setSize]=useState(10),[deleting,setDeleting]=useState<{id:string;rev:number}>();
+  const [deleteError,setDeleteError]=useState("");
   const [editing,setEditing]=useState<{id:string;action:string}>();
-  const table=useRef<HTMLDivElement>(null), lastOpened=useRef<string | undefined>(undefined), previousFocus=useRef(focus);
-  useEffect(()=>{if(previousFocus.current && !focus) table.current?.querySelector<HTMLButtonElement>(`[data-resource="${lastOpened.current}"]`)?.focus({preventScroll:true});previousFocus.current=focus;},[focus]);
+  const table=useRef<HTMLDivElement>(null),trigger=useRef<HTMLElement | null>(null);
+  const selectedResource=state.resources.find(item=>item.id===(editing?.action==="save_resource"?editing.id:focus));
+  const closeResource=()=>{setEditing(undefined);if(focus)onOpen("");requestAnimationFrame(()=>trigger.current?.focus({preventScroll:true}));};
   const manager=roleOf(state)==="supervisor";
-  const rows=state.resources.filter(x=>(category==="全部" || x.type===category) && `${x.name} ${x.id} ${x.versions.at(-1)?.scope ?? ""}`.toLowerCase().includes(search.toLowerCase()) && (!status || (status==="draft" ? !!x.draft : status==="pending" ? pendingResourceRules(state,x).length>0 : !!x.versions.length)));
+  const available=state.resources.filter(x=>!x.deletedAt && (source==="current"?!!x.kind:!x.kind)).sort((a,b)=>indicatorRuleCategories.findIndex(([id])=>id===resourceSchemas[a.kind ?? ""]?.indicator)-indicatorRuleCategories.findIndex(([id])=>id===resourceSchemas[b.kind ?? ""]?.indicator));
+  const rows=available.filter(x=>(category==="全部" || (x.kind?resourceSchemas[x.kind].name:x.type)===category) && `${x.name} ${x.id} ${x.versions.at(-1)?.scope ?? ""}`.toLowerCase().includes(search.toLowerCase()) && (!status || (status==="draft" ? !!x.draft : !!x.versions.length)));
   const currentPage=Math.min(page,Math.max(1,Math.ceil(rows.length/size)));
   const shown=rows.slice((currentPage-1)*size,currentPage*size);
-  const resource=state.resources.find(x=>x.id===preview);
-  const snapshot=resource?.versions.at(-1) ?? resource?.draft;
-  const open=(id:string)=>{if(id)lastOpened.current=id;setPreview(undefined);onOpen(id);};
-  const act=(id:string,action:string)=>{if(["save_resource","create_resource"].includes(action))setEditing({id,action});else onAction(id,action);};
+  const resource=state.resources.find(x=>x.id===deleting?.id);
+  const blockers=resource ? resourceDeletionBlockers(state,resource.id) : [];
+  const remove=()=>{if(!deleting)return;try{onSubmit({id:deleting.id,rev:deleting.rev,action:"delete_resource",requestId:crypto.randomUUID(),input:{note:"从业务资源列表删除资源"}});setDeleting(undefined);}catch(error){setDeleteError(error instanceof Error ? error.message : "删除失败，请重试");}};
+  const open=(id:string)=>{if(id)trigger.current=document.activeElement as HTMLElement;onOpen(id);};
+  const act=(id:string,action:string)=>{if(["save_resource","create_resource"].includes(action)){trigger.current=document.activeElement as HTMLElement;setEditing({id,action});}else onAction(id,action);};
   const reset=()=>{setSearch("");setCategory("全部");setStatus("");setPage(1);};
   return <>
-    <div hidden={!!focus} className="resource-catalog panel">
-      <PageHeader title={<>业务资源库 <span>{state.resources.length}</span></>} description="维护业务依据，查看哪些规则正在使用它。">{manager && state.resources[0] && <Button primary icon="plus" onClick={()=>act(state.resources[0].id,"create_resource")}>新增资源</Button>}</PageHeader>
-      <Tabs label="资源分类" panelId="resource-results" value={category} options={["全部","业务知识","词库","SOP"].map(value=>({value,label:value,count:state.resources.filter(x=>value==="全部" || x.type===value).length}))} onChange={value=>{setCategory(value);setPage(1);}}/>
-      <div role="tabpanel" id="resource-results" aria-labelledby={`resource-results-tab-${category}`}>
-        <div className="catalog-toolbar"><SearchField name="resource-search" label="搜索资源" placeholder="搜索名称、编号或适用业务…" value={search} onValueChange={value=>{setSearch(value);setPage(1);}}/><label>状态<select aria-label="资源状态" value={status} onChange={e=>{setStatus(e.target.value);setPage(1);}}><option value="">全部状态</option><option value="draft">有待发布草稿</option><option value="pending">待切换引用</option><option value="published">已有发布版本</option></select></label><span role="status">共 {rows.length} 项</span>{(search || status || category!=="全部") && <Button onClick={reset}>重置筛选</Button>}</div>
-        <div className="resource-table-scroll" ref={table}><table className="resource-table"><thead><tr><th>资源名称 / 内容</th><th>类型</th><th>适用业务</th><th>发布版本</th><th>规则引用</th><th>更新时间</th><th>操作</th></tr></thead><tbody>{shown.map(x=>{const v=x.versions.at(-1),ref=state.rules.filter(rule=>x.id in rule.versions.at(-1)!.resources),pending=pendingResourceRules(state,x);return <tr key={x.id}><td><button className="resource-name" data-resource={x.id} onClick={()=>{lastOpened.current=x.id;setPreview(x.id);}}><span className="resource-type-icon"><Icon name={x.type==="SOP" ? "sliders" : x.type==="词库" ? "database" : "file"}/></span><span><b>{x.name}</b><small>{x.id} · {(v ?? x.draft)?.content.split("\n").filter(Boolean).length ?? 0} {x.type==="SOP" ? "个步骤" : "条内容"}</small></span></button></td><td>{x.type}</td><td>{v?.scope ?? x.draft?.scope}</td><td><b>{v ? `V${v.version}` : "尚未发布"}</b><small>{x.draft ? <Badge tone="warning">{x.checked ? "草稿待发布" : "草稿待检查"}</Badge> : <Badge tone="success">已发布</Badge>}</small></td><td><span>{ref.length} 条规则</span>{pending.length>0 && <small className="resource-pending">{pending.length} 条待切换</small>}</td><td className="resource-date">{stamp(v?.at)}</td><td><button className="text-button" onClick={()=>open(x.id)}>查看详情</button></td></tr>;})}</tbody></table>{!rows.length && <Empty text="没有符合条件的资源" hint="调整关键词、分类或发布状态。" action={<Button onClick={reset}>重置筛选</Button>}/>}</div>
+    <div className="resource-workspace">
+      <div className="resource-workspace-tabs"><Tabs label="资源分类" panelId="resource-results" value={source} onChange={value=>{setSource(value);reset();}} options={[{value:"current",label:"指标业务资源",count:state.resources.filter(x=>!x.deletedAt && !!x.kind).length},{value:"legacy",label:"历史资源",count:state.resources.filter(x=>!x.deletedAt && !x.kind).length}]}/></div>
+      <div className="catalog-toolbar resource-workspace-filters">
+        <SearchField name="resource-search" label="搜索资源" placeholder="搜索名称、编号或适用业务…" value={search} onValueChange={value=>{setSearch(value);setPage(1);}}/>
+        <SelectField aria-label="业务资源类型" value={category} onValueChange={value=>{setCategory(value);setPage(1);}}>{["全部",...new Set(available.map(r=>r.kind?resourceSchemas[r.kind].name:r.type))].map(value=><option key={value} value={value}>{value==="全部" ? "全部资源类型" : value}</option>)}</SelectField>
+        <SelectField aria-label="资源状态" value={status} onValueChange={value => {setStatus(value);setPage(1);}}><option value="">全部状态</option><option value="draft">有未完成修改</option><option value="published">已配置</option></SelectField>
+        {(search || status || category!=="全部") && <Button onClick={reset}>重置筛选</Button>}<span role="status">共 {rows.length} 项</span>{manager && state.resources[0] && <Button primary icon="plus" onClick={()=>act(state.resources[0].id,"create_resource")}>新增资源</Button>}
+      </div>
+      <div className="resource-catalog panel" id="resource-results" role="tabpanel" aria-labelledby={`resource-results-tab-${source}`}>
+        <div className="resource-table-scroll" ref={table}><Table className="resource-table"><TableHeader><TableRow><TableHead>业务资源</TableHead><TableHead>对应指标</TableHead><TableHead>维护方式</TableHead><TableHead>配置状态</TableHead><TableHead>规则引用</TableHead><TableHead>更新时间</TableHead><TableHead className="resource-actions-heading">操作</TableHead></TableRow></TableHeader><TableBody>{shown.map(x=>{const v=x.versions.at(-1),ref=state.rules.filter(rule=>x.id in (rule.versions.at(-1)?.resources ?? {}));return <TableRow key={x.id}><TableCell><div className="resource-name"><span className="resource-type-icon"><Icon name={x.type==="SOP" ? "sliders" : x.type==="词库" ? "database" : "file"}/></span><div className="resource-name-details"><div className="resource-title-line"><ShadcnButton variant="ghost" className="resource-open" data-resource={x.id} aria-label={`查看资源 ${x.name}`} onClick={()=>open(x.id)}><b>{x.name}</b></ShadcnButton>{x.kind && <ResourceFieldInfo name={x.name} fields={resourceSchemas[x.kind].fields}/>}</div><small>{x.id} · {x.kind ? resourceRows(x.kind,(v ?? x.draft)?.content ?? "").length : x.type === "SOP" ? readSopRules((v ?? x.draft)?.content ?? "",x.name).length : (v ?? x.draft)?.content.split("\n").filter(Boolean).length ?? 0} {x.kind ? "条记录" : x.type==="SOP" ? "条 SOP 规则" : "条内容"}</small></div></div></TableCell><TableCell>{x.kind?indicatorName(resourceSchemas[x.kind].indicator):"历史资源"}</TableCell><TableCell>{x.kind?(resourceSchemas[x.kind].csv?"CSV / 表单":"表单"):x.type}</TableCell><TableCell>{x.draft?<Badge tone="warning">有未完成修改</Badge>:<Badge tone={v?"success":"warning"}>{v?"已配置":"待完善"}</Badge>}</TableCell><TableCell><span>{ref.length} 条规则</span></TableCell><TableCell className="resource-date">{stamp(v?.at)}</TableCell><TableCell><div className="resource-row-actions"><ShadcnButton variant="link" size="sm" onClick={()=>open(x.id)}>查看</ShadcnButton>{actions(state,x.id).includes("save_resource") && <ShadcnButton variant="link" size="sm" onClick={()=>act(x.id,"save_resource")}>编辑</ShadcnButton>}{actions(state,x.id).includes("delete_resource") && <ShadcnButton variant="link" size="sm" className="resource-delete-action" onClick={()=>{setDeleteError("");setDeleting({id:x.id,rev:x.rev});}}>删除</ShadcnButton>}</div></TableCell></TableRow>;})}</TableBody></Table>{!rows.length && <Empty text="没有符合条件的资源" hint="调整关键词、分类或配置状态。" action={<Button onClick={reset}>重置筛选</Button>}/>}</div>
         <Pagination page={currentPage} total={rows.length} size={size} onPage={setPage} onSize={value=>{setSize(value);setPage(1);}}/>
       </div>
     </div>
-    {focus && <Strategy detailOnly state={state} view="resources" focus={focus} onOpen={open} onAction={act} onSubmit={onSubmit}/>}
-    {editing && <ActionForm key={`${editing.id}-${editing.action}`} state={state} id={editing.id} action={editing.action} onSubmit={onSubmit} onClose={()=>setEditing(undefined)}/>}
-    {resource && snapshot && <Modal variant="resource" title={resource.name} description={`${resource.id} · ${resource.type}`} onClose={()=>setPreview(undefined)} footer={<><Button onClick={()=>setPreview(undefined)}>关闭预览</Button><Button primary onClick={()=>open(resource.id)}>{actions(state,resource.id).includes("save_resource") ? "查看详情与维护" : "查看完整详情"}</Button></>}><div className="resource-preview-body"><div className="resource-preview-meta"><Badge tone={resource.versions.length ? "success" : "warning"}>{resource.versions.length ? `已发布 V${resource.versions.at(-1)!.version}` : "未发布草稿"}</Badge><span>{snapshot.scope}</span><span>{snapshot.role}</span></div><ResourceContent resource={resource} snapshot={{...snapshot,version:resource.versions.at(-1)?.version ?? 0,at:resource.versions.at(-1)?.at ?? ""}}/><section><h3>当前规则引用</h3>{state.rules.filter(rule=>resource.id in rule.versions.at(-1)!.resources).map(rule=><div className="preview-reference" key={rule.id}><span>{rule.name}</span><b>V{rule.versions.at(-1)!.resources[resource.id]}</b></div>)}{!state.rules.some(rule=>resource.id in rule.versions.at(-1)!.resources) && <p>尚未被规则引用。</p>}</section>{resource.draft && <p className="callout">有未发布草稿，可进入详情核对内容差异。</p>}</div></Modal>}
+    {selectedResource && <ResourceDialog key={selectedResource.id} state={state} resource={selectedResource} initialEdit={editing?.action==="save_resource"} onSubmit={onSubmit} onClose={closeResource}/>}
+    {editing?.action==="create_resource" && <ActionForm key={`${editing.id}-${editing.action}`} state={state} id={editing.id} action={editing.action} onSubmit={onSubmit} onClose={()=>setEditing(undefined)}/>}
+    {resource && deleting && <Modal title={blockers.length ? "暂时无法删除" : "删除资源"} description={`${resource.id} · ${resource.name}`} onClose={()=>setDeleting(undefined)} footer={<><Button onClick={()=>setDeleting(undefined)}>{blockers.length ? "关闭" : "取消"}</Button>{!blockers.length && <Button intent="danger" onClick={remove}>确认删除</Button>}</>}>
+      {blockers.length ? <><p>该资源仍被以下指标使用，当前不可删除。可编辑并保存资源内容。</p><ul className="resource-delete-references">{blockers.map(rule=><li key={rule.id}>{rule.name} · {rule.id}</li>)}</ul></> : <p>确认删除“{resource.name}”？删除后将从资源列表移除，已有检测结果和处理记录保留。</p>}
+      {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
+    </Modal>}
   </>;
 }

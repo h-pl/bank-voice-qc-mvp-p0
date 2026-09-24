@@ -1,0 +1,7 @@
+{
+  "comments": {
+    "c1": {
+      "data": "<comment comment-id=\"7688196500140116968\" block-id=\"doxcnzmFatpQwE0gSKwjZux6bzh\"><quote>规则目录展示 10 条规则，完整 16 项指标通过指标说明 info 入口解释分工。</quote><msg user=\"石建文\">声纹识别\n语音识别\n文本纠错\n关键词检出\n情绪识别\n意图识别\n覆盖率\n时效性\n数据展示\n风险上报与干预\n服务礼仪\n语言表达\n专业性\n隐私性\n禁用词\n消极情感\n\n\nqwen3 asr，MOSS-Audio-4B，VAD，emotion2vec，Qwen3-4B<img src=\"Qobbbon0vozU3LxbKNQc3BeSnJe\"/><img src=\"Oy0qbuEO6oU75PxZsiLcwv3snde\"/><img src=\"PNYsbGG2qohkHyxmqOScDMr8ndc\"/></msg></comment>"
+    }
+  }
+}

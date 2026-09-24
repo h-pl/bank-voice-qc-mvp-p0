@@ -1,0 +1,130 @@
+[
+  {
+    "name": "workorders",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=workorders",
+    "capturedAt": "2026-09-20T14:38:01.419Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "alerts",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=alerts",
+    "capturedAt": "2026-09-20T14:38:02.690Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "improvement",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=improvement",
+    "capturedAt": "2026-09-20T14:38:03.750Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "calls",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=calls",
+    "capturedAt": "2026-09-20T14:38:04.702Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "rules",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=rules",
+    "capturedAt": "2026-09-20T14:38:05.584Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "resources",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=resources",
+    "capturedAt": "2026-09-20T14:38:06.464Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "resource-detail",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=resources&id=RES-WORD",
+    "capturedAt": "2026-09-20T14:38:07.498Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "report-overview",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=reports&module=overview",
+    "capturedAt": "2026-09-20T14:38:08.414Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "report-issues",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=reports&module=issues",
+    "capturedAt": "2026-09-20T14:38:09.695Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "report-teams",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=reports&module=teams",
+    "capturedAt": "2026-09-20T14:38:11.098Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "report-improvement",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=reports&module=improvement",
+    "capturedAt": "2026-09-20T14:38:12.003Z",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "name": "rule-modal",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=rules&id=R-INT-001",
+    "state": "规则参数编辑弹窗",
+    "capturedAt": "2026-09-20T14:40:00.577Z"
+  },
+  {
+    "name": "resource-modal",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=resources&id=RES-WORD",
+    "state": "词库资源编辑弹窗",
+    "capturedAt": "2026-09-20T14:40:01.745Z"
+  },
+  {
+    "name": "conclusion-modal",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=workorders",
+    "state": "主管确认结论弹窗",
+    "capturedAt": "2026-09-20T14:40:04.256Z"
+  },
+  {
+    "name": "evidence-modal",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=workorders",
+    "state": "原音转写与证据查看弹窗",
+    "capturedAt": "2026-09-20T14:40:04.565Z"
+  },
+  {
+    "name": "call-detail",
+    "url": "https://bank-voice-qc-6001.vercel.app/?view=calls&id=CALL-1040",
+    "capturedAt": "2026-09-20T14:40:05.706Z"
+  }
+]

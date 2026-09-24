@@ -1,3 +1,4 @@
+import {legacyIssued} from './helpers/legacy-issuance.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createInitial} from '../lib/fixtures.ts';
@@ -6,7 +7,7 @@ const now=new Date('2026-09-13T10:00:00+08:00'),due='2026-09-17T12:00:00+08:00';
 let seq=0;
 const as=(s,identity)=>({...s,identity});
 const run=(s,id,action,input={})=>apply(s,{id,action,rev:entity(s,id).rev,requestId:`life-${++seq}`,input:{note:'核对本轮材料及完整事实依据',owner:'Q01',dueAt:due,evidence:[2],...input}},now);
-function verification(count=2){let s=run(createInitial(now),'WO-1039','publish',{remedy:true,goal:'改善服务说明',standard:'完整说明业务条件',sampleCount:count,observation:'后续同业务复测'}),id=s.remedies.at(-1).id;s=run(as(s,'A1048'),id,'accept_remedy');s=run(s,id,'sample_calls');s=run(s,id,'material',{samples:[s.calls.at(-1).id]});return [as(s,'Q01'),id];}
+function verification(count=2){let s=legacyIssued(now,due,count),id=s.remedies.at(-1).id;s=run(as(s,'A1048'),id,'accept_remedy');s=run(s,id,'sample_calls');s=run(s,id,'material',{samples:[s.calls.at(-1).id]});return [as(s,'Q01'),id];}
 for(const outcome of ['false_positive','insufficient']) for(const stage of ['pending','submitted']) test(`N01: ${outcome} cancels ${stage} remedy supplements and rejects stale replies`,()=>{
   let[s,id]=verification();s=run(s,id,'verify',{value:'insufficient'});const sp=s.supplements.at(-1).id;
   if(stage==='submitted')s=run(as(s,'A1048'),sp,'reply',{attachment:'补充材料'});
@@ -30,9 +31,9 @@ test('N01: stored legacy terminal parents repair dangling children idempotently'
 });
 test('N02: supplement handoff has exactly one active task, then restores the assigned review',()=>{
  let s=run(createInitial(now),'AP-1033','accept_assign',{owner:'Q02'});const rid=entity(s,'AP-1033').reviewId;
- s=run(as(s,'Q02'),rid,'request_evidence');s=run(as(s,'S01'),rid,'supplement',{owner:'A1048'});const sp=s.supplements.at(-1).id;
+ s=run(as(s,'Q02'),rid,'supplement',{owner:'A1048'});const sp=s.supplements.at(-1).id;
  assert.ok(!isTodo(s,entity(s,rid)));assert.ok(!isTodo(s,entity(s,'AP-1033')));assert.ok(isTodo(as(s,'A1048'),entity(s,'AP-1033')));
- s=run(as(s,'A1048'),sp,'reply');s=as(s,'S01');assert.ok(isTodo(s,entity(s,'AP-1033')));assert.ok(!isTodo(s,entity(s,rid)));assert.deepEqual(actions(s,sp),['receive_supplement']);
+ s=run(as(s,'A1048'),sp,'reply');s=as(s,'Q02');assert.ok(isTodo(s,entity(s,'AP-1033')));assert.ok(!isTodo(s,entity(s,rid)));assert.deepEqual(actions(s,sp),['receive_supplement']);
  s=run(s,sp,'receive_supplement');assert.ok(isTodo(as(s,'Q02'),entity(s,rid)));assert.ok(!isTodo(s,entity(s,'AP-1033')));assert.equal(entity(s,rid).owner,'Q02');
 });
 test('N03: live reminders share the agent queue and notice source while read and feedback stay independent',()=>{
@@ -43,7 +44,7 @@ test('N03: live reminders share the agent queue and notice source while read and
 test('N04: saved acceptance restores result, reason and basis after serialization; submission archives it',()=>{
  let[s,id]=verification(1);s=run(s,id,'save_acceptance',{value:'fail',note:'第一段说明尚未符合验收标准'});s=JSON.parse(JSON.stringify(s));
  const r=entity(s,id);assert.equal(r.acceptanceDraft.result,'fail');assert.equal(r.acceptanceDraft.note,'第一段说明尚未符合验收标准');assert.equal(r.acceptanceDraft.round,1);assert.ok(acceptanceDraftMatches(r,'Q01'));assert.equal(r.status,'verification');
- s=run(s,id,'verify',{value:r.acceptanceDraft.result,note:r.acceptanceDraft.note});assert.equal(entity(s,id).acceptanceDraft,undefined);assert.equal(entity(s,id).acceptanceDraftHistory.length,1);assert.equal(entity(s,id).acceptance.result,'fail');
+ s=run(s,id,'verify',{value:r.acceptanceDraft.result,note:r.acceptanceDraft.note});assert.equal(entity(s,id).acceptanceDraft,undefined);assert.equal(entity(s,id).acceptanceDraftHistory.length,1);assert.equal(entity(s,id).rounds.at(-1).acceptance.result,'fail');
 });
 test('N04: changed standard preserves reference draft, requires confirmation and archives old basis',()=>{
  let[s,id]=verification(1);s=run(s,id,'save_acceptance',{value:'pass',note:'已完成原验收标准核对'});s=run(as(s,'S01'),id,'change_standard',{goal:'补充业务条件说明',standard:'明确说明处理时效及例外'});s=as(s,'Q01');

@@ -1,11 +1,17 @@
 "use client";
+import CallDemo from "../components/call-demo";
+import callDemoStyles from "../components/call-demo.module.css";
+import { flushSync } from "react-dom";
+import { SurfaceButton } from "../components/ui/button";
+import { SelectField } from "../components/select-field";
 import { Activity, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Icon, type IconName } from "../components/icon";
-import { Button, DetailNavigation, Empty, Modal, Tabs } from "../components/ui";
+import { Button, Modal } from "../components/ui";
 import dynamic from "next/dynamic";
 import { allowNavigation } from "../components/rule-editor";
 const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
-import { Workspace, label, stateLabel, viewFor } from "../components/workspace";
+import { NotificationCenter } from "../components/notification-center";
+import { Workspace, viewFor } from "../components/workspace";
 import { ResourceCatalog } from "../components/resource-catalog";
 import { Strategy } from "../components/strategy";
 import { ReportPage } from "../components/report-page";
@@ -19,7 +25,10 @@ import {
 } from "../lib/store";
 import {
   apply,
-  actionNames,
+  actions,
+  latest,
+  actionLabel,
+  visibleTaskTarget,
   entity,
   canSee,
   nav,
@@ -57,7 +66,7 @@ const pages: Record<
     group: "质检作业",
   },
   rules: {
-    title: "质检规则",
+    title: "质检策略",
     icon: "sliders",
     group: "策略与资源",
   },
@@ -88,17 +97,18 @@ export default function Home() {
   const [visited, setVisited] = useState<Set<View>>(() => new Set());
   const [mobile, setMobile] = useState(false),
     [noticeOpen, setNoticeOpen] = useState(false),
-    [noticeTab, setNoticeTab] = useState("todo"),
     [resetOpen, setResetOpen] = useState(false),
     [toast, setToast] = useState(""),
+    [toastTarget, setToastTarget] = useState<string | undefined>(),
+    [archivedTarget, setArchivedTarget] = useState<string | undefined>(),
     [focus, setFocus] = useState<string>(),
     [form, setForm] = useState<{ id: string; action: string }>();
   useEffect(() => {
     if (toast) {
-      const timer = setTimeout(() => setToast(""), 4500);
+      const timer = setTimeout(() => setToast(""), archivedTarget ? 15000 : 4500);
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [toast, archivedTarget]);
   const go = (view: View, id?: string, module:ReportModule = "overview") => {
     if (!allowNavigation()) return;
     const s = getSnapshot();
@@ -127,6 +137,10 @@ export default function Home() {
     if (!initialQuery.has("view") || initialQuery.get("view") === "overview") {
       history.replaceState(null, "", `?view=${defaultView}`);
     }
+    if (initialQuery.get("view") === "workorders2") {
+      initialQuery.set("view", "workorders");
+      history.replaceState(history.state, "", `?${initialQuery.toString()}`);
+    }
     routeRef.current = location.href;
     const params = new URLSearchParams(window.location.search),
       id = params.get("id");
@@ -138,7 +152,11 @@ export default function Home() {
     const pop = () => {
       const p = new URLSearchParams(location.search),
         s = getSnapshot(),
-        view = p.get("view") as View;
+        view = (p.get("view") === "workorders2" ? "workorders" : p.get("view")) as View;
+      if (p.get("view") === "workorders2") {
+        p.set("view", "workorders");
+        history.replaceState(history.state, "", `?${p.toString()}`);
+      }
       const valid = nav[roleOf(s)].includes(view) ? view : defaultView;
       if (!allowNavigation()) { history.pushState(history.state, "", routeRef.current); return; }
       if (p.get("view") === "overview") history.replaceState(null, "", `?view=${defaultView}`);
@@ -162,9 +180,9 @@ export default function Home() {
       routeRef.current = location.href;
       return;
     }
-    const item=entity(state,id);
-    const target=item && "executor" in item ? item.target : id;
-    go(viewFor(state,target), target);
+    const target = visibleTaskTarget(state, id);
+    const destination = viewFor(state,target);
+    go(destination, target);
   };
   const changeIdentity = (identity: string) => {
     if (!allowNavigation()) return;
@@ -182,17 +200,34 @@ export default function Home() {
     const before = getSnapshot();
     const result = apply(before, command);
     const saved = updateState(result);
-    if (command.action === "create_resource") {
+    const created = result.reviews.find(item => !before.reviews.some(old => old.id === item.id)) ?? result.appeals.find(item => !before.appeals.some(old => old.id === item.id)) ?? result.remedies.find(item => !before.remedies.some(old => old.id === item.id));
+    setToastTarget(["alerts","workorders","improvement","calls"].includes(before.view) ? created?.id ?? visibleTaskTarget(result, command.id) : undefined);
+    const archived = result.findings.find(f => f.source === "auto" && latest(f)?.value === "false_positive" && !before.findings.some(old => old.id === f.id && latest(old)?.value === "false_positive"));
+    setArchivedTarget(archived?.id);
+    if (["create_policy","create_policy_configuration"].includes(command.action)) {
+      const created=result.rules.find(rule=>!before.rules.some(old=>old.id===rule.id));
+      if(created)go("rules",created.id);
+    }
+    if (["create_resource","create_resource_content"].includes(command.action)) {
       const created = result.resources.find(resource => !before.resources.some(old => old.id === resource.id));
       if (created) go("resources", created.id);
     }
+    if (command.action === "accept_result" || command.action === "decide") {
+      const created=result.remedies.find(r=>!before.remedies.some(old=>old.id===r.id));
+      if(created) go("improvement",created.id);
+    }
+    if(command.action === "spotcheck") {
+      const created=result.reviews.find(r=>!before.reviews.some(old=>old.id===r.id));
+      if(created) go("workorders",created.id);
+    }
     setToast(
       saved
-        ? `${({save_rule:"参数草稿已保存，当前生效版本未改变",check_rule:"草稿检查已完成",publish_rule:"新规则版本已生效",save_resource:"资源草稿已保存",publish_resource:"资源版本已发布，规则引用保持不变",switch_resource:"所选规则引用已切换，历史检测保持原版本"} as Record<string,string>)[command.action] ?? `${actionNames[command.action] ?? "操作"}已完成`}`
+        ? archived ? "已归档，可在『误报归档』中查看" : `${({save_rule_configuration:"预警配置已保存",save_resource_content:"资源已保存",create_resource_content:"资源已创建",create_policy_configuration:"策略已创建",save_policy_associations:"策略关联已保存",save_policy_bindings:"关联草稿已保存，可在当前页检查并发布",create_policy:"策略及关联草稿已保存，检查后可一并发布",save_rule:"参数草稿已保存，当前生效版本未改变",check_rule:"草稿检查已完成",publish_rule:"新规则版本已生效",save_resource:"资源草稿已保存",publish_resource:"资源版本已发布，规则引用保持不变",switch_resource:"所选规则引用已切换，历史检测保持原版本"} as Record<string,string>)[command.action] ?? `${actionLabel(before, command.id, command.action)}已完成`}`
         : "本次已更新，但浏览器存储不可用，刷新可能恢复示例",
     );
   };
   const handleAction = (id:string, action:string) => {
+    if (!actions(getSnapshot(),id).includes(action)) {setToast("当前状态或身份已变化，此操作已不可用");return;}
     if(["ack","read_reminder","accept_remedy"].includes(action)) {
       try {submit({id,action,rev:entity(getSnapshot(),id)!.rev,requestId:crypto.randomUUID(),input:{}});} catch(e) {setToast(e instanceof Error ? e.message : "操作失败");}
     } else setForm({id,action});
@@ -203,7 +238,7 @@ export default function Home() {
   const tasks = notices(state),
     current = state.view === "reports" ? {...pages.reports,title:reportModuleTitle(reportModule),group:"质量报表"} : pages[state.view],
     events = state.logs
-      .filter((l) => canSee(state, l.target))
+      .filter((l) => canSee(state, l.target) && l.action !== "示例场景已载入")
       .slice()
       .reverse(),
     readEvents = state.readEvents?.[state.identity] ?? [];
@@ -232,12 +267,12 @@ export default function Home() {
           <Icon name="headset" />
         </span>
         <b>Moss Quality</b>
-        <p>正在恢复当前身份与演示进度…</p>
+        <p>正在恢复工作区…</p>
       </div>
     );
   const navigation = (
       <aside className="sidebar">
-        <div className="brand">
+        <div className={`brand ${callDemoStyles.brand}`}>
           <span className="brand-mark">
             <Icon name="headset" size={23} />
           </span>
@@ -245,8 +280,8 @@ export default function Home() {
             <b>Moss Quality</b>
             <small>银行呼入客服质检</small>
           </div>
+          <CallDemo/>
         </div>
-        <div className="workspace-name">银行客服中心</div>
         <nav aria-label="主导航">
           {["质检作业", "策略与资源", "分析"].map(
             (group) =>
@@ -284,19 +319,18 @@ export default function Home() {
           )}
         </nav>
         <div className="sidebar-utilities">
-          <button onClick={() => setResetOpen(true)} aria-label="重置演示数据"><Icon name="refresh" size={14} /><span>重置演示</span></button>
-          <small>6001 · 对比迭代</small>
+          <SurfaceButton onClick={() => setResetOpen(true)} aria-label="重置本地数据"><Icon name="refresh" size={14} /><span>重置数据</span></SurfaceButton>
         </div>
       </aside>
   );
   return (
-    <div className="app-shell">
+    <div className={`app-shell${["workorders", "calls", "resources", "reports"].includes(state.view) ? " review2-shell" : ""}`}>
       <a className="skip-link" href="#main-content">跳到主要内容</a>
       {mobile ? <Modal title="导航" variant="navigation" onClose={() => setMobile(false)}>{navigation}</Modal> : navigation}
       <div className="main">
         <header className="topbar">
           <div className="breadcrumb">
-            <button
+            <SurfaceButton
               className="icon-button mobile-toggle"
               aria-label="打开导航"
               aria-haspopup="dialog"
@@ -304,47 +338,37 @@ export default function Home() {
               onClick={() => setMobile(true)}
             >
               <Icon name="menu" />
-            </button>
+            </SurfaceButton>
             <span>{current.group}</span>
             <Icon name="chevron" size={13} />
             <h1 id="page-title">{current.title}</h1>
           </div>
           <div className="top-actions">
-            <span className="demo-badge">演示</span>
             <label className="role-select">
               <span className="role-avatar" aria-hidden="true">{person(state.identity).name.slice(0,1)}</span>
-              <select
-                aria-label="演示身份"
+              <SelectField
+                aria-label="当前身份"
                 value={state.identity}
-                onChange={(e) => changeIdentity(e.target.value)}
+                onValueChange={value => changeIdentity(value)}
               >
                 {people.map((p) => (
                   <option value={p.id} key={p.id}>
                     {p.name} · {roleNames[p.role]}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </label>
-            <button
-              className="notification-button"
-              aria-label={`我的待办 ${tasks.length}`}
-              aria-haspopup="dialog"
-              aria-expanded={noticeOpen}
-              onClick={() => setNoticeOpen(!noticeOpen)}
-            >
-              <Icon name="bell" />
-              {tasks.length > 0 && <span>{tasks.length}</span>}
-            </button>
+            <NotificationCenter events={events} readIds={readEvents} open={noticeOpen} onOpenChange={setNoticeOpen} onRead={readEvent} onNavigate={targetId=>{const target=entity(state,targetId);const id=target && "executor" in target ? target.target : targetId;go(viewFor(state,id),id);}}/>
           </div>
         </header>
         <main id="main-content" tabIndex={-1} aria-labelledby="page-title">
-          {focus && !["rules","resources","calls"].includes(state.view) && sourceLabel && <DetailNavigation label={sourceLabel} onBack={()=>returnSource?.onBack()}/>}
           {allowedNav.filter(v => visited.has(v) || state.view === v).map((v) => (
             <Activity key={`${state.identity}-${v}`} mode={state.view === v ? "visible" : "hidden"}><div>
               {["alerts", "workorders", "improvement", "calls"].includes(v) ? (
                 <Workspace
                   state={state}
                   view={v}
+                  review2={v === "workorders"}
                   returnSource={state.view === v ? returnSource : undefined}
                   focus={state.view === v ? focus : undefined}
                   onOpen={open}
@@ -366,78 +390,7 @@ export default function Home() {
           ))}
         </main>
       </div>
-      {noticeOpen && (
-        <Modal title="我的待办" variant="notification" description={`${tasks.length} 项等待你处理`} onClose={() => setNoticeOpen(false)}>
-          <Tabs value={noticeTab} label="通知分类" panelId="notice-panel" options={[{value:"todo",label:"我的待办",count:tasks.length},{value:"events",label:"事件通知",count:events.filter(e => !readEvents.includes(e.id)).length}]} onChange={setNoticeTab}/>
-          <div role="tabpanel" id="notice-panel" aria-labelledby={`notice-panel-tab-${noticeTab}`}>
-            {noticeTab === "events" ? (
-              events.length ? (
-                events.map((e) => (
-                  <div className="event-notice" key={e.id}>
-                    <button
-                      className="notice"
-                      onClick={() => {
-                        readEvent(e.id);
-                        const target=entity(state,e.target);
-                        const id=target && "executor" in target ? target.target : e.target;
-                        go(viewFor(state,id),id);
-                      }}
-                    >
-                      <span
-                        className={
-                          readEvents.includes(e.id)
-                            ? "notice-read"
-                            : "notice-dot"
-                        }
-                      />
-                      <div>
-                        <b>{e.action}</b>
-                        <p>{e.note}</p>
-                        <small>
-                          {new Date(e.at).toLocaleString("zh-CN")} · {e.target}
-                        </small>
-                      </div>
-                    </button>
-                    {!readEvents.includes(e.id) && (
-                      <button
-                        className="event-read text-button"
-                        onClick={() => readEvent(e.id)}
-                      >
-                        标记已读
-                      </button>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <Empty text="暂无事件通知" />
-              )
-            ) : tasks.length ? (
-              tasks.map((x) => (
-                <button
-                  className="notice"
-                  key={x.id}
-                  onClick={() => go(viewFor(state,x.id),x.id)}
-                >
-                  <span className="notice-dot" />
-                  <div>
-                    <b>{label(x)}</b>
-                    <p>
-                      {x.id} · {stateLabel(x,state)}
-                    </p>
-                  </div>
-                  <Icon name="chevron" size={15} />
-                </button>
-              ))
-            ) : (
-              <Empty
-                text="当前没有待办"
-                hint="角色交接后的新任务会出现在这里。"
-              />
-            )}
-          </div>
-        </Modal>
-      )}
-      <div className={`toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">{toast ? <><Icon name="bell" size={17}/>{toast}</> : null}</div>
+      <div className={`toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">{toast ? <><Icon name="bell" size={17}/>{toast}{archivedTarget ? <SurfaceButton className="toast-history" onClick={()=>{go("alerts",archivedTarget);requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent("qc:show-archive",{detail:archivedTarget})));setToast("");}}>查看归档</SurfaceButton> : toastTarget && <SurfaceButton className="toast-history" onClick={()=>{flushSync(()=>open(toastTarget));window.dispatchEvent(new CustomEvent("qc:show-history",{detail:toastTarget}));setToast("");}}>查看处理记录</SurfaceButton>}</> : null}</div>
       {form && (
         <ActionForm
           key={`${form.id}-${form.action}`}
@@ -449,9 +402,9 @@ export default function Home() {
         />
       )}
       {resetOpen && (
-        <Modal title="恢复标准演示数据" onClose={() => setResetOpen(false)}>
+        <Modal title="恢复初始数据" onClose={() => setResetOpen(false)}>
           <p className="modal-copy">
-            将清除本浏览器中的本轮演示进度，并按当前时间恢复标准示例。此操作可用于重新演示完整流程。
+            将清除本浏览器中保存的操作记录与修改，并恢复初始数据。此操作无法撤销。
           </p>
           <div className="modal-actions">
             <Button onClick={() => setResetOpen(false)}>取消</Button>
@@ -462,7 +415,7 @@ export default function Home() {
                 resetState();
                 setFocus(undefined);
                 setResetOpen(false);
-                setToast("已恢复标准演示数据");
+                setToast("已恢复初始数据");
               }}
             >
               确认重置

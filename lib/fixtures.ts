@@ -1,3 +1,5 @@
+import { completeSeedScenarios } from "./seed-scenarios.ts";
+import { withDemoHistory } from "./demo-history.ts";
 import type {
   State,
   Rule,
@@ -411,7 +413,7 @@ export function createInitial(now = new Date()): State {
     standard: "整改后同业务通话体现全部必要核验步骤，无跳步；说明清楚可追溯。",
     standardVersion: 1,
     sampleCount: 1,
-    observation: "提交 1 通整改后同类业务样例（演示值）",
+    observation: "提交 1 通整改后同类业务样例",
     dueAt: time(n === 7 ? 12 : -2),
     originalDueAt: time(n === 7 ? 12 : -2),
     createdAt: time(-100),
@@ -438,7 +440,7 @@ export function createInitial(now = new Date()): State {
     wasOverdue: true,
   };
   remedies[1].firstOverdueAt = time(-2);
-  return {
+  return withDemoHistory(completeSeedScenarios({
     schema: 2,
     revision: 1,
     identity: "S01",
@@ -506,7 +508,7 @@ export function createInitial(now = new Date()): State {
           {
             version: 1,
             content:
-              "1. 确认客户诉求与业务范围\n2. 核对 IVR 核验是否有效\n3. 未完成时按安全流程补充核验\n4. 查询业务并说明处理结果",
+              "身份核验：确认客户诉求与业务范围，核对IVR核验是否有效，未完成时按安全流程补充核验；\n业务办理：确认业务范围，查询业务进度，向客户说明处理结果；",
             scope: "全部业务",
             role: "坐席",
             exception: "有效 IVR 核验可以复用；不得索取完整短信验证码",
@@ -527,5 +529,5 @@ export function createInitial(now = new Date()): State {
       },
     ],
     requests: [],
-  };
+  }));
 }

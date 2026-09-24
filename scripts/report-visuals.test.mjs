@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createInitial} from '../lib/fixtures.ts';
 import {report, reportCsv} from '../lib/reports.ts';
-import {reportTrend, reportVisuals, periodRows, periodMetric, visualMetric} from '../lib/report-visuals.ts';
+import {reportTrend, reportVisuals, issueReportVisuals, teamReportVisuals, periodRows, periodMetric, visualMetric} from '../lib/report-visuals.ts';
 const now = new Date('2026-09-13T10:00:00+08:00');
 const filter = {business:'',group:'',agent:'',start:'2026-09-07',end:'2026-09-13'};
 const sum = xs => xs.reduce((n,x)=>n+x,0);
@@ -78,4 +78,110 @@ test('V07: selected-period ratio, denominator and export note use the selected p
     if(key==='coverage')assert.ok(m.note.includes(`已完成 ${p.count} / 已结束通话 ${p.denominator}`));
     if(m.rows.length)assert.ok(csv.includes(m.note));
   }
+});
+
+
+function warningReportState() {
+  const state = createInitial(now), template = state.findings[0];
+  const call = state.calls.find(c => c.endedAt && c.endedAt.startsWith('2026-09'));
+  const records = [
+    ['auto-risk', 'auto', '6.3.7', 'risk'], ['auto-fp', 'auto', '6.3.6', 'false_positive'],
+    ['auto-insufficient', 'auto', '6.3.7', 'insufficient'], ['auto-pending', 'auto', '6.3.7', undefined],
+    ['manual-risk', 'manual', '6.3.6', 'risk'], ['manual-fp', 'manual', '6.3.7', 'false_positive'],
+    ['asr-risk', 'auto', '6.2.2', 'risk'], ['text-risk', 'auto', '6.2.4', 'risk'],
+    ['policy-risk', 'auto', '6.3.4', 'risk'],
+  ];
+  state.findings = records.map(([id, source, indicator, value]) => ({...template, id, callId:call.id, source, indicator,
+    conclusions:value ? [{version:1,value,note:'测试结论',at:now.toISOString()}] : [],
+  }));
+  return state;
+}
+
+test('V08: issue cards, indicator bars and verdicts use one warning population for each selection', () => {
+  const state = warningReportState(), metrics = report(state, filter, now);
+  const expected = { candidates:['auto-risk','auto-fp','auto-insufficient','auto-pending'], risk:['auto-risk','manual-risk'], manual:['manual-risk','manual-fp'], fp:['auto-risk','auto-fp'] };
+  for (const [key, ids] of Object.entries(expected)) {
+    const result = issueReportVisuals(state, metrics, key);
+    assert.deepEqual(result.metric.rows.map(r=>r.id).sort(), ids.toSorted());
+    assert.deepEqual(result.indicators.flatMap(g=>g.rows.map(r=>r.id)).sort(), ids.toSorted());
+    assert.deepEqual(result.verdicts.flatMap(g=>g.rows.map(r=>r.id)).sort(), ids.toSorted());
+    assert.equal(result.total, ids.length);
+    assert.ok(!result.indicators.some(g=>['6.2.2','6.2.4','6.3.4'].includes(g.key)));
+    assert.equal(result.metric.value, key === 'fp' ? '50.0%' : String(ids.length));
+  }
+});
+
+test('V09: false-positive distribution and export retain only the confirmed automatic denominator', () => {
+  const state = warningReportState(), result = issueReportVisuals(state, report(state,filter,now), 'fp');
+  assert.equal(result.verdicts.find(g=>g.key==='false_positive').rows.length, 1);
+  assert.equal(result.verdicts.find(g=>g.key==='risk').rows.length, 1);
+  assert.equal(result.verdicts.find(g=>g.key==='insufficient').rows.length, 0);
+  assert.equal(result.verdicts.find(g=>g.key==='pending').rows.length, 0);
+  assert.match(result.metric.note, /误报 1.*成立）2/);
+  const output = reportCsv(result.metric,state,now.toISOString(),filter);
+  assert.ok(output.includes('auto-risk') && output.includes('auto-fp'));
+  for (const excluded of ['manual-risk','manual-fp','auto-insufficient','auto-pending','asr-risk','text-risk','policy-risk']) assert.ok(!output.includes(excluded));
+});
+
+test('V10: issue linkage respects filters, missing denominators, latest conclusions and role permissions', () => {
+  const state=warningReportState(), metrics=report(state,filter,now);
+  const before=issueReportVisuals(state,metrics,'risk');
+  state.findings.find(f=>f.id==='auto-risk').conclusions.push({version:2,value:'false_positive',note:'更正',at:now.toISOString()});
+  const changed=report(state,filter,now);
+  assert.equal(issueReportVisuals(state,changed,'risk').total,before.total-1);
+  assert.equal(issueReportVisuals(state,changed,'fp').metric.value,'100.0%');
+  const empty=issueReportVisuals(state,report(state,{...filter,business:'不存在'},now),'fp');
+  assert.equal(empty.metric.value,'—');assert.equal(empty.total,0);
+  assert.ok(empty.indicators.every(g=>g.rows.length===0));
+  for(const identity of ['Q01','A1048']) {
+    const restricted={...state,identity};
+    const result=issueReportVisuals(restricted,report(restricted,filter,now),'risk');
+    assert.equal(result.total,0);assert.deepEqual(result.summaries,[]);
+  }
+});
+
+
+function teamReportState() {
+  const state=createInitial(now), callTemplate=state.calls[0], findingTemplate=state.findings[0];
+  state.calls=['A','B','C','D','E'].map((id,index)=>({...structuredClone(callTemplate),id:`call-${id}`,
+    agentId:index<2?'A1048':'A1186',group:index<2?'客服一组':'客服二组',endedAt:now.toISOString(),
+    batches:[{...callTemplate.batches[0],checks:[{name:'测试检查',state:id==='B'?'failed':'success'}]}],
+  }));
+  state.findings=[['A1','A','6.3.7','risk'],['A2','A','6.3.7','risk'],['A3','A','6.3.6','risk'],
+    ['B1','B','6.3.7','risk'],['C1','C','6.3.6','false_positive'],['E1','E','6.2.2','risk']]
+    .map(([id,call,indicator,value])=>({...findingTemplate,id,callId:`call-${call}`,indicator,source:'auto',
+      conclusions:[{version:1,value,note:'测试结论',at:now.toISOString()}],
+    }));
+  return state;
+}
+
+test('V11: team cards drive agent groups and matrices, preserving normal calls and warning dimensions',()=>{
+  const state=teamReportState(),metrics=report(state,filter,now);
+  for(const [key,total] of [['calls',5],['completed',4],['riskcalls',1],['risk',4]]) {
+    const result=teamReportVisuals(state,metrics,filter,key);
+    assert.equal(result.total,total);
+    assert.equal(sum(result.agents.map(a=>a.rows.length)),total);
+    assert.ok(!result.indicators.some(i=>['6.2.2','6.2.4','6.3.4'].includes(i.id)));
+    const sourceIds=new Set(result.metric.rows.map(r=>r.id));
+    for(const row of result.agents.flatMap(a=>a.indicators.flatMap(i=>i.rows)))assert.ok(sourceIds.has(row.id));
+  }
+  const all=teamReportVisuals(state,metrics,filter,'calls');
+  assert.ok(all.metric.rows.some(r=>r.id==='call-D'),'normal call stays in workload');
+  assert.equal(all.agents[0].indicators.find(i=>i.key==='6.3.7').rows.length,2,'same call counted once per indicator');
+  const risks=teamReportVisuals(state,metrics,filter,'risk');
+  assert.equal(risks.agents[0].indicators.find(i=>i.key==='6.3.7').rows.length,3,'problem mode counts distinct findings');
+});
+
+test('V12: team risk-call ratios use completed calls per agent and a weighted aggregate',()=>{
+  const state=teamReportState(),metrics=report(state,filter,now),result=teamReportVisuals(state,metrics,filter,'riskcalls');
+  assert.equal(result.metric.value,'25.0%');
+  assert.deepEqual(result.agents.map(a=>a.value),['100.0%','0.0%']);
+  assert.deepEqual(result.denominators,{A1048:1,A1186:3});
+  assert.deepEqual(result.metric.rows.map(r=>r.id),['call-A']);
+  const f={...filter,agent:'A1186'},single=teamReportVisuals(state,report(state,f,now),f,'riskcalls');
+  assert.equal(single.agents.length,1);assert.equal(single.metric.value,'0.0%');
+  const emptyFilter={...filter,business:'不存在'},empty=teamReportVisuals(state,report(state,emptyFilter,now),emptyFilter,'riskcalls');
+  assert.equal(empty.metric.value,'—');assert.ok(empty.agents.every(a=>a.value==='—'));
+  const restricted={...state,identity:'Q01'};
+  assert.equal(teamReportVisuals(restricted,report(restricted,filter,now),filter,'risk').total,0);
 });

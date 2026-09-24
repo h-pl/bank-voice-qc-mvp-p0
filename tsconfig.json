@@ -22,14 +22,23 @@
         "name": "next"
       }
     ],
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-strategy/types/**/*.ts",
+    ".next-strategy/dev/types/**/*.ts",
+    ".next-archive/types/**/*.ts",
+    ".next-archive/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

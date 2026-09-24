@@ -1,3 +1,5 @@
+import {legacyInitial} from './helpers/legacy-initial.mjs';
+import {legacyIssued} from './helpers/legacy-issuance.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitial } from "../lib/fixtures.ts";
@@ -41,14 +43,7 @@ const run = (s, id, action, input = {}, clock = now) =>
   );
 const options = { start: "", end: "", business: "", group: "", agent: "" };
 function issued() {
-  let s = start();
-  s = run(s, "WO-1039", "publish", {
-    remedy: true,
-    goal: "改善服务表达",
-    standard: "完成必要说明且无消极表达",
-    sampleCount: 1,
-    observation: "一通同业务样例",
-  });
+  const s=legacyIssued(now,deadline);
   return [s, s.remedies.at(-1).id];
 }
 function appealSetup() {
@@ -103,32 +98,33 @@ test("T02: false positive closes only candidate and never creates remediation", 
 });
 test("T03: insufficient evidence has owned and dated supplement loop and is excluded from false positives", () => {
   let s = start();
-  s = run(s, "F-1036", "supplement", { owner: "Q02" });
+  assert.throws(()=>run(s, "F-1036", "dismiss", { value: "insufficient" }), /仅确认误报/);
+  s = run(s, "F-1036", "assign", { owner: "Q01" });
+  const reviewId = s.reviews.at(-1).id;
+  s = run(as(s, "Q01"), reviewId, "request_evidence");
+  s = run(as(s, "S01"), reviewId, "supplement", { owner: "Q02" });
   const sup = s.supplements.at(-1);
   assert.equal(sup.executor, "Q02");
   s = run(as(s, "Q02"), sup.id, "reply");
   s = run(as(s, "S01"), sup.id, "receive_supplement");
-  s = run(s, "F-1036", "dismiss", { value: "insufficient" });
-  assert.equal(
-    latest(s.findings.find((f) => f.id === "F-1036")).value,
-    "insufficient",
-  );
+  assert.equal(entity(s,reviewId).status,"working");
+  assert.equal(entity(s,"F-1036").status,"review");
   assert.ok(
     !report(s, options, now)
       .find((m) => m.key === "fp")
       .rows.some((r) => r.id === "F-1036"),
   );
 });
-test("T04: confirmed risk without remedy is delivered, remains risk, can appeal; ack cannot close or alter verdict", () => {
+test("T04: distributed risk waits for acceptance is delivered, remains risk, can appeal; ack cannot close or alter verdict", () => {
   let s = start();
   const n = s.remedies.length;
-  s = run(s, "WO-1039", "publish", { noRemedy: "当通已纠正并具备对应证据" });
+  s = run(s, "F-1037", "dispatch", {goal:"完整说明",standard:"业务条件完整",observation:"后续样例",sampleCount:1});
   assert.equal(s.remedies.length, n);
   s = as(s, "A1048");
-  assert.ok(actions(s, "F-1039").includes("appeal"));
-  s = run(s, "F-1039", "ack");
-  assert.equal(latest(s.findings.find((f) => f.id === "F-1039")).value, "risk");
-  assert.ok(actions(s, "F-1039").includes("appeal"));
+  assert.ok(actions(s, "F-1037").includes("appeal"));
+  s = run(s, "F-1037", "ack");
+  assert.equal(latest(s.findings.find((f) => f.id === "F-1037")).value, "risk");
+  assert.ok(actions(s, "F-1037").includes("appeal"));
 });
 test("T05: issue once, agent accepts/materials, assigned inspector passes, supervisor closes", () => {
   let [s, id] = verification();
@@ -140,7 +136,7 @@ test("T05: issue once, agent accepts/materials, assigned inspector passes, super
   assert.equal(entity(s, id).status, "done");
   assert.equal(s.remedies.filter((r) => r.id === id).length, 1);
 });
-test("T06: insufficient samples retain inspector ownership; agent supplements; failed acceptance waits for supervisor return", () => {
+test("T06: insufficient samples retain inspector ownership; agent supplements; failed verification returns concrete requirements to agent", () => {
   let [s, id] = verification();
   s = run(as(s, "Q01"), id, "verify", { value: "insufficient" });
   const sp = s.supplements.at(-1);
@@ -155,9 +151,8 @@ test("T06: insufficient samples retain inspector ownership; agent supplements; f
   const passed=run(s,id,"verify",{value:"pass"});
   assert.equal(entity(run(as(passed,"S01"),id,"close_remedy"),id).status,"done");
   s = run(s, id, "verify", { value: "fail" });
-  assert.equal(entity(s, id).supervisorReason, "return");
+  assert.equal(entity(s, id).status, "executing");
   assert.ok(!actions(as(s, "S01"), id).includes("close_remedy"));
-  s = run(as(s, "S01"), id, "return_remedy");
   assert.equal(entity(s, id).round, 2);
   assert.equal(entity(s, id).status, "executing");
 });
@@ -176,7 +171,7 @@ test("T07: preacceptance and in-review appeal supplements both return through su
   sp = s.supplements.at(-1).id;
   s = run(as(s, "A1048"), sp, "reply");
   assert.equal(entity(s, ap).status, "supplement");
-  s = run(as(s, "S01"), sp, "receive_supplement");
+  s = run(as(s, "Q02"), sp, "receive_supplement");
   assert.equal(entity(s, ap).status, "reviewing");
   assert.equal(entity(s, r).owner, "Q02");
 });
@@ -199,7 +194,7 @@ test("T08: withdraw, reject, maintain restore phase and elapsed pause; old overd
     assert.equal(Date.parse(entity(s, id).dueAt) - Date.parse(due), 3600000);
     assert.equal(entity(s, id).status, "pending");
   }
-  let s = start();
+  let s = legacyInitial(now);
   s = run(as(s, "A1048"), "AP-1033", "withdraw");
   assert.ok(entity(s, "REC-1033").firstOverdueAt);
 });
@@ -243,11 +238,11 @@ test("T10: rule bounds, resource duplicate/SOP validation, failed checks keep dr
   assert.throws(
     () =>
       run(s, "RES-SOP", "save_resource", {
-        content: "1. 确认诉求\n2. ",
+        content: "核验：确认诉求，；",
         scope: "全部业务",
         resourceRole: "坐席",
       }),
-    /两个有序步骤/,
+    /步骤不能为空/,
   );
 
   assert.throws(
@@ -273,7 +268,7 @@ test("T10: rule bounds, resource duplicate/SOP validation, failed checks keep dr
   assert.throws(
     () =>
       run(s, "RES-SOP", "save_resource", {
-        content: "只有一个步骤",
+        content: "核验：只有一个步骤；",
         scope: "全部业务",
         resourceRole: "坐席",
       }),
@@ -282,13 +277,14 @@ test("T10: rule bounds, resource duplicate/SOP validation, failed checks keep dr
 });
 test("T11: multi-risk counts separate from calls, zero denominators show dash, CSV uses drilldown rows and protects formulas", () => {
   let s = start();
+  for(const id of ["WO-1039", "WO-1039-B"]){s=run(s,id,"return_review");const review=entity(s,id);s=run(as(s,review.owner),id,"submit_review",{opinions:Object.fromEntries(review.findingIds.map(fid=>[fid,{value:"risk",note:"质检员完成逐项核实",evidence:[2]}]))});s=as(s,"S01");}
   s = run(s, "WO-1039", "publish", {
-    noRemedy: "当通已纠正并具备对应证据",
+    goal:"改善说明",standard:"业务条件完整",observation:"后续样例",sampleCount:1,
     opinions: {
       "F-1039": { value: "risk", note: "两个问题分别成立", evidence: [2] },
-      "F-1039-B": { value: "risk", note: "两个问题分别成立", evidence: [2] },
     },
   });
+  s = run(s, "WO-1039-B", "publish", {goal:"改善说明",standard:"业务条件完整",observation:"后续样例",sampleCount:1,opinions:{"F-1039-B":{value:"risk",note:"处理时限问题单独确认",evidence:[4]}}});
   const m = report(s, options, now),
     risk = m.find((x) => x.key === "risk");
   assert.ok(
@@ -300,9 +296,13 @@ test("T11: multi-risk counts separate from calls, zero denominators show dash, C
   assert.equal(output.split("\r\n").length, risk.rows.length + 1);
   assert.match(csv([["=1+2"]]), /"'=1\+2"/);
 });
-test("T12: 3 roles, 7 routes, identity-scoped objects and actions, stale version rejected", () => {
+test("T12: 3 roles, 7 business routes with one review workspace, identity-scoped objects and actions, stale version rejected", () => {
   const s = start();
   assert.equal(nav.supervisor.length, 7);
+  for (const routes of Object.values(nav)) {
+    assert.equal(routes.filter(view => view === "workorders").length, 1);
+    assert.equal(routes.includes("workorders2"), false);
+  }
   assert.equal(nav.agent.length, 3);
   const agent = as(s, "A1048");
   assert.equal(canSeeCall(agent, s.calls[3]), false);
@@ -399,11 +399,14 @@ test("T15: withdrawal cancels open appeal review and invalidates captured form, 
 test("T16: changing a completion standard invalidates prior approval; supplement executor cannot close", () => {
   let [s, id] = verification();
   s = run(as(s, "Q01"), id, "verify", { value: "pass" });
+  assert.throws(() => run(as(s, "S01"), id, "change_standard"), /不允许/);
+  s = run(as(s, "S01"), id, "return_remedy");
+  s = run(as(s, "Q01"), id, "agree_remedy_return");
   s = run(as(s, "S01"), id, "change_standard", {
     goal: "补充新范围",
     standard: "新版验收完成标准",
   });
-  assert.equal(entity(s, id).status, "verification");
+  assert.equal(entity(s, id).status, "executing");
   assert.equal(entity(s, id).standardVersion, 2);
   assert.ok(entity(s, id).acceptanceHistory.length);
   assert.ok(!actions(s, id).includes("close_remedy"));

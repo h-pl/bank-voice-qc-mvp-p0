@@ -1,4 +1,10 @@
 "use client";
+import { ConfigurationEditor } from "./indicator-config";
+import type { State } from "../lib/workflow";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Button as ShadcnButton } from "./ui/button";
+import { SelectField } from "./select-field";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button, Modal } from "./ui";
 import type { Command, Rule } from "../lib/workflow";
@@ -12,7 +18,7 @@ export const parameterHints = {
 export function allowNavigation() {
   return window.dispatchEvent(new Event("qc:before-navigate", { cancelable: true }));
 }
-export function RuleEditor({ rule, onSubmit, onDone }: { rule: Rule; onSubmit: (command: Command) => void; onDone: () => void }) {
+function LegacyRuleEditor({ rule, onSubmit, onDone }: { rule: Rule; onSubmit: (command: Command) => void; onDone: () => void }) {
   const field = rule.editable!;
   const [initial] = useState(() => rule.draft ?? rule.versions.at(-1)!);
   const [rev] = useState(rule.rev);
@@ -61,17 +67,21 @@ export function RuleEditor({ rule, onSubmit, onDone }: { rule: Rule; onSubmit: (
       <div className="action-form-body">
         <div className="parameter-field">
           <label htmlFor={`parameter-${rule.id}`}>{parameterNames[field]}</label>
-          {field === "threshold" ? <div className="number-unit"><input id={`parameter-${rule.id}`} name="threshold" type="number" inputMode="numeric" min={3} max={60} step={1} value={value} aria-describedby={`parameter-help parameter-range${errorField === "parameter" ? " parameter-error" : ""}`} aria-invalid={errorField === "parameter"} onChange={e=>{setValue(e.target.value);setError("");setErrorField(undefined);}}/><span>秒</span></div> : <select id={`parameter-${rule.id}`} name={field} value={value} aria-describedby={`parameter-help parameter-range${errorField === "parameter" ? " parameter-error" : ""}`} aria-invalid={errorField === "parameter"} onChange={e=>{setValue(e.target.value);setError("");setErrorField(undefined);}}>{(field === "scope" ? ["全部业务", "账户查询", "信用卡", "转账汇款"] : ["高风险候选", "所有候选", "关闭提醒"]).map(value=><option value={value} key={value}>{value}</option>)}</select>}
+          {field === "threshold" ? <div className="number-unit"><Input id={`parameter-${rule.id}`} name="threshold" type="number" inputMode="numeric" min={3} max={60} step={1} value={value} aria-describedby={`parameter-help parameter-range${errorField === "parameter" ? " parameter-error" : ""}`} aria-invalid={errorField === "parameter"} onChange={e=>{setValue(e.target.value);setError("");setErrorField(undefined);}}/><span>秒</span></div> : <SelectField id={`parameter-${rule.id}`} name={field} value={value} aria-describedby={`parameter-help parameter-range${errorField === "parameter" ? " parameter-error" : ""}`} aria-invalid={errorField === "parameter"} onValueChange={value => {setValue(value);setError("");setErrorField(undefined);}}>{(field === "scope" ? ["全部业务", "账户查询", "信用卡", "转账汇款"] : ["高风险候选", "所有候选", "关闭提醒"]).map(value=><option value={value} key={value}>{value}</option>)}</SelectField>}
           <small id="parameter-range">当前生效：{String(rule.versions.at(-1)![field])}{field === "threshold" ? " 秒 · 可设 3–60 秒" : ""}{rule.draft && " · 正在修改草稿"}</small>
           <p id="parameter-help">{parameterHints[field]}</p>
         </div>
-        <label className="editor-reason" htmlFor="parameter-reason">修改原因<textarea className="resize-none" id="parameter-reason" name="reason" required minLength={4} aria-describedby={errorField === "reason" ? "parameter-error" : undefined} autoComplete="off" rows={3} value={note} aria-invalid={errorField === "reason"} placeholder={field === "threshold" ? "例如：根据业务等待时长调整静默阈值" : field === "scope" ? "例如：仅检查信用卡业务的诉求匹配情况" : "例如：仅对高风险候选发出提醒"} onChange={e=>{setNote(e.target.value);setError("");setErrorField(undefined);}}/></label>
+        <label className="editor-reason" htmlFor="parameter-reason">修改原因<Textarea className="resize-none" id="parameter-reason" name="reason" required minLength={4} aria-describedby={errorField === "reason" ? "parameter-error" : undefined} autoComplete="off" rows={3} value={note} aria-invalid={errorField === "reason"} placeholder={field === "threshold" ? "例如：根据业务等待时长调整静默阈值" : field === "scope" ? "例如：仅检查信用卡业务的诉求匹配情况" : "例如：仅对高风险候选发出提醒"} onChange={e=>{setNote(e.target.value);setError("");setErrorField(undefined);}}/></label>
         <p className="parameter-save-note">保存为草稿，检查并发布后生效。</p>
         {warning && <p className="edit-warning" role="status">{warning}</p>}
       </div>
       {error && <p className="form-error" id="parameter-error" role="alert">{error}</p>}
       {discard && <p className="parameter-discard" role="alert">修改尚未保存，放弃后将恢复原参数。</p>}
-      <div className="modal-actions">{discard ? <><button type="button" className="btn" data-continue-editing onClick={()=>setDiscard(false)}>继续编辑</button><Button intent="danger" onClick={onDone}>放弃修改</Button></> : <><Button disabled={busy} onClick={requestClose}>取消</Button><Button primary type="submit" disabled={busy}>{busy ? "保存中…" : "保存草稿"}</Button></>}</div>
+      <div className="modal-actions">{discard ? <><ShadcnButton variant="outline" type="button" className="btn" data-continue-editing onClick={()=>setDiscard(false)}>继续编辑</ShadcnButton><Button intent="danger" onClick={onDone}>放弃修改</Button></> : <><Button disabled={busy} onClick={requestClose}>取消</Button><Button primary type="submit" disabled={busy}>{busy ? "保存中…" : "保存草稿"}</Button></>}</div>
     </form>
   </Modal>;
+}
+
+export function RuleEditor(props:{rule:Rule;state:State;onSubmit:(command:Command)=>void;onDone:()=>void}) {
+ return props.rule.fixedResources || props.rule.versions.at(-1)?.config ? <ConfigurationEditor {...props}/> : <LegacyRuleEditor {...props}/>;
 }

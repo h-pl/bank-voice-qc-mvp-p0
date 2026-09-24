@@ -1,4 +1,5 @@
 "use client";
+import { SurfaceButton } from "./ui/button";
 import { useEffect, useRef, useState } from 'react';
 import type { Metric } from '../lib/reports';
 import type { TrendPoint, VisualGroup } from '../lib/report-visuals';
@@ -59,7 +60,7 @@ export function TrendChart({ points, stride, metric, onInspect }: { points: Tren
         {point?.value !== null && point && <g><g className="qa-chart-cursor" style={{transform:`translateX(${x(active)}px)`}}><line x1="0" x2="0" y1={top} y2={height-bottom} stroke="var(--line)"/></g><circle className="qa-chart-active-dot" cx="0" cy="0" r="5" style={{transform:`translate(${x(active)}px, ${y(point.value)}px)`}} fill={chartColors.orange} stroke="var(--surface)" strokeWidth="2"/></g>}
         {points.map((p,i)=>i===0 || i===points.length-1 || i%Math.max(1,Math.ceil(points.length/(width<500 ? 4 : 8)))===0 ? <text key={p.start} x={x(i)} y={height-10} textAnchor={i===0 ? "start" : i===points.length-1 ? "end" : "middle"}>{p.label}</text> : null)}
       </svg>
-      {points.map((p, i) => <button key={p.start} ref={el => { buttons.current[i] = el; }} className={`qa-point ${active === i ? 'selected' : ''}`} style={{ left: `${x(i) / width * 100}%`, top: `${y(p.value ?? 0) / height * 100}%` }} tabIndex={active === i ? 0 : -1} aria-label={`${p.start}${stride > 1 ? `至${p.end}` : ''}，${valueText(p)}，查看明细`} onFocus={() => selectWithKeyboard(i)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? points.length - 1 : Math.max(0, Math.min(points.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1))); buttons.current[next]?.focus(); } }} onClick={() => onInspect(p)}><span className={p.value === null ? 'missing' : ''}/></button>)}
+      {points.map((p, i) => <SurfaceButton key={p.start} ref={el => { buttons.current[i] = el; }} className={`qa-point ${active === i ? 'selected' : ''}`} style={{ left: `${x(i) / width * 100}%`, top: `${y(p.value ?? 0) / height * 100}%` }} tabIndex={active === i ? 0 : -1} aria-label={`${p.start}${stride > 1 ? `至${p.end}` : ''}，${valueText(p)}，查看明细`} onFocus={() => selectWithKeyboard(i)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? points.length - 1 : Math.max(0, Math.min(points.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1))); buttons.current[next]?.focus(); } }} onClick={() => onInspect(p)}><span className={p.value === null ? 'missing' : ''}/></SurfaceButton>)}
       {point && <div className="qa-callout-anchor" style={{width:Math.min(240,width-16),transform:`translate3d(${Math.max(8,Math.min(width-Math.min(240,width-16)-8,x(active)+16))}px, ${Math.max(8,Math.min(height-geometry.calloutHeight-8,(pointerY!==undefined ? pointerY/100*height : y(point.value??0))-geometry.calloutHeight-16))}px, 0)`}}><div ref={calloutRef} className="qa-chart-callout qa-trend-float">
         <div>{point.start}{stride>1 ? ` — ${point.end}` : ' · 全天'}</div>
         <p style={{color:chartColors.orange}}>{metric.label}：{valueText(point)}</p>
@@ -67,8 +68,8 @@ export function TrendChart({ points, stride, metric, onInspect }: { points: Tren
       </div></div>}
 
     </div>
-    <div className="qa-chart-readout" aria-live="polite"><span>{point?.start}{stride > 1 && ` — ${point?.end}`}{ratio && point?.denominator !== undefined && <small>样本 {point.count} / {point.denominator}</small>}</span><strong>{point ? valueText(point) : '暂无数据'}</strong><button type="button" className="text-button" onClick={() => point && onInspect(point)}>查看该{stride > 1 ? '段' : '日'}明细</button></div>
-    <p className="qa-chart-hint sr-only">方向键切换日期，Enter 查看明细。{ratio ? '无分母日期留空，不连接为 0%。' : '数量为当前样例记录汇总。'}</p>
+    <div className="qa-chart-readout" aria-live="polite"><span>{point?.start}{stride > 1 && ` — ${point?.end}`}{ratio && point?.denominator !== undefined && <small>样本 {point.count} / {point.denominator}</small>}</span><strong>{point ? valueText(point) : '暂无数据'}</strong><SurfaceButton type="button" className="text-button" onClick={() => point && onInspect(point)}>查看该{stride > 1 ? '段' : '日'}明细</SurfaceButton></div>
+    <p className="qa-chart-hint sr-only">方向键切换日期，Enter 查看明细。{ratio ? '无分母日期留空，不连接为 0%。' : '数量按当前筛选范围汇总。'}</p>
   </section>;
 }
 
@@ -93,11 +94,15 @@ export function RingChart({ title, note, groups, center, centerLabel, onSelect }
         {!total && <small>暂无样本，占比不计算</small>}</div>
       </div>
     </div>
-    <div className="qa-legend">{groups.map(g=><button key={g.key} className={selected?.key===g.key ? 'is-highlighted' : ''} onPointerEnter={()=>setHighlight(g.key)} onFocus={()=>setHighlight(g.key)} onClick={()=>onSelect(g.key)} aria-label={`${g.label} ${g.count}，占比 ${percent(g.count)}，查看明细`}><span className="qa-dot" style={{background:g.color}}/><span>{g.label}</span><b>{formatNumber(g.count)}</b><small>{percent(g.count)}</small></button>)}</div>
+    <div className="qa-legend">{groups.map(g=><SurfaceButton key={g.key} className={selected?.key===g.key ? 'is-highlighted' : ''} onPointerEnter={()=>setHighlight(g.key)} onFocus={()=>setHighlight(g.key)} onClick={()=>onSelect(g.key)} aria-label={`${g.label} ${g.count}，占比 ${percent(g.count)}，查看明细`}><span className="qa-dot" style={{background:g.color}}/><span>{g.label}</span><b>{formatNumber(g.count)}</b><small>{percent(g.count)}</small></SurfaceButton>)}</div>
   </section>;
 }
 
-export function HorizontalBars({ groups, total, onSelect, unit = '项', color = chartColors.orange }: { groups: VisualGroup[]; total: number; onSelect: (key: string) => void; unit?: string; color?: string }) {
+export function HorizontalBars({ groups, total, onSelect, unit = '项', color = chartColors.orange, denominators }: { groups: VisualGroup[]; total: number; onSelect: (key: string) => void; unit?: string; color?: string; denominators?: Record<string, number> }) {
   const max = Math.max(1, ...groups.map(g => g.rows.length));
-  return <div className="qa-bars">{groups.map(g => <button key={g.key} className="qa-bar-row" onClick={() => onSelect(g.key)} aria-label={`${g.label}，${g.rows.length}${unit}，查看明细`}><span className="qa-bar-label">{g.label}</span><span className="qa-bar-track"><i style={{ width: `${g.rows.length / max * 100}%`, background: color }}/></span><b>{g.rows.length}<small>{unit}</small></b><span className="qa-share">{total ? `${(g.rows.length / total * 100).toFixed(0)}%` : '—'}</span><span className="qa-bar-callout">{g.label} · {g.rows.length} / {total} {unit} · 点击查看明细</span></button>)}</div>;
+  return <div className={`qa-bars${denominators ? ' qa-ratio-bars' : ''}`}>{groups.map(g => {
+    const count=g.rows.length, denominator=denominators?.[g.key] ?? 0;
+    const percent=denominator ? `${(count/denominator*100).toFixed(1)}%` : '—';
+    return <SurfaceButton key={g.key} className="qa-bar-row" onClick={() => onSelect(g.key)} aria-label={denominators ? `${g.label}，${percent}，确认风险 ${count} / 自动检测完成 ${denominator} 通，查看明细` : `${g.label}，${count}${unit}，查看明细`}><span className="qa-bar-label">{g.label}</span><span className="qa-bar-track"><i style={{ width: `${denominators ? denominator ? count/denominator*100 : 0 : count/max*100}%`, background: color }}/></span><b>{denominators ? percent : <>{count}<small>{unit}</small></>}</b><span className="qa-share">{denominators ? `${count}/${denominator}` : total ? `${(count/total*100).toFixed(0)}%` : '—'}</span><span className="qa-bar-callout">{g.label} · {denominators ? `确认风险 ${count} / 自动检测完成 ${denominator} 通` : `${count} / ${total} ${unit}`} · 点击查看明细</span></SurfaceButton>;
+  })}</div>;
 }

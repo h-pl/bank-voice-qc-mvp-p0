@@ -1,6 +1,7 @@
 import { localDate, type Metric, type ReportFilter, type Row } from './reports.ts';
 import { latest, people, type State } from './workflow.ts';
 import { officialIndicators } from './official-indicators.ts';
+import { supportsWarning } from './strategy-schema.ts';
 
 export type TrendPoint = { start: string; end: string; label: string; value: number | null; count: number; denominator?: number };
 export type VisualGroup = { key: string; label: string; rows: Row[] };
@@ -68,4 +69,93 @@ export function reportVisuals(s: State, metrics: Metric[], filter: ReportFilter)
 }
 export function visualMetric(key: string, label: string, rows: Row[], note: string): Metric {
   return { key, label, rows, note, value: String(rows.length) };
+}
+
+
+export type IssueMetricKey = 'candidates' | 'risk' | 'manual' | 'fp';
+// Cards, both charts and drill-downs share the same filtered warning population.
+export function issueReportVisuals(s: State, metrics: Metric[], key: IssueMetricKey) {
+  const findingById = new Map(s.findings.map(f => [f.id, f]));
+  const keys: IssueMetricKey[] = ['candidates', 'risk', 'manual', 'fp'];
+  const summaries = keys.flatMap(metricKey => {
+    const source = metrics.find(m => m.key === metricKey);
+    if (!source) return [];
+    const rows = source.rows.filter(row => {
+      const finding = findingById.get(row.id);
+      return finding && supportsWarning(finding.indicator);
+    });
+    const falsePositives = rows.filter(row => latest(findingById.get(row.id)!)?.value === 'false_positive').length;
+    return [{ ...source, rows,
+      value: metricKey === 'fp' ? rows.length ? `${(falsePositives / rows.length * 100).toFixed(1)}%` : '—' : String(rows.length),
+      note: metricKey === 'fp' ? `自动预警中误报 ${falsePositives} /（误报 + 成立）${rows.length}；仅预警指标，不含未判定、证据不足及人工发现` : `${source.note}；仅统计支持预警的指标`,
+    }];
+  });
+  const metric = summaries.find(m => m.key === key);
+  const rows = metric?.rows ?? [];
+  const indicators: VisualGroup[] = officialIndicators.filter(i => supportsWarning(i.id) &&
+    (s.rules.some(rule => rule.indicator === i.id) || rows.some(row => findingById.get(row.id)?.indicator === i.id)))
+    .map(i => ({ key: i.id, label: i.name, rows: rows.filter(row => findingById.get(row.id)?.indicator === i.id) }));
+  const verdictNames = { risk: '风险成立', false_positive: '误报', insufficient: '证据不足', pending: '尚未判定' };
+  const verdicts: VisualGroup[] = Object.entries(verdictNames).map(([value, label]) => ({ key: value, label,
+    rows: rows.filter(row => (latest(findingById.get(row.id)!)?.value ?? 'pending') === value),
+  }));
+  const titles: Record<IssueMetricKey, string> = {
+    candidates: '自动预警 · 指标分布', risk: '成立问题 · 预警指标分布',
+    manual: '人工发现 · 预警指标分布', fp: '误报判定样本 · 预警指标分布',
+  };
+  return { summaries, metric, indicators, verdicts, total: rows.length, title: titles[key],
+    note: key === 'fp' ? '自动预警中已确认成立或误报的问题；按主指标计数' : '仅预警指标；按主指标计数',
+  };
+}
+
+
+export type TeamMetricKey = 'calls' | 'completed' | 'riskcalls' | 'risk';
+export function teamReportVisuals(s: State, metrics: Metric[], filter: ReportFilter, key: TeamMetricKey) {
+  const byKey = new Map(metrics.map(m => [m.key, m]));
+  const callById = new Map(s.calls.map(c => [c.id, c]));
+  const riskMetric = issueReportVisuals(s, metrics, 'risk').metric;
+  const riskRows = riskMetric?.rows ?? [];
+  const completed = byKey.get('completed')?.rows ?? [];
+  const riskCallIds = new Set(riskRows.map(row => row.callId));
+  const riskCalls = completed.filter(row => riskCallIds.has(row.id));
+  const ratio = (n: number, d: number) => d ? `${(n / d * 100).toFixed(1)}%` : '—';
+  const riskCallSource = byKey.get('riskcalls');
+  const riskCallMetric = riskCallSource ? {...riskCallSource, rows:riskCalls, value:ratio(riskCalls.length, completed.length),
+    note:`自动检测完成通话中确认风险 ${riskCalls.length} / 已完成 ${completed.length}；仅预警指标，按通话去重`} : undefined;
+  const summaries = [byKey.get('calls'), byKey.get('completed'), riskCallMetric, riskMetric].filter((m): m is Metric => !!m);
+  const metric = summaries.find(m => m.key === key);
+  const rows = metric?.rows ?? [];
+  const callIds = new Set(rows.map(row => row.callId));
+  const riskIds = new Set(riskRows.map(row => row.id));
+  const findings = s.findings.filter(f => callIds.has(f.callId) && supportsWarning(f.indicator) &&
+    (!['risk', 'riskcalls'].includes(key) || riskIds.has(f.id)));
+  const indicators = officialIndicators.filter(i => supportsWarning(i.id) &&
+    (s.rules.some(rule => rule.indicator === i.id) || findings.some(f => f.indicator === i.id)));
+  const unit = key === 'risk' ? '条' : '通';
+  const matrixNote = key === 'risk' ? '确认问题按主指标计数，仅显示预警指标' :
+    `${key === 'riskcalls' ? '确认风险' : '所选通话中的问题'}按主指标归属；每格按通话去重，同一通话可涉及多个指标`;
+  const agents = people.filter(p => p.role === 'agent' && (!filter.agent || p.id === filter.agent) &&
+    (!filter.group || s.calls.some(c => c.agentId === p.id && c.group === filter.group))).map(p => {
+    const selectedRows = rows.filter(row => callById.get(row.callId)?.agentId === p.id);
+    const agentCallIds = new Set(selectedRows.map(row => row.callId));
+    const agentFindings = findings.filter(f => agentCallIds.has(f.callId));
+    const denominator = completed.filter(row => callById.get(row.id)?.agentId === p.id).length;
+    return {id:p.id, name:p.name, group:s.calls.find(c => c.agentId === p.id && (!filter.group || c.group === filter.group))?.group ?? '',
+      rows:selectedRows, denominator, value:key === 'riskcalls' ? ratio(selectedRows.length,denominator) : String(selectedRows.length),
+      callCount:agentCallIds.size, findingCount:agentFindings.length,
+      risk:agentFindings.filter(f => latest(f)?.value === 'risk').length,
+      fp:agentFindings.filter(f => latest(f)?.value === 'false_positive').length,
+      insufficient:agentFindings.filter(f => latest(f)?.value === 'insufficient').length,
+      indicators:indicators.map(i => {
+        const matches=agentFindings.filter(f => f.indicator === i.id), ids=new Set(matches.map(f=>key === 'risk' ? f.id : f.callId));
+        return {key:i.id,label:i.name,rows:selectedRows.filter(row=>ids.has(row.id))};
+      }),
+    };
+  });
+  return {summaries, metric, agents, indicators, total:rows.length, unit, matrixNote,
+    title:({calls:'坐席通话量',completed:'坐席自动检测完成量',riskcalls:'坐席确认风险通话占比',risk:'坐席确认问题数'})[key],
+    matrixTitle:key === 'risk' ? '坐席确认问题 · 预警指标分布' : '坐席通话 · 预警指标分布',
+    // A percentage must retain each agent's own completed-call denominator.
+    denominators:key === 'riskcalls' ? Object.fromEntries(agents.map(a=>[a.id,a.denominator])) : undefined,
+  };
 }

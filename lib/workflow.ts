@@ -1,4 +1,10 @@
-import { pendingResourceRules, switchResourceReferences } from "./resource-publication.ts";
+import type { AlertTiming } from "./alert-deadlines.ts";
+import { prepareNewPolicyAssociations } from "./policy-associations.ts";
+import { withPolicyBindingFeatures, validateBindings, bindingPolicyVersions, refreshPolicyReferences, type IndicatorBinding } from "./indicator-bindings.ts";
+import { validateRuleConfig, validateRuleResources, policyTriggers, resourceSchemas, ruleHasParameters, fixedResourceReferences } from "./strategy-schema.ts";
+import { validateResourceRows } from "./resource-import.ts";
+import { parseSopRules } from "./sop-rules.ts";
+import { pendingResourceRules, switchResourceReferences, resourceDeletionBlockers, refreshFixedResourceReferences } from "./resource-publication.ts";
 
 export type Role = "supervisor" | "inspector" | "agent";
 export type View =
@@ -85,7 +91,19 @@ export type Conclusion = {
   ruleVersion?: number;
   batchId?: string;
 };
+export type Distribution = {
+  source: "direct" | "review" | "spotcheck";
+  version: number;
+  status: "pending" | "accepted" | "appealed";
+  goal: string; standard: string; observation: string; sampleCount: number;
+  dueAt: string; inspector: string; at: string;
+};
 export type Finding = Base & {
+  alertTiming?: AlertTiming;
+  detectionBasis?: { summary: string; checks: { requirement: string; observation: string; result: "待核对" | "待补证" | "符合" | "不符合" }[] };
+  distribution?: Distribution;
+  optimization?: { status: "pending" | "recorded" | "unnecessary"; note: string; by: string; at: string };
+
   callId: string;
   title: string;
   indicator: string;
@@ -123,7 +141,8 @@ export type Review = Base & {
   owner: string;
   dueAt: string;
   originalDueAt: string;
-  status: "pending" | "working" | "supervisor" | "done" | "cancelled";
+  status: "pending" | "working" | "supervisor" | "response" | "done" | "cancelled";
+  supervisorComment?: string;
   opinions: Record<string, Opinion>;
   summary?: string;
   scopeResult?: "clear" | "insufficient";
@@ -179,6 +198,9 @@ export type AcceptanceDraft = {
   dueAt?: string;
 };
 export type Remedy = Base & {
+  origin?: Distribution["source"] | "appeal";
+  supervisorComment?: string;
+  supplementRequirements?: string;
   findingId: string;
   conclusionVersion: number;
   agentId: string;
@@ -187,6 +209,7 @@ export type Remedy = Base & {
     | "pending"
     | "executing"
     | "verification"
+    | "response"
     | "supervisor"
     | "done"
     | "terminated";
@@ -250,6 +273,7 @@ export type Supplement = Base & {
   trigger: string;
 };
 export type ResourceVersion = {
+  sourceFile?: string;
   version: number;
   content: string;
   scope: string;
@@ -258,6 +282,8 @@ export type ResourceVersion = {
   at: string;
 };
 export type Resource = Base & {
+  kind?: string;
+  deletedAt?: string;
   name: string;
   type: "词库" | "业务知识" | "SOP";
   versions: ResourceVersion[];
@@ -265,7 +291,19 @@ export type Resource = Base & {
   checked?: boolean;
   draftRuleIds?: string[];
 };
+export type RuleDefinition = {
+  name: string; objective: string; checks: string[]; boundary: string; output: string;
+  basis: { kind: string; entries?: string[] }[];
+};
+export type PolicyBindingSelection = {ruleId:string;rev:number;features:string[]};
 export type RuleVersion = {
+  pendingPolicyBindings?: PolicyBindingSelection[];
+  definition?: RuleDefinition;
+  configurationModel?: "indicator-bindings" | "shared-policy";
+  bindings?: IndicatorBinding[];
+  policyVersions?: Record<string,number>;
+  triggerRules?: string[];
+  config?: Record<string,string>;
   version: number;
   at: string;
   threshold: number;
@@ -274,6 +312,9 @@ export type RuleVersion = {
   resources: Record<string, number>;
 };
 export type Rule = Base & {
+  retired?: boolean;
+  fixedResources?: boolean;
+  legacyTriggerRules?: string[];
   name: string;
   indicator: string;
   description: string;
@@ -294,6 +335,9 @@ export type Log = {
 };
 export type State = {
   schema: 2;
+  demoUiVersion?: number;
+  strategyDemoVersion?: number;
+  ruleCatalogVersion?: number;
   revision: number;
   readEvents?: Record<string, string[]>;
   identity: string;
@@ -352,7 +396,7 @@ export function canSeeCall(s: State, c: Call) {
       : c.authorized.includes(s.identity) ||
         s.reviews.some((r) => r.callId === c.id && r.owner === s.identity) ||
         s.remedies.some(
-          (r) => callFor(s, r.id)?.id === c.id && r.inspector === s.identity,
+          (r) => r.inspector === s.identity && (callFor(s, r.id)?.id === c.id || [...r.materials, ...(r.rounds ?? []).flatMap(round => round.materials)].some(material => material.samples.includes(c.id))),
         ) ||
         s.supplements.some(
           (x) => x.executor === s.identity && callFor(s, x.target)?.id === c.id,
@@ -393,11 +437,11 @@ export function detection(c: Call) {
   return failed === checks.length ? "失败" : failed ? "部分失败" : "已完成";
 }
 export const statusNames: Record<string, string> = {
-  candidate: "待分诊",
+  candidate: "待主管初审",
   reminded: "已提醒 · 待衔接",
   supplement: "待补材料",
   review: "人工复核中",
-  closed: "候选已关闭",
+  closed: "误报归档",
   delivered: "结论已送达",
   pending: "待处理",
   working: "复核中",
@@ -411,21 +455,34 @@ export const statusNames: Record<string, string> = {
   withdrawn: "已撤回",
   rejected: "不受理",
   executing: "整改中",
-  verification: "待验收",
+  verification: "待质检员核验",
+  response: "待质检员核对主管意见",
   terminated: "已终止",
 };
 export const actionNames: Record<string, string> = {
+  dispatch: "直接提醒并分发",
+  accept_result: "接受并开始整改",
+  assign_inspector: "指定核验质检员",
+  optimization_feedback: "记录规则优化反馈",
+  agree_remedy_return: "赞同，补充整改要求",
+  explain_remedy: "不赞同，向主管补充说明",
+  return_appeal: "退回质检员核对",
+  agree_appeal_return: "赞同，重新核查",
+  explain_appeal: "不赞同，向主管补充说明",
+  create_policy: "新增预警策略",
+  save_policy_bindings: "保存策略关联草稿",
   request_evidence: "申请补证",
   link_finding: "关联已有问题",
   accept_assign: "受理并分派核查",
   accept_decide: "受理并直接裁定",
   create_resource: "新增资源条目",
+  delete_resource: "删除资源",
   resource_feedback: "提出依据补充意见",
   reassign: "转派任务",
   sample_calls: "生成整改后样例",
   remind: "提醒坐席",
   end_call: "模拟通话结束",
-  dismiss: "关闭候选",
+  dismiss: "确认误报并归档",
   assign: "转人工复核",
   supplement: "要求补充材料",
   reply: "提交补充材料",
@@ -434,12 +491,12 @@ export const actionNames: Record<string, string> = {
   save_review: "保存复核草稿",
   submit_review: "提交复核意见",
   return_review: "退回复核",
-  publish: "确认结论",
-  spotcheck: "新建人工抽查",
+  publish: "确认并分发结果",
+  spotcheck: "发起人工抽检",
   add_finding: "登记人工发现",
   ack: "确认知悉",
   feedback_result: "补充结果意见",
-  appeal: "提交申诉",
+  appeal: "不接受，提交申诉",
   withdraw: "撤回申诉",
   accept_appeal: "受理申诉",
   reject_appeal: "不予受理",
@@ -451,13 +508,13 @@ export const actionNames: Record<string, string> = {
   save_acceptance: "保存验收草稿",
   verify: "提交验收意见",
   close_remedy: "确认整改结案",
-  return_remedy: "退回整改 / 重新核验",
+  return_remedy: "退回质检员核对",
   change_standard: "调整目标与标准",
   read_reminder: "标记提醒已读",
   feedback_reminder: "反馈提醒执行",
   dissent_reminder: "提出提醒异议",
-  start_detection: "新建示例检测批次",
-  finish_detection: "完成示例检测",
+  start_detection: "新建检测批次",
+  finish_detection: "完成检测",
   save_rule: "保存参数草稿",
   check_rule: "查看预设检查",
   publish_rule: "确认模拟生效",
@@ -469,14 +526,38 @@ export const actionNames: Record<string, string> = {
   discard_resource: "放弃资源草稿",
   followup: "登记补证跟进",
 };
+// Shared by detail buttons, forms and event history so each stage uses the same wording.
+export function actionLabel(s: State, id: string, action: string): string {
+  const item = entity(s, id);
+  if (action === "check_rule" || action === "check_resource") return "检查草稿";
+  if (action === "publish_rule" || action === "publish_resource") return "发布新版本";
+  if (item && "conclusionVersion" in item && !("standardVersion" in item) && action === "decide") return "确认申诉裁定";
+  if (item && "standardVersion" in item && action === "verify") return "提交核验结果";
+  if (item && "standardVersion" in item && action === "close_remedy") return "确认整改完成并归档";
+  if (item && "batches" in item && action === "start_detection") return item.batches.length ? "重新检测" : "开始检测";
+  if (item && "findingIds" in item) {
+    if (action === "publish") {
+      if (!item.findingIds.length) return "确认抽检完成";
+      const values = item.findingIds.map(fid => item.opinions[fid]?.value);
+      if (values.every(value => value === "false_positive")) return "确认结果并归档";
+      return "确认结果并分发";
+    }
+    if (action === "return_review") return item.type === "spotcheck" ? "退回重新抽检" : "退回重新核实";
+    if (action === "submit_review") return item.type === "spotcheck" ? "提交抽检结果" : item.type === "appeal" ? "提交申诉核查结果" : "提交核实结果";
+    if (action === "supplement" && item.type === "appeal") return "要求补充申诉资料";
+    if (action === "supplement" && item.evidenceRequest) return "安排补证";
+  }
+  return actionNames[action] ?? action;
+}
 export function actions(s: State, id: string): string[] {
   if (!canSee(s, id)) return [];
   const e = entity(s, id)!,
     role = roleOf(s),
     out: string[] = [];
+  if ("type" in e && "versions" in e && e.deletedAt) return role === "supervisor" ? ["create_resource"] : [];
   if ("batches" in e) {
     if (role === "supervisor") {
-      if (e.endedAt) out.push("spotcheck");
+      if (e.endedAt && !s.reviews.some(r=>r.callId===id && r.type==="spotcheck" && !["done","cancelled"].includes(r.status))) out.push("spotcheck");
       if (detection(e) === "处理中") out.push("finish_detection");
       else out.push("start_detection");
       if (!e.endedAt) out.push("end_call");
@@ -486,13 +567,13 @@ export function actions(s: State, id: string): string[] {
   if ("conclusions" in e) {
     if (role === "supervisor" && !activeAppeal(s, e.id)) {
       if (["candidate", "reminded", "supplement"].includes(e.status)) {
-        out.push("dismiss", "assign");
-        if (!s.supplements.some((x) => x.target === id && openSupplement(x)))
-          out.push("supplement");
-        if (!callFor(s, id)!.endedAt && !e.reminder) out.unshift("remind");
+        out.push(...(s.supplements.some(x => x.target === id && openSupplement(x)) ? [] : ["dispatch"]), "dismiss", "assign");
+        if(!callFor(s,id)!.endedAt && !e.reminder) out.push("remind");
+        // Missing evidence belongs to the assigned review, not a fourth triage route.
+
       }
-      if (latest(e) && e.status === "delivered") out.push("followup");
-      if (latest(e) && e.status === "closed") out.push("followup");
+      if (latest(e) && e.status === "delivered" && !e.distribution) out.push("followup");
+      if (latest(e)?.value === "false_positive" && e.source === "auto") out.push("optimization_feedback");
     }
     if (role === "agent") {
       if (e.reminder) {
@@ -501,10 +582,11 @@ export function actions(s: State, id: string): string[] {
       }
       const c = latest(e);
       if (c) {
+        if (e.distribution?.status === "pending") out.push("accept_result");
         if (e.seenVersion !== c.version) out.push("ack");
         out.push("feedback_result");
         if (
-          c.value === "risk" &&
+          c.value === "risk" && (!e.distribution || e.distribution.status === "pending") &&
           !s.appeals.some(
             (a) =>
               a.findingId === id &&
@@ -531,16 +613,19 @@ export function actions(s: State, id: string): string[] {
     ) {
       out.push("save_review");
       if (callFor(s, id)?.endedAt) out.push("submit_review");
-      out.push("request_evidence");
-      if (e.type === "spotcheck") out.push("add_finding", "link_finding");
+      out.push(e.type === "appeal" ? "supplement" : "request_evidence");
+      if (e.type === "spotcheck") {
+        out.push("add_finding");
+        if (linkableFindings(s, e).length) out.push("link_finding");
+      }
     }
+    if (role === "inspector" && e.owner === s.identity && e.status === "response" && e.type === "appeal") out.push("agree_appeal_return", "explain_appeal");
     if (role === "supervisor" && e.status === "supervisor" && !awaiting)
       out.push(
-        ...(e.type === "appeal" || e.evidenceRequest || !callFor(s,id)?.endedAt ? [] : ["publish"]),
-        "return_review",
-        "supplement",
+        ...(e.type === "appeal" || e.evidenceRequest || !callFor(s,id)?.endedAt || (e.findingIds.length ? e.findingIds.some(fid => !["risk", "false_positive"].includes(e.opinions[fid]?.value)) : e.scopeResult !== "clear" || !e.summary?.trim()) ? [] : ["publish"]),
+        ...(e.type === "appeal" ? [] : e.evidenceRequest ? ["supplement", "return_review"] : ["return_review"]),
       );
-    if (role === "supervisor" && !["done", "cancelled"].includes(e.status))
+    if (role === "supervisor" && ["pending", "working", "response"].includes(e.status))
       out.push("extend", "reassign");
   }
   if (
@@ -550,16 +635,18 @@ export function actions(s: State, id: string): string[] {
     const a = e as Appeal;
     if (role === "agent" && !terminalAppeal(a)) out.push("withdraw");
     if (role === "supervisor" && !terminalAppeal(a)) {
-      if (a.status === "submitted") out.push("accept_assign", "accept_decide", "accept_appeal", "reject_appeal");
-      if (["accepted", "decision"].includes(a.status)) out.push("decide");
+      if (a.status === "submitted") out.push("accept_assign", "accept_appeal", ...(!s.findings.find(f=>f.id===a.findingId)?.distribution ? ["accept_decide", "reject_appeal"] : []));
+      if (a.status === "decision" || a.status === "accepted" && !s.findings.find(f=>f.id===a.findingId)?.distribution) out.push("decide");
+      if (a.status === "decision" && a.reviewId) out.push("return_appeal");
       if (a.status === "accepted" && !a.reviewId) out.push("assign_appeal");
-      if (a.status !== "supplement") out.push("supplement");
-      out.push("extend");
+      // New-flow appeal evidence is requested by the assigned inspector, never during adjudication.
+      if (!s.findings.find(f => f.id === a.findingId)?.distribution && ["submitted", "accepted", "reviewing"].includes(a.status)) out.push("supplement");
+      if (a.status !== "decision") out.push("extend");
     }
   }
   if ("standardVersion" in e && !terminalRemedy(e)) {
     if (role === "agent") {
-      out.push("sample_calls");
+      if (e.status === "executing" || e.pause || s.supplements.some(sp => sp.target === id && sp.executor === s.identity && sp.status === "pending")) out.push("sample_calls");
       if (e.status === "pending" && !e.pause) out.push("accept_remedy");
       if (["pending", "executing"].includes(e.status) && !e.pause)
         out.push("adjust_request");
@@ -573,29 +660,32 @@ export function actions(s: State, id: string): string[] {
       out.push("save_acceptance");
       if (!e.pause && !s.supplements.some(x => x.target === id && openSupplement(x))) out.push("verify");
     }
+    if (role === "inspector" && e.inspector === s.identity && e.status === "response" && !e.pause) out.push("agree_remedy_return", "explain_remedy");
     if (role === "supervisor") {
-      out.push("change_standard", "extend", "reassign");
+      if (!e.pause && (e.status !== "supervisor" && e.status !== "response" || e.supervisorReason === "adjust"))
+        out.push("change_standard", "extend", ...(e.inspector ? ["reassign"] : e.origin === "direct" ? ["assign_inspector"] : []));
       if (e.status === "supervisor" && !e.pause) {
         if (
           e.supervisorReason === "approve" &&
           e.acceptance?.result === "pass" &&
-          e.acceptance.version === e.standardVersion &&
+          e.acceptance.version === e.standardVersion && e.acceptance.round === e.round &&
           !s.supplements.some((x) => x.target === id && openSupplement(x))
         )
           out.push("close_remedy");
-        out.push("return_remedy");
+        if (e.supervisorReason === "approve" && e.acceptance?.result === "pass" && e.inspector) out.push("return_remedy");
       }
     }
   }
   if ("executor" in e) {
     const parent = s.remedies.find(r => r.id === e.target);
-    if (parent && terminalRemedy(parent)) return [];
+    const target = entity(s, e.target);
+    if (parent && terminalRemedy(parent) || target && "status" in target && ["done", "cancelled", "closed", "terminated", "withdrawn", "rejected"].includes(target.status)) return [];
     if (e.executor === s.identity && e.status === "pending") out.push("reply");
     if (
-      e.status === "submitted" &&
+      e.status === "submitted" && !parent?.pause &&
       (s.remedies.some((r) => r.id === e.target)
         ? s.remedies.some((r) => r.id === e.target && r.inspector === s.identity)
-        : role === "supervisor")
+        : s.appeals.some(ap=>ap.id===e.target && ap.reviewId) ? s.reviews.some(r=>r.appealId===e.target && r.owner===s.identity && !["done","cancelled"].includes(r.status)) : role === "supervisor")
     )
       out.push("receive_supplement");
   }
@@ -603,7 +693,9 @@ export function actions(s: State, id: string): string[] {
     out.push("resource_feedback");
   if ("versions" in e && role === "supervisor") {
     if ("editable" in e || "indicator" in e) {
-      if ((e as Rule).editable) {
+      if ((e as Rule).retired) return out;
+      if ((e as Rule).indicator === "6.3.4") { out.push("create_policy"); if(e.versions.length)out.push("save_policy_bindings"); }
+      if (ruleHasParameters(e as Rule)) {
         out.push("save_rule");
         if (e.draft)
           out.push(
@@ -611,9 +703,9 @@ export function actions(s: State, id: string): string[] {
             "discard_rule",
             ...(e.checked ? ["publish_rule"] : []),
           );
-      }
+      } else if(e.draft) out.push("discard_rule");
     } else {
-      out.push("create_resource", "save_resource");
+      out.push("create_resource", "save_resource", "delete_resource");
       if (pendingResourceRules(s, e as Resource).some(rule => !rule.draft)) out.push("switch_resource");
       if (e.draft)
         out.push(
@@ -625,7 +717,25 @@ export function actions(s: State, id: string): string[] {
   }
   return [...new Set(out)];
 }
+export function linkableFindings(s: State, review: Review) {
+  return s.findings.filter(f => f.callId === review.callId && !latest(f) && ["candidate", "reminded"].includes(f.status) && canSee(s, f.id) && !review.findingIds.includes(f.id) && !activeAppeal(s, f.id) && !s.reviews.some(other => other.id !== review.id && other.findingIds.includes(f.id) && !["done", "cancelled"].includes(other.status)));
+}
+
+// Legacy commands remain available to migrations; product entry points share this list.
+export function contextActions(s: State, id: string): string[] {
+  const hidden = ["remind", "sample_calls", "accept_appeal", "accept_decide", "reject_appeal", "followup", "feedback_result", "save_review", "save_acceptance"];
+  const item = entity(s, id);
+  return actions(s, id).filter(action => !hidden.includes(action) && !(action === "supplement" && item && !("findingIds" in item)) && !(action === "decide" && item && "findingId" in item && !("standardVersion" in item) && !item.reviewId));
+}
+
 export type Input = {
+  policyBindings?: PolicyBindingSelection[];
+  bindings?: IndicatorBinding[];
+  ruleResources?: Record<string,number>;
+  triggerRules?: string[];
+  config?: Record<string,string>;
+  resourceKind?: string;
+  sourceFile?: string;
   referenceRevs?: Record<string, number>;
   findingId?: string;
   dispositions?: Record<string, { remedy: boolean; noRemedy?: string; goal?: string; standard?: string; owner?: string; dueAt?: string; sampleCount?: number; observation?: string }>;
@@ -685,19 +795,24 @@ export const currentOwner = (s: State, e: Entity): string => {
       );
       return r ? (r.status === "supervisor" ? "S01" : r.owner) : "";
     }
-    return "";
+    return e.distribution?.status === "pending" ? callFor(s,e.id)!.agentId : "";
   }
-  if ("findingIds" in e)
+  if ("findingIds" in e) {
+    const ap=s.appeals.find(a=>a.id===e.appealId);
+    if(ap?.status==="supplement" && !["done","cancelled"].includes(e.status))return currentOwner(s,ap);
+    const supplement=s.supplements.find(sp=>sp.target===e.id&&openSupplement(sp));
+    if(supplement && !["done","cancelled"].includes(e.status))return currentOwner(s,supplement);
     return ["done", "cancelled"].includes(e.status)
       ? ""
       : e.status === "supervisor" || e.evidenceRequest
         ? "S01"
         : e.owner;
+  }
   if ("standardVersion" in e)
     return terminalRemedy(e)
       ? ""
-      : e.status === "verification"
-        ? e.inspector
+      : e.status === "verification" || e.status === "response"
+        ? e.inspector || "S01"
         : e.status === "supervisor"
           ? "S01"
           : e.agentId;
@@ -705,7 +820,7 @@ export const currentOwner = (s: State, e: Entity): string => {
     return terminalAppeal(e)
       ? ""
       : e.status === "supplement"
-        ? (s.supplements.find(sp => sp.target === e.id && openSupplement(sp))?.status === "submitted" ? "S01" : e.agentId)
+        ? (s.supplements.find(sp => sp.target === e.id && openSupplement(sp))?.status === "submitted" ? s.reviews.find(r=>r.id===e.reviewId)?.owner ?? "S01" : e.agentId)
         : e.status === "reviewing"
           ? (s.reviews.find((r) => r.id === e.reviewId)?.owner ?? "S01")
           : "S01";
@@ -713,7 +828,7 @@ export const currentOwner = (s: State, e: Entity): string => {
     return s.remedies.some(r => r.id === e.target && terminalRemedy(r)) ? "" : e.status === "pending"
       ? e.executor
       : e.status === "submitted"
-        ? (s.remedies.find((r) => r.id === e.target)?.inspector ?? "S01")
+        ? (s.remedies.find((r) => r.id === e.target)?.inspector || s.reviews.find(r=>r.id===s.appeals.find(ap=>ap.id===e.target)?.reviewId)?.owner || "S01")
         : "";
   return "";
 };
@@ -783,8 +898,16 @@ export function acceptanceDraftMatches(r: Remedy, identity: string) {
   const d = r.acceptanceDraft;
   return !!d && d.version === r.standardVersion && d.round === r.round && d.author === identity;
 }
-export function agentWorkItems(s: State) {
-  return s.findings.filter(f => canSee(s, f.id) && (!!latest(f) || !!f.reminder));
+// A supplement executor may see their task without access to internal review opinions.
+export function standaloneSupplements(s: State) {
+  return s.supplements.filter(sp => canSee(s, sp.id) && !canSee(s, sp.target));
+}
+export function visibleTaskTarget(s: State, id: string) {
+  const item = entity(s, id);
+  return item && "executor" in item && canSee(s, item.target) ? item.target : id;
+}
+export function agentWorkItems(s: State): Entity[] {
+  return [...s.findings.filter(f => canSee(s, f.id) && (!!latest(f) || !!f.reminder)), ...standaloneSupplements(s)];
 }
 function cancelAppealReview(s: State, a: Appeal, now: Date, completed = false) {
   const r = s.reviews.find((r) => r.id === a.reviewId);
@@ -812,6 +935,50 @@ function cancelAppealReview(s: State, a: Appeal, now: Date, completed = false) {
 }
 export function apply(state: State, cmd: Command, now = new Date()): State {
   if (state.requests.includes(cmd.requestId)) return state;
+  const directActions: Record<string, string> = {
+    save_rule_configuration: "save_rule", save_resource_content: "save_resource",
+    create_resource_content: "create_resource", create_policy_configuration: "create_policy",
+    save_policy_associations: "save_policy_bindings",
+  };
+  const legacyAction = directActions[cmd.action];
+  if (legacyAction) {
+    const input = structuredClone({...cmd.input, note: cmd.input.note?.trim() || "保存配置内容", checkPass: true});
+    if (cmd.action === "save_policy_associations") {
+      for (const update of input.policyBindings ?? []) {
+        const rule = state.rules.find(r => r.id === update.ruleId);
+        const current = rule?.draft?.bindings ?? rule?.versions.at(-1)?.bindings ?? [];
+        const removed = current.filter(b => b.policyId === cmd.id && !update.features.includes(b.feature));
+        must(removed.every(b => current.some(other => other.feature === b.feature && other.policyId && other.policyId !== cmd.id && other.policyId !== "none")), "移除最后一条策略前，请在对应规则中选择替代策略或明确选择不预警。");
+      }
+    }
+    let next = apply(state, {...cmd, action: legacyAction, input, requestId: `${cmd.requestId}:save`}, now);
+    const targets = legacyAction === "create_policy" ? next.rules.filter(r => !state.rules.some(old => old.id === r.id)).map(r => r.id)
+      : legacyAction === "create_resource" ? next.resources.filter(r => !state.resources.some(old => old.id === r.id)).map(r => r.id)
+      : legacyAction === "save_policy_bindings" ? (input.policyBindings ?? []).map(item => item.ruleId) : [cmd.id];
+    for (const id of targets) {
+      const resource = next.resources.find(r => r.id === id);
+      const kind = resource ? "resource" : "rule";
+      for (const step of ["check", "publish"]) {
+        next = apply(next, {id, action: `${step}_${kind}`, rev: entity(next, id)!.rev, input: {...input}, requestId: `${cmd.requestId}:${id}:${step}`}, now);
+      }
+      if (resource) {
+        // Shared content applies to every current reference, including legacy resources.
+        const saved = next.resources.find(r => r.id === id)!;
+        const version = saved.versions.at(-1)!.version;
+        for (const rule of next.rules) {
+          const previous = rule.versions.at(-1);
+          if (!previous || (!(id in previous.resources) && !saved.draftRuleIds?.includes(rule.id)) || previous.resources[id] === version) continue;
+          rule.versions.push({...structuredClone(previous), version: previous.version + 1, at: now.toISOString(), resources: {...previous.resources, [id]: version}});
+          rule.rev++;
+        }
+      }
+    }
+    // Keep the user-facing audit entry about the saved object, not implementation steps.
+    next.logs = next.logs.slice(0, state.logs.length);
+    next.logs.push({id: `CONFIG-${next.revision}-${next.logs.length + 1}`, target: targets[0] ?? cmd.id, at: now.toISOString(), actor: next.identity, action: legacyAction.includes("resource") ? "保存资源" : "保存预警配置", note: input.note});
+    next.requests.push(cmd.requestId);
+    return next;
+  }
   const old = entity(state, cmd.id);
   must(old, "对象不存在");
   must(old.rev === cmd.rev, "记录已更新，请关闭旧表单后重新操作。");
@@ -819,6 +986,25 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     actions(state, cmd.id).includes(cmd.action),
     "当前身份或状态不允许此操作。",
   );
+  if(cmd.action==="save_policy_bindings"){
+    const updates=cmd.input.policyBindings;
+    must((cmd.input.note ?? "").trim().length>=4,"请填写至少 4 个字的修改原因");
+    must(updates?.length,"关联未变更");
+    must(new Set(updates.map(update=>update.ruleId)).size===updates.length,"同一规则不能重复提交");
+    let next=state;
+    for(const update of updates){
+      const rule=next.rules.find(r=>r.id===update.ruleId);
+      must(rule && rule.indicator!=="6.3.4" && !rule.retired,"请选择有效指标规则");
+      must(rule.rev===update.rev,`${rule.name}已更新，请关闭表单后重新操作`);
+      const bindings=withPolicyBindingFeatures(rule,cmd.id,update.features,next);
+      must(JSON.stringify(bindings)!==JSON.stringify(rule.draft?.bindings ?? rule.versions.at(-1)?.bindings ?? []),`${rule.name}关联未变更`);
+      next=apply(next,{id:rule.id,rev:update.rev,action:"save_rule",requestId:`${cmd.requestId}:${rule.id}`,input:{bindings,note:cmd.input.note}},now);
+    }
+    const policy=next.rules.find(r=>r.id===cmd.id)!;
+    policy.rev++;next.revision++;next.requests.push(cmd.requestId);
+    next.logs.push({id:`EV-${next.revision}-${next.logs.length+1}`,target:policy.id,at:now.toISOString(),actor:next.identity,action:actionNames[cmd.action],note:cmd.input.note!.trim()});
+    return next;
+  }
   if (["accept_assign", "accept_decide"].includes(cmd.action)) {
     let next = apply(state, {...cmd, action: "accept_appeal", requestId: cmd.requestId + ":accept"}, now);
     next = apply(next, {...cmd, action: cmd.action === "accept_assign" ? "assign_appeal" : "decide", rev: entity(next,cmd.id)!.rev, requestId: cmd.requestId + ":next"}, now);
@@ -840,6 +1026,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     "read_reminder",
     "ack",
     "accept_remedy",
+    "accept_result",
     "check_rule",
     "check_resource",
     "discard_rule",
@@ -927,6 +1114,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
         r.rev++;
       }
     }
+    f.distribution = undefined;
     f.conclusions.push({
       version: (latest(f)?.version ?? 0) + 1,
       value,
@@ -937,9 +1125,40 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       noRemedy,
       evidence: [...selectedEvidence], ruleVersion: f.ruleVersion, batchId: f.batchId,
     });
-    f.status = "delivered";
+    f.status = value === "false_positive" ? "closed" : "delivered";
+    if (value === "false_positive" && f.source === "auto") f.optimization = {status:"pending",note,by:s.identity,at};
     f.rev++;
   };
+  const distribution = (f: Finding, d: Partial<Distribution>, source: Distribution["source"], owner: string) => {
+    must(d.goal?.trim() && d.standard?.trim() && d.observation?.trim(), "请补齐整改目标、标准与资料要求");
+    must(Number.isInteger(d.sampleCount) && d.sampleCount! >= 1 && d.sampleCount! <= 20, "样例数量须为 1–20");
+    must(future(d.dueAt,now), "请选择晚于当前时间的整改期限");
+    must(source === "direct" || validInspector(owner), "复核或抽检结果必须沿用经办质检员");
+    f.distribution = {source,version:latest(f)!.version,status:"pending",goal:d.goal!,standard:d.standard!,observation:d.observation!,sampleCount:d.sampleCount!,dueAt:d.dueAt!,inspector:owner,at};
+  };
+  const createRemedy = (f: Finding, owner?: string, origin?: Remedy["origin"]) => {
+    const d=f.distribution;
+    must(d && d.version===latest(f)?.version, "缺少当前结论的整改要求，请联系主管补充分发");
+    must(!s.remedies.some(r=>r.findingId===f.id && r.conclusionVersion===d.version && !terminalRemedy(r)), "本结论已有整改任务");
+    const assigned=owner ?? d.inspector;
+    must(validInspector(assigned) || d.source==="direct" && !owner, "此来源必须沿用已记录的质检员");
+    s.remedies.push({id:`${uid("REC")}-${f.id}`,rev:0,findingId:f.id,conclusionVersion:d.version,agentId:callFor(s,f.id)!.agentId,inspector:assigned,origin:origin ?? d.source,status:"executing",goal:d.goal,standard:d.standard,standardVersion:1,sampleCount:d.sampleCount,observation:d.observation,dueAt:d.dueAt,originalDueAt:d.dueAt,createdAt:at,round:1,materials:[],acceptanceHistory:[],pauseHistory:[],standards:[{version:1,goal:d.goal,standard:d.standard,note:"按已分发要求进入整改",at}]});
+    d.status="accepted";f.seenVersion=d.version;f.rev++;
+  };
+  const returnToAgent = (r: Remedy) => {
+    (r.rounds ??= []).push({round:r.round,standard:r.standard,standardVersion:r.standardVersion,goal:r.goal,sampleCount:r.sampleCount,observation:r.observation,materials:structuredClone(r.materials),acceptance:structuredClone(r.acceptance),at});
+    r.round++;r.status="executing";r.materials=[];r.acceptance=undefined;r.supervisorReason=undefined;r.supplementRequirements=i.note;
+  };
+  if(a==="dispatch") { const f=e as Finding; conclude(f,"risk",i.note!,undefined,undefined,evidence(f.callId));distribution(f,i,"direct",""); }
+  if(a==="accept_result") createRemedy(e as Finding);
+  if(a==="assign_inspector") {
+    const r=e as Remedy;
+    must(r.origin==="direct" && !r.inspector,"仅直接提醒且直接接受整改需要补派质检员");
+    r.inspector=inspector();
+    const f=s.findings.find(f=>f.id===r.findingId);
+    if(f?.distribution?.version===r.conclusionVersion) {f.distribution.inspector=r.inspector;f.rev++;}
+  }
+  if(a==="optimization_feedback") {must(["pending","recorded","unnecessary"].includes(i.value ?? ""),"请选择优化反馈状态");(e as Finding).optimization={status:i.value as "pending"|"recorded"|"unnecessary",note:i.note!,by:s.identity,at};}
   const addSupplement = (target: string, executor: string, origin: string) => {
     must(
       !s.supplements.some((x) => x.target === target && openSupplement(x)),
@@ -998,8 +1217,8 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "dismiss") {
     const f = e as Finding;
     must(
-      ["false_positive", "insufficient"].includes(i.value ?? ""),
-      "关闭原因须为误报或证据不足",
+      i.value === "false_positive",
+      "仅确认误报才能关闭归档；材料不足请转人工核实或补件",
     );
     evidence(f.callId);
     conclude(f, i.value as Verdict, i.note!);
@@ -1035,6 +1254,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     const r = e as Review, f = s.findings.find(f=>f.id === i.findingId);
     must(f && f.callId === r.callId && canSee(s,f.id), "请选择同通话的已有问题");
     must(!r.findingIds.includes(f.id), "该问题已经关联");
+    must(!latest(f) && ["candidate", "reminded"].includes(f.status), "已形成结论或正在核实的问题不能重新关联抽检");
     must(!activeAppeal(s,f.id), "该问题申诉处理中，请在申诉内补充证据");
     must(!s.reviews.some(x=>x.id!==r.id && x.findingIds.includes(f.id) && !["done","cancelled"].includes(x.status)), "已有复核在处理中，请进入原工单");
     r.findingIds.push(f.id); f.status="review"; f.rev++;
@@ -1068,7 +1288,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       "同一事实已存在，请关联已有问题。",
     );
     const rule = s.rules.find((x) => x.id === i.ruleId);
-    must(rule, "规则不存在");
+    must(rule && !rule.retired && rule.indicator !== "6.3.4" && rule.versions.length, "请选择当前有效的指标规则");
     const f: Finding = {
       id: uid("F"),
       rev: 0,
@@ -1097,7 +1317,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
         const op = opinions[id];
         must(
           op &&
-            ["risk", "false_positive", "insufficient"].includes(op.value) &&
+            ["risk", "false_positive"].includes(op.value) &&
             op.note.trim().length >= 4 &&
             op.evidence.length &&
             op.evidence.every(
@@ -1108,8 +1328,8 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       }
       if (!r.findingIds.length) {
         must(
-          ["clear", "insufficient"].includes(i.value ?? ""),
-          "请确认抽查范围内未发现问题或证据不足",
+          i.value === "clear" && !!(i.summary || i.note)?.trim(),
+          "请确认抽检未发现问题并填写范围核验说明；材料不足请申请补证",
         );
         r.scopeResult = i.value as "clear" | "insufficient";
       }
@@ -1134,6 +1354,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   }
   if (a === "return_review") {
     const r = e as Review;
+    r.supervisorComment = i.note;
     r.status = "working";
     r.evidenceRequest = undefined;
     r.dueAt = due();
@@ -1147,10 +1368,13 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     const r = e as Review;
     must(r.type !== "appeal", "申诉核查须在申诉案件裁定");
     must(callFor(s,r.id)?.endedAt, "通话结束后才能确认正式结论");
+    if(!r.findingIds.length) must(r.scopeResult === "clear" && !!r.summary?.trim(),"请先由质检员提交未发现问题的范围核验说明");
     for (const id of r.findingIds) {
       const disposition = i.dispositions?.[id] ?? i;
       const f = s.findings.find((f) => f.id === id)!,
-        op = i.opinions?.[id] ?? r.opinions[id];
+        op = r.opinions[id];
+      must(!i.opinions?.[id] || i.opinions[id].value === op?.value,
+        "不认可核实结论时，请退回质检员重新核实");
       must(
         op &&
           op.note.trim().length >= 4 &&
@@ -1161,66 +1385,11 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
         "每个问题均须保留有效结论说明与证据",
       );
       must(
-        ["risk", "false_positive", "insufficient"].includes(op.value),
+        ["risk", "false_positive"].includes(op.value),
         "结论无效",
       );
-      if (op.value === "risk") {
-        if (disposition.remedy) {
-          must(
-            disposition.goal?.trim() && disposition.standard?.trim() && disposition.observation?.trim(),
-            "请补齐整改目标、标准与观察要求",
-          );
-          must(
-            Number.isInteger(disposition.sampleCount) &&
-              disposition.sampleCount! > 0 &&
-              disposition.sampleCount! <= 20,
-            "演示样例数须为 1–20",
-          );
-          must(validInspector(disposition.owner), "请选择有效质检员");
-          must(future(disposition.dueAt,now), "请选择晚于当前时间的整改期限");
-        } else
-          must((disposition.noRemedy ?? "").trim().length >= 4, "无需整改须说明原因");
-      }
-      conclude(
-        f,
-        op.value,
-        op.note || i.note!,
-        r.owner,
-        op.value === "risk" && !disposition.remedy ? disposition.noRemedy : undefined,
-        op.evidence,
-      );
-      if (op.value === "risk" && disposition.remedy) {
-        s.remedies.push({
-          id: `${uid("REC")}-${id}`,
-          rev: 0,
-          findingId: id,
-          conclusionVersion: latest(f)!.version,
-          agentId: callFor(s, f.id)!.agentId,
-          inspector: disposition.owner!,
-          status: "pending",
-          goal: disposition.goal!,
-          standard: disposition.standard!,
-          standardVersion: 1,
-          sampleCount: disposition.sampleCount!,
-          observation: disposition.observation!,
-          dueAt: disposition.dueAt!,
-          originalDueAt: disposition.dueAt!,
-          createdAt: at,
-          round: 1,
-          materials: [],
-          acceptanceHistory: [],
-          pauseHistory: [],
-          standards: [
-            {
-              version: 1,
-              goal: disposition.goal!,
-              standard: disposition.standard!,
-              note: i.note!,
-              at,
-            },
-          ],
-        });
-      }
+      conclude(f,op.value,op.note || i.note!,r.owner,undefined,op.evidence);
+      if (op.value === "risk") distribution(f,disposition,r.type === "spotcheck" ? "spotcheck" : "review",r.owner);
     }
     r.status = "done";
     r.finishedAt = at;
@@ -1242,6 +1411,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       originalDueAt: new Date(now.getTime() + 86400000).toISOString(),
     };
     s.appeals.push(ap);
+    if(f.distribution) {f.distribution.status="appealed";f.seenVersion=c.version;}
     s.remedies
       .filter((r) => r.findingId === f.id && !terminalRemedy(r))
       .forEach((r) => pauseRemedy(r, ap.id, now));
@@ -1268,6 +1438,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     if (a === "withdraw" || a === "reject_appeal") {
       ap.status = a === "withdraw" ? "withdrawn" : "rejected";
       ap.decidedAt = at;
+      if(f.distribution) f.distribution.status="pending";
       cancelAppealReview(s, ap, now);
       s.remedies
         .filter((r) => r.findingId === f.id)
@@ -1287,6 +1458,16 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       ap.status = "reviewing";
     }
     if (a === "decide") {
+      const review=s.reviews.find(r=>r.id===ap.reviewId);
+      if(f.distribution) {
+        must(review && review.status==="supervisor", "申诉须先由质检员核查并提交结果");
+        const proposed=review.opinions[f.id]?.value;
+        must(i.value === (proposed==="false_positive" ? "false_positive" : proposed==="risk" ? "maintain" : ""), "裁定须确认质检员提交结果；不赞同请退回质检员核对");
+        if(i.value==="maintain") {
+          distribution(f,i,f.distribution.source,review.owner);
+          createRemedy(f,review.owner,"appeal");
+        }
+      }
       must(
         ["maintain", "false_positive", "insufficient", "adjust"].includes(
           i.value ?? "",
@@ -1343,6 +1524,17 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
         addSupplement(f.id, i.owner, "appeal_insufficient");
       }
     }
+  }
+  if(a==="return_appeal") {
+    const ap=e as Appeal, r=s.reviews.find(r=>r.id===ap.reviewId);
+    must(r && r.status==="supervisor", "质检员尚未提交申诉核查结果");
+    r.status="response";r.supervisorComment=i.note;r.rev++;ap.status="reviewing";
+  }
+  if(a==="agree_appeal_return" || a==="explain_appeal") {
+    const r=e as Review, ap=s.appeals.find(ap=>ap.id===r.appealId)!;
+    r.status=a==="agree_appeal_return" ? "working" : "supervisor";
+    r.summary=i.note;r.history.push({at,opinions:structuredClone(r.opinions),summary:i.note});
+    ap.status=a==="agree_appeal_return" ? "reviewing" : "decision";ap.rev++;
   }
   if (a === "supplement") {
     if ("standardVersion" in e) throw new Error("请通过验收样例不足提出补件");
@@ -1409,8 +1601,9 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       ...structuredClone(source),
       id: uid("SAMPLE"),
       rev: 0,
-      startedAt: at,
+      startedAt: new Date(now.getTime()-30000).toISOString(),
       endedAt: at,
+      duration: 30,
       sample: true,
       audio: undefined,
       authorized: [r.inspector],
@@ -1434,7 +1627,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
           startedAt: at,
           endedAt: at,
           ruleVersions: Object.fromEntries(
-            s.rules.map((x) => [x.id, x.versions.at(-1)!.version]),
+            s.rules.filter(x=>x.versions.length).map((x) => [x.id, x.versions.at(-1)!.version]),
           ),
           checks: [{ name: "场景规则", state: "success" }],
         },
@@ -1489,6 +1682,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "verify") {
     const r = e as Remedy;
     must(!r.pause, "申诉暂停期间只能保存意见草稿");
+    must(!r.origin || i.value !== "insufficient", "资料不满足时请选择不通过，并列明补充整改或资料要求");
     must(
       ["pass", "fail", "insufficient"].includes(i.value ?? ""),
       "请选择验收结果",
@@ -1513,8 +1707,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     if (i.value === "insufficient") {
       addSupplement(r.id, r.agentId, "verification");
     } else {
-      r.status = "supervisor";
-      r.supervisorReason = i.value === "pass" ? "approve" : "return";
+      if(i.value === "pass") {r.status="supervisor";r.supervisorReason="approve";} else returnToAgent(r);
     }
   }
   if (a === "close_remedy") {
@@ -1530,16 +1723,16 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     r.finishedAt = at;
   }
   if (a === "return_remedy") {
-    const r = e as Remedy;
-    if (r.supervisorReason === "return") {
-      (r.rounds ??= []).push({round:r.round,standard:r.standard,standardVersion:r.standardVersion,goal:r.goal,sampleCount:r.sampleCount,observation:r.observation,materials:structuredClone(r.materials),acceptance:structuredClone(r.acceptance),at});
-      r.round++;
-      r.status = "executing";
-      r.materials = [];
-    } else r.status = r.materials.length ? "verification" : "executing";
-    r.acceptance = undefined;
-    r.supervisorReason = undefined;
-    r.dueAt = due();
+    const r=e as Remedy;
+    must(validInspector(r.inspector), "请先指定核验质检员");
+    r.status="response";r.supervisorComment=i.note;
+  }
+  if(a==="agree_remedy_return") returnToAgent(e as Remedy);
+  if(a==="explain_remedy") {
+    const r=e as Remedy;
+    must(r.acceptance?.result==="pass", "须保留本轮通过意见及核验依据");
+    r.acceptance.note += `\n补充核验说明：${i.note}`;
+    r.acceptanceHistory.push({...r.acceptance,at});r.status="supervisor";r.supervisorReason="approve";
   }
   if (a === "change_standard") {
     const r = e as Remedy;
@@ -1575,7 +1768,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       id: uid("B"),
       startedAt: at,
       ruleVersions: Object.fromEntries(
-        s.rules.map((r) => [r.id, r.versions.at(-1)!.version]),
+        s.rules.filter(r=>r.versions.length).map((r) => [r.id, r.versions.at(-1)!.version]),
       ),
       checks: [
         { name: "转写", state: "running" },
@@ -1595,10 +1788,37 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     );
     b.endedAt = at;
   }
+  if (a === "create_policy") {
+    must(i.title?.trim() && i.title.trim().length<=100,"请填写 1–100 字的策略名称");
+    must(!s.rules.some(r=>r.indicator==="6.3.4" && r.name===i.title!.trim()),"已有同名预警策略");
+    const r:Rule={id:uid("ALERT"),rev:0,name:i.title!.trim(),indicator:"6.3.4",description:"统一维护检测范围、触发条件、风险等级与处置。",severity:"medium",editable:"trigger",fixedResources:true,versions:[]};
+    must(i.config,"请填写预警策略");validateRuleConfig(r,i.config,s,i.triggerRules ?? []);
+    r.draft={version:0,at,threshold:15,scope:"全部业务",trigger:"所有候选",resources:{},config:structuredClone(i.config),configurationModel:"shared-policy",pendingPolicyBindings:structuredClone(i.policyBindings ?? [])};
+    prepareNewPolicyAssociations(r,s,false);
+    s.rules.push(r);s.logs.push({id:uid("LOG"),target:r.id,at,actor:s.identity,action:"新增预警策略草稿",note:i.note!});
+  }
   if (a === "save_rule") {
     const r = e as Rule,
-      v = structuredClone(r.versions.at(-1)!);
-    if (r.editable === "threshold") {
+      v = structuredClone(r.draft ?? r.versions.at(-1)!);
+    must(!v.config || i.config || i.bindings,"请使用指标配置表单提交完整配置");
+    if (i.bindings) {
+      validateBindings(r,i.bindings,s,false);
+      v.bindings=structuredClone(i.bindings);v.policyVersions=bindingPolicyVersions(i.bindings,s);
+      v.configurationModel="shared-policy";v.config={};delete v.triggerRules;
+      v.resources=fixedResourceReferences(r,s);
+    }
+    if (i.config && !i.bindings) {
+      const selectedTriggers=i.triggerRules ?? policyTriggers(r,s);
+      validateRuleConfig(r,i.config,s,selectedTriggers);
+      if(r.fixedResources && i.ruleResources && JSON.stringify(i.ruleResources)!==JSON.stringify(v.resources))throw new Error("资源引用关系固定，请直接编辑对应业务资源");
+      const selectedResources=r.fixedResources ? fixedResourceReferences(r,s) : i.ruleResources ?? v.resources;
+      validateRuleResources(r,selectedResources,s);
+      v.resources=structuredClone(selectedResources);
+      if(r.indicator==="6.3.4"){delete v.triggerRules;v.configurationModel="shared-policy";}
+      v.config=structuredClone(i.config);
+
+    }
+    if (!i.config && !i.bindings && r.editable === "threshold") {
       must(
         Number.isInteger(i.threshold) &&
           i.threshold! >= 3 &&
@@ -1607,41 +1827,65 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       );
       v.threshold = i.threshold!;
     }
-    if (r.editable === "scope") {
+    if (!i.config && !i.bindings && r.editable === "scope") {
       must(
         ["账户查询", "信用卡", "转账汇款", "全部业务"].includes(i.scope ?? ""),
         "请选择允许的业务范围",
       );
       v.scope = i.scope!;
     }
-    if (r.editable === "trigger") {
+    if (!i.config && !i.bindings && r.editable === "trigger") {
       must(
         ["高风险候选", "所有候选", "关闭提醒"].includes(i.trigger ?? ""),
         "请选择有效提醒触发项",
       );
       v.trigger = i.trigger!;
     }
+    if(i.policyBindings){
+      must(r.indicator==="6.3.4" && !r.versions.length,"已发布策略请通过管理关联调整规则");
+      v.pendingPolicyBindings=structuredClone(i.policyBindings);
+    }
     r.draft = v;
+    if(r.indicator==="6.3.4" && !r.versions.length)prepareNewPolicyAssociations(r,s,false);
     r.checked = false;
   }
   if (a === "check_rule" || a === "check_resource") {
     const r = e as Rule | Resource;
     must(r.draft, "请先保存草稿");
+    if("indicator" in r && r.draft && r.draft.config)validateRuleConfig(r,r.draft.config,s,(r.draft as RuleVersion).triggerRules ?? []);
+    if("indicator" in r && r.fixedResources && r.indicator!=="6.3.4")validateBindings(r,(r.draft as RuleVersion).bindings ?? [],s);
+    if("indicator" in r && r.indicator==="6.3.4" && !r.versions.length)prepareNewPolicyAssociations(r,s);
     r.checked = i.checkPass !== false;
   }
   if (a === "publish_rule") {
     const r = e as Rule;
     must(r.draft && r.checked, "请先完成草稿预设检查");
+    if(r.fixedResources) r.draft!.resources=fixedResourceReferences(r,s);
+    if(r.draft?.config) {validateRuleConfig(r,r.draft.config,s,policyTriggers(r,s,r.draft));validateRuleResources(r,r.draft.resources,s);}
+    if(r.fixedResources && r.indicator!=="6.3.4"){
+      validateBindings(r,r.draft.bindings ?? [],s);
+      r.draft.policyVersions=bindingPolicyVersions(r.draft.bindings ?? [],s);
+    }
+    const associations=r.indicator==="6.3.4" && !r.versions.length?prepareNewPolicyAssociations(r,s):[];
+    const publishedDraft={...r.draft};delete publishedDraft.pendingPolicyBindings;
     r.versions.push({
-      ...r.draft,
-      version: r.versions.at(-1)!.version + 1,
+      ...publishedDraft,
+      version: (r.versions.at(-1)?.version ?? 0) + 1,
       at,
     });
     r.draft = undefined;
     r.checked = false;
+    if(r.indicator==="6.3.4")refreshPolicyReferences(s,r,at);
+    for(const association of associations){
+      const linked=s.rules.find(rule=>rule.id===association.ruleId)!;
+      linked.versions.push({...association.snapshot,version:(linked.versions.at(-1)?.version ?? 0)+1,at});
+      linked.rev++;
+      s.logs.push({id:uid("LOG"),target:linked.id,at,actor:s.identity,action:"随新策略发布关联",note:`${r.name}：${association.features.join("、")}；${i.note?.trim() ?? ""}`});
+    }
   }
   if (a === "discard_rule") {
     const r = e as Rule;
+    if(!r.versions.length)s.rules=s.rules.filter(x=>x.id!==r.id);
     r.draft = undefined;
     r.checked = false;
   }
@@ -1650,11 +1894,13 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   }
   if (a === "reassign") {
     const owner = inspector();
+    must(owner !== ("findingIds" in e ? e.owner : "standardVersion" in e ? e.inspector : undefined), "请选择另一位质检员进行转派");
     if ("findingIds" in e) {
       e.owner = owner;
       e.dueAt = due();
       if (e.status === "supervisor") e.status = "working";
       if (e.appealId) {
+        if (e.status === "response") e.status = "working";
         const ap = s.appeals.find((x) => x.id === e.appealId)!;
         ap.status = "reviewing";
         ap.rev++;
@@ -1677,30 +1923,33 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       );
       must(
         !s.resources.some(
-          (x) => x.name === i.title && x.type === i.resourceType,
+          (x) => !x.deletedAt && x.name === i.title && x.type === i.resourceType,
         ),
         "同类型已有同名条目",
       );
-      must(
-        i.refs?.length &&
-          i.refs.every((id) => s.rules.some((r) => r.id === id)),
-        "新条目须选择有效引用规则",
-      );
+      const refs=i.resourceKind ? s.rules.filter(rule=>rule.fixedResources && rule.indicator===resourceSchemas[i.resourceKind!]?.indicator).map(rule=>rule.id) : i.refs;
+      must(refs?.length && refs.every(id=>s.rules.some(rule=>rule.id===id)),i.resourceKind ? "未找到对应指标规则" : "新条目须选择有效引用规则");
       r = {
         id: uid("RES"),
         rev: 0,
         name: i.title!,
         type: i.resourceType!,
+        ...(i.resourceKind ? {kind:i.resourceKind} : {}),
         versions: [],
-        draftRuleIds: i.refs,
+        draftRuleIds: refs,
       };
       s.resources.push(r);
     }
     must(
-      (i.content ?? "").trim().length >= 4 && i.scope && i.resourceRole,
-      "请填写内容、业务范围和适用角色",
+      (i.content ?? "").trim().length >= 4 && (r.kind || (i.scope && i.resourceRole)),
+      r.kind === "voice" ? "请填写声纹记录" : "请填写内容、业务范围和适用角色",
     );
-    if (r.type === "词库") {
+    if (r.kind) {
+      i.scope="全部业务";i.resourceRole="双方";i.exception="";
+      must(resourceSchemas[r.kind]?.group===r.type,"资源类型与模板不一致");
+      validateResourceRows(r.kind,i.content!);
+    }
+    if (!r.kind && r.type === "词库") {
       const words = i
         .content!.split(/[\n，,]/)
         .map((x) => x.trim())
@@ -1709,7 +1958,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       must(
         !s.resources.some(
           (x) =>
-            x.id !== r.id &&
+            !x.deletedAt && x.id !== r.id &&
             x.type === "词库" &&
             x.versions.at(-1)?.scope === i.scope &&
             x.versions
@@ -1720,29 +1969,27 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
         "同范围已有重复词条",
       );
     }
-    if (r.type === "SOP")
-      must(
-        i.content!.split("\n").filter((x) => x.trim()).length >= 2 &&
-          i
-            .content!.split("\n")
-            .every(
-              (x) => x.replace(/^\s*\d+[.、)）]\s*/, "").trim().length > 0,
-            ),
-        "SOP 至少需要两个有序步骤",
-      );
+    if (!r.kind && r.type === "SOP") parseSopRules(i.content!);
     r.draft = {
       content: i.content!,
-      scope: i.scope!,
-      role: i.resourceRole!,
-      exception: i.exception ?? "",
+      sourceFile: i.sourceFile?.slice(0,255),
+      scope: r.kind === "voice" ? (r.draft ?? r.versions.at(-1))?.scope ?? "全部业务" : i.scope!,
+      role: r.kind === "voice" ? (r.draft ?? r.versions.at(-1))?.role ?? "坐席" : i.resourceRole!,
+      exception: r.kind === "voice" ? (r.draft ?? r.versions.at(-1))?.exception ?? "" : i.exception ?? "",
     };
     r.checked = false;
+  }
+  if (a === "delete_resource") {
+    must(!resourceDeletionBlockers(s,e.id).length, "资源仍被生效规则或规则草稿引用，请先调整引用。");
+    // Keep snapshots for historical rule versions and audit records.
+    (e as Resource).deletedAt = at;
   }
   if (a === "publish_resource") {
     const r = e as Resource;
     must(r.draft && r.checked, "请先通过草稿预设检查");
     const version = (r.versions.at(-1)?.version ?? 0) + 1;
     r.versions.push({ ...r.draft, version, at });
+    refreshFixedResourceReferences(s,r,at);
     r.draft = undefined;
     r.checked = false;
   }
@@ -1765,7 +2012,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     callId: callFor(s, e.id)?.id,
     at,
     actor: s.identity,
-    action: actionNames[a] ?? a,
+    action: actionLabel(state, cmd.id, a),
     note:
       i.note?.trim() ||
       (a === "end_call"
@@ -1807,6 +2054,8 @@ export function needsRead(s: State, e: Entity) {
 export function needsWork(s: State, e: Entity): boolean {
   if(!canSee(s,e.id)) return false;
   if ("standardVersion" in e && terminalRemedy(e)) return false;
+  if("pause" in e && e.pause) return false;
+  if ("standardVersion" in e && !e.inspector && e.origin === "direct" && roleOf(s)==="supervisor") return true;
   if ("findingIds" in e && e.appealId) {
     const parent = s.appeals.find(a => a.id === e.appealId);
     if (!parent || terminalAppeal(parent) || parent.status === "supplement") return false;
@@ -1821,12 +2070,14 @@ export function needsWork(s: State, e: Entity): boolean {
 }
 export function isTodo(s:State,e:Entity) { return needsRead(s,e) || needsWork(s,e); }
 export function notices(s: State) {
-  const candidates: Entity[] = [...s.findings,...s.reviews,...s.appeals,...s.remedies];
+  const candidates: Entity[] = [...s.findings,...s.reviews,...s.appeals,...s.remedies,...standaloneSupplements(s)];
   return candidates.filter(e=>isTodo(s,e));
 }
 export function primaryAction(s:State,id:string) {
-  const allowed=actions(s,id);
-  const order=["reply","receive_supplement","remind","assign","submit_review","publish","accept_assign","decide","accept_remedy","material","verify","close_remedy","return_remedy","ack","read_reminder","feedback_reminder","supplement","request_evidence"];
+  const allowed=contextActions(s,id);
+  const item=entity(s,id);
+  if (item && "standardVersion" in item && item.supervisorReason === "adjust" && allowed.includes("change_standard")) return "change_standard";
+  const order=["reply","receive_supplement","accept_result","assign_inspector","dispatch","agree_remedy_return","agree_appeal_return","remind","assign","submit_review","publish","accept_assign","decide","accept_remedy","material","verify","close_remedy","return_remedy","ack","read_reminder","feedback_reminder","supplement","request_evidence","return_review"];
   return order.find(a=>allowed.includes(a));
 }
 export const csv = (rows: unknown[][]) =>

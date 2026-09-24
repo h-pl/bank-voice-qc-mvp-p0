@@ -10,3 +10,12 @@ playwright-report/
 /node_modules
 .vercel
 .env*
+
+# Isolated local prototype previews
+.next-strategy/
+
+.next-archive/
+
+.next-txt-verify/
+
+.next-dialog-verify/

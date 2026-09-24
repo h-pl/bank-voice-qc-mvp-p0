@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 export type IconName =
   | "grid"
   | "headset"
+  | "phone"
   | "bell"
   | "sliders"
   | "database"
@@ -31,6 +32,7 @@ export type IconName =
   | "edit";
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, ReactNode> = {
+    phone: <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2Z"/>,
     info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></>,
     edit: <><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></>,
     grid: (

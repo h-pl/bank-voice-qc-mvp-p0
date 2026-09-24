@@ -3,7 +3,7 @@
 三个核心角色、七个业务模块的银行呼入客服质检高保真原型。延续灰白界面、橙色点缀与黑色主按钮，使用合成音频、预设检测和浏览器内状态。
 
 - 本地演示：http://localhost:6001
-- 飞书 PRD：https://acnc6zeentra.feishu.cn/docx/JJiCdLFFbotAvgxXr7rcsdmDnwe
+- 最新飞书 PRD：https://acnc6zeentra.feishu.cn/docx/HfCadGmEroohoOx1qikcA2yAnfh
 - 私有仓库：https://github.com/h-pl/bank-voice-qc-mvp-p0
 - 核心文档：[docs/reviews](docs/reviews/README.md)
 
@@ -38,10 +38,17 @@ pnpm verify:mvp
 
 ## 6001 对比迭代
 
-基于当前 5001 含未提交 UI 的完整快照（693d6a2）继续迭代，独立 worktree 为 `质检-ui-6001`。5001 保留当前 MVP，5002 为 MVP 前最后版本 v4.11.0-private.1（92ae9aa）。新分支未推送 GitHub。
+基于当前 5001 含未提交 UI 的完整快照（693d6a2）继续迭代，独立 worktree 为 `质检-ui-6001`。5001 保留当前 MVP，5002 为 MVP 前最后版本 v4.11.0-private.1（92ae9aa）。后续迭代沿用 `codex/unified-experience-6001`；2026-09-20 线上演示基线为 `8e5eced`，后续代码同步记录见下方。
 
 - [需求、逻辑与架构比较](docs/reviews/新版与旧版-需求逻辑架构及方案汇总-20260920.md)
 - [UI 交互比较](docs/reviews/新版与旧版-UI交互对比与采纳方案-20260920.md)
 - [6001 实施与验收](docs/reviews/6001迭代实施与验收-20260920.md)
 
 当前本机启动使用 `node node_modules/next/dist/bin/next start -p 6001 --hostname 127.0.0.1`。开发和生产脚本默认端口均为 6001；当前 worktree 的 node_modules 复用已安装依赖，分支自身不跟踪该链接。
+
+## 2026-09-24 代码同步
+
+当前 6001 迭代包含质检、申诉与整改流程修正，规则与策略直接保存、业务资源维护、统一表单与报表，以及模拟电话接入。包版本仍为 0.2.4，旧标签只定位历史快照。代码推送不代表线上部署或真实服务联调完成。
+
+- [本次变更与验证记录](docs/reviews/6001-代码同步与验证-20260924.md)
+- [对应飞书 PRD](https://acnc6zeentra.feishu.cn/docx/HfCadGmEroohoOx1qikcA2yAnfh)
