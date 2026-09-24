@@ -52,3 +52,6 @@ pnpm verify:mvp
 
 - [本次变更与验证记录](docs/reviews/6001-代码同步与验证-20260924.md)
 - [对应飞书 PRD](https://acnc6zeentra.feishu.cn/docx/HfCadGmEroohoOx1qikcA2yAnfh)
+
+
+当前线上演示已于 2026-09-24 更新：[Moss Quality](https://bank-voice-qc-6001.vercel.app/)。部署状态 `READY`，对应提交 `4d424ac`（业务代码基线 `9edfac0`）；详情见[部署与验证记录](docs/reviews/6001-代码同步与验证-20260924.md)。
