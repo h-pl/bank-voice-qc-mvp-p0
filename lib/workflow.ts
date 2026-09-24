@@ -460,7 +460,7 @@ export const statusNames: Record<string, string> = {
   terminated: "已终止",
 };
 export const actionNames: Record<string, string> = {
-  dispatch: "直接提醒并分发",
+  dispatch: "直接提醒坐席",
   accept_result: "接受并开始整改",
   assign_inspector: "指定核验质检员",
   optimization_feedback: "记录规则优化反馈",
