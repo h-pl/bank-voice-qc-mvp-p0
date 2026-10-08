@@ -1,17 +1,20 @@
-/* Compact media toolbar; transcript and hit ranges retain the shared selection language. */
+/* Listening-first layout: source, play beside timeline, then secondary controls. */
 .evidence-reader { container-type:inline-size; }
-.recording-player-linked { border:0; border-radius:8px; padding:14px 16px; background:#f7f8fa; margin:0 0 20px; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:16px; position:sticky; top:0; z-index:2; }
+.recording-player-linked { border:0; border-radius:8px; padding:14px 16px; background:#f7f8fa; margin:0 0 20px; display:flex; flex-direction:column; align-items:stretch; gap:12px; position:sticky; top:0; z-index:2; }
+.recording-header { display:flex; align-items:center; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; }
+.recording-playback { display:grid; grid-template-columns:40px minmax(0,1fr); gap:16px; align-items:start; }
+.recording-player-linked .recording-play { width:40px; height:40px; min-height:40px; margin-top:2px; border-radius:50%; }
 .recording-player-linked .recording-heading { margin:0; gap:4px 10px; justify-content:flex-start; flex-wrap:wrap; }
 .recording-player-linked .recording-heading > span { font-weight:400; font-size:14px; white-space:nowrap; }
 .recording-player-linked .recording-heading small { flex-shrink:0; color:#626b76; font-size:12px; }
 .recording-player-linked .recording-heading small[data-error="true"] { color:var(--red); }
-.recording-player-linked .recording-controls { gap:6px; min-width:0; }
+.recording-player-linked .recording-controls { gap:8px; min-width:0; margin-left:56px; }
 .recording-player-linked .recording-controls > button { width:34px; height:34px; min-height:34px; flex-shrink:0; }
 .recording-player-linked .recording-time { color:var(--ink); white-space:nowrap; font-weight:400; font-size:13px; }
 .recording-player-linked .recording-time > span { color:var(--muted); }
 .recording-player-linked .recording-options { margin-left:auto; display:flex; align-items:center; gap:6px; }
 .recording-player-linked .recording-speed { width:64px; min-height:32px; border:1px solid #e1e5e9; box-shadow:none; background:#fff; }
-.recording-player-linked .recording-timeline { grid-column:1 / -1; min-width:0; margin-top:14px; }
+.recording-player-linked .recording-timeline { min-width:0; margin:0; }
 .recording-axis { height:44px; position:relative; touch-action:none; }
 .recording-regions { position:absolute; inset:0; overflow:hidden; border-radius:3px; pointer-events:none; }
 .recording-regions > span { position:absolute; inset-block:0; }
@@ -31,14 +34,14 @@
 .recording-player-linked .recording-wave-slider [data-slot="slider-thumb"]:focus-visible { outline:2px solid var(--orange); outline-offset:4px; }
 .recording-axis-hover { position:absolute; top:-24px; transform:translateX(-50%); padding:2px 5px; border-radius:3px; background:#303942; color:white; font-size:11px; line-height:18px; font-variant-numeric:tabular-nums; pointer-events:none; }
 .recording-axis-ticks { display:flex; justify-content:space-between; margin-top:6px; color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
-.recording-hit-lane { height:26px; position:relative; margin-top:5px; }
-.recording-hit-range { position:absolute; inset-block:0; display:flex; align-items:center; justify-content:center; padding:0 4px; border:0; border-radius:3px; background:#fff0df; color:#99521c; font:inherit; font-size:12px; font-weight:400; cursor:pointer; overflow:hidden; }
+.recording-hit-links { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.recording-hit-range { display:inline-flex; min-height:28px; align-items:center; justify-content:center; padding:3px 8px; border:0; border-radius:3px; background:#fff0df; color:#99521c; font:inherit; font-size:12px; font-weight:400; cursor:pointer; overflow:hidden; }
 .recording-hit-range > span { text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
 .recording-hit-range:is(:hover,[data-hovered="true"]) { background:#ffe4c7; }
 .recording-hit-range[aria-pressed="true"] { background:#ffdfbd; }
 .recording-hit-range:focus-visible { outline:2px solid var(--orange); outline-offset:2px; }
 .recording-hit-range:disabled { opacity:.5; cursor:default; }
-.recording-player-linked .recording-hint { grid-column:1 / -1; margin:8px 0 0; font-size:12px; }
+.recording-player-linked .recording-hint { margin:0; font-size:12px; }
 .recording-error { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 .recording-error > button { height:auto; padding:0; }
 .evidence-reader .evidence-transcript-heading h3,
@@ -65,13 +68,10 @@
 .evidence-reader .evidence-reading-hint { display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; margin:4px 0 14px; font-size:12px; color:#626b76; }
 .evidence-hit-legend { display:inline-flex; align-items:center; gap:6px; color:#99521c; }
 .evidence-hit-legend::before { content:""; width:8px; height:8px; border-radius:2px; background:#f8c28d; }
-@container (max-width:520px) {
-  .recording-hit-prefix { display:none; }
-  .recording-player-linked { grid-template-columns:1fr; row-gap:10px; }
-  .recording-player-linked .recording-heading { justify-content:space-between; }
-  .recording-player-linked .recording-timeline { margin-top:0; }
-}
 @container (max-width:380px) {
+  .recording-playback { gap:12px; }
+  .recording-player-linked .recording-controls { margin-left:0; }
+  .recording-axis-ticks > span:nth-child(2), .recording-axis-ticks > span:nth-child(4) { display:none; }
   .evidence-reader .transcript-linked .utterance { grid-template-columns:44px 32px minmax(0,1fr); gap:5px 8px; padding:10px; }
   .evidence-reader .transcript-linked .utterance-text { grid-column:1 / -1; grid-row:2; }
   .evidence-reader .transcript-linked .utterance-state { grid-column:3; grid-row:1; justify-self:end; }
