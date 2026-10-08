@@ -22,12 +22,13 @@
 .recording-regions > span[data-selected="true"] { background:#ffdfbd; }
 .recording-waveform { position:absolute; inset:0; display:flex; align-items:center; gap:2px; padding-inline:2px; pointer-events:none; }
 .recording-waveform > span { flex:1; min-width:0; border-radius:1px; background:#aab4bf; }
-.recording-waveform > span[data-past="true"] { background:#586470; }
+.recording-waveform-played { clip-path:inset(0 100% 0 0); }
+.recording-waveform-played > span { background:#586470; }
 .recording-axis-baseline { position:absolute; inset:calc(50% - 1px) 0 auto; height:2px; background:#c4cbd2; pointer-events:none; }
 .recording-player-linked .recording-wave-slider { position:absolute; inset:0; height:100%; cursor:pointer; }
 .recording-player-linked .recording-wave-slider [data-slot="slider-track"] { height:100%; background:transparent; border-radius:0; }
 .recording-player-linked .recording-wave-slider [data-slot="slider-range"] { background:transparent; }
-.recording-player-linked .recording-wave-slider [data-slot="slider-thumb"] { width:3px; height:48px; border:0; border-radius:1px; background:var(--orange); box-shadow:none; }
+.recording-player-linked .recording-wave-slider [data-slot="slider-thumb"] { width:3px; height:48px; border:0; border-radius:1px; background:var(--orange); box-shadow:none; opacity:0; }
 .recording-player-linked .recording-wave-slider [data-slot="slider-thumb"]:hover { box-shadow:0 0 0 3px #ff9f4929; }
 .recording-player-linked .recording-wave-slider [data-slot="slider-thumb"]:focus-visible { outline:2px solid var(--orange); outline-offset:4px; }
 .recording-axis-hover { position:absolute; top:-24px; transform:translateX(-50%); padding:2px 5px; border-radius:3px; background:#303942; color:white; font-size:11px; line-height:18px; font-variant-numeric:tabular-nums; pointer-events:none; }
@@ -65,4 +66,14 @@
 @container (max-width:380px) {
   .recording-player-linked .recording-options { flex-basis:100%; margin-left:0; }
   .recording-waveform { gap:1px; }
+}
+
+/* The native slider retains hit testing and keyboard semantics; only its visual is frame-driven. */
+.recording-playhead-track { position:absolute; inset:0; overflow:clip; pointer-events:none; }
+.recording-playhead { position:absolute; inset:0; pointer-events:none; transform:translateX(0%); }
+.recording-playhead::before { content:""; position:absolute; inset-block:0; left:0; width:3px; border-radius:1px; background:var(--orange); transform:translateX(-50%); }
+.recording-axis:has([data-slot="slider-thumb"]:focus-visible) { outline:2px solid var(--orange); outline-offset:3px; }
+/* This is essential media position, with no easing or decorative motion, including reduced-motion mode. */
+@media (prefers-reduced-motion:reduce) {
+  .recording-playhead, .recording-waveform-played { animation:none; transition:none; }
 }
