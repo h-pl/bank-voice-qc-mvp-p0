@@ -1,4 +1,4 @@
-import { withAlertDeadlines } from "./alert-deadlines.ts";
+import { withPrototypeAlertDeadlines } from "./prototype-alert-deadlines.ts";
 import { createPrototypeState, migrateUntouchedSeeds, migrateRuleCatalog, migrateContextScenarios } from "./prototype-seeds.ts";
 import { normalizeLegacyLabels } from "./prototype-labels.ts";
 import { withFindingContext } from "./finding-context.ts";
@@ -68,8 +68,12 @@ export function getSnapshot(): State {
       } catch {}
       cache=expanded;
     }
-    const timed = withAlertDeadlines(cache);
+    const timed = withPrototypeAlertDeadlines(cache);
     if (timed !== cache) {
+      try {
+        const key = `${storageKey}-before-mock-alert-deadlines-v1`;
+        if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(cache));
+      } catch {}
       cache = timed;
       try { localStorage.setItem(storageKey, JSON.stringify(cache)); } catch {}
     }
