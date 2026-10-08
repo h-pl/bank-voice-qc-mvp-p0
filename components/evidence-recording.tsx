@@ -55,9 +55,9 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
         <span className="utterance-meta">
           <span className="timecode">{clock(segment.at)}</span>
           <span className={`speaker ${segment.speaker}`}>{segment.speaker === "agent" ? "坐席" : "客户"}</span>
+          {segments.includes(index) && <span className="hit-label">命中</span>}
         </span>
         <span className="utterance-text">{corrected ? call.corrections?.find(correction => correction.segment === index)?.text ?? segment.text : segment.text}
-          {segments.includes(index) && <span className="hit-label">证据</span>}
           {corrected && call.corrections?.some(correction => correction.segment === index) && <small className="correction-original">原文：{segment.text}<br/>{call.corrections.find(correction => correction.segment === index)?.reason}</small>}
         </span>
       </button>)}

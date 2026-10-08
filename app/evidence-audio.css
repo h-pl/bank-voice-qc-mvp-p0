@@ -98,11 +98,8 @@
 .evidence-reader > .evidence-locate-actions { margin-bottom:12px; justify-content:flex-end; }
 .recording-player-linked .recording-speed [data-slot="select-value"] { overflow:visible; }
 
-/* Icon transport and sentence-end evidence markers. */
+/* Transport uses the same outline controls and palette as the rest of the workspace. */
 .recording-player-linked .recording-controls > button { width:34px; padding:0; }
-.recording-player-linked .recording-play { background:#c45515; color:#fff; box-shadow:none; }
-.recording-player-linked .recording-play:hover { background:#a84410; }
-.recording-player-linked .recording-rewind { background:#fff1e5; color:#a84410; }
-.recording-player-linked .recording-rewind:hover { background:#ffe2c7; }
-.evidence-reader .transcript-linked .utterance-text .hit-label { display:inline-block; margin-left:8px; vertical-align:baseline; }
+.recording-player-linked :is(.recording-play,.recording-rewind) { color:var(--ink); box-shadow:none; }
+.evidence-reader .transcript-linked .utterance-meta .hit-label { display:inline-flex; margin-left:auto; color:var(--accent-ink); background:var(--surface); }
 .recording-player-linked .evidence-locate-actions button { width:32px; padding:0; }
