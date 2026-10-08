@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { revealTranscriptRow } from "../lib/transcript-scroll";
 import type { Call } from "../lib/workflow";
 import { recordingSource, recordingSegmentAt } from "../lib/recording-timeline";
 import { recordingTimestamp as clock } from "../lib/evidence-clip";
@@ -30,10 +31,10 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
   const locate = (time: number) => {
     updatePosition(time);
     const index = recordingSegmentAt(call.transcript, time, duration);
-    transcriptRef.current?.children[index]?.scrollIntoView({ block: "nearest" });
+    revealTranscriptRow(transcriptRef.current?.children[index]);
   };
   useEffect(() => {
-    if (playing && selected >= 0) transcriptRef.current?.children[selected]?.scrollIntoView({ block: "nearest" });
+    if (playing && selected >= 0) revealTranscriptRow(transcriptRef.current?.children[selected]);
   }, [playing, selected]);
   useEffect(() => {
     if (initialSegment !== undefined) transcriptRef.current?.children[initialSegment]?.scrollIntoView({ block: "nearest" });

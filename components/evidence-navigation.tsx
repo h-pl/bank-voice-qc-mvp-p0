@@ -15,7 +15,6 @@ export function EvidenceNavigation({ transcriptRef, segments, current, onLocate 
     const segment = segments[(currentIndex + direction + segments.length) % segments.length];
     onLocate(segment);
     const row = transcriptRef.current?.children[segment] as HTMLElement | undefined;
-    row?.scrollIntoView({ block: "nearest" });
     row?.focus({ preventScroll: true });
   };
   if (segments.length < 2) return null;

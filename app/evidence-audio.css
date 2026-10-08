@@ -67,8 +67,8 @@
 
 /* The native slider retains hit testing and keyboard semantics; only its visual is frame-driven. */
 .recording-playhead-track { position:absolute; inset:0; overflow:clip; pointer-events:none; }
-.recording-playhead { position:absolute; inset:0; pointer-events:none; transform:translateX(0%); }
-.recording-playhead::before { content:""; position:absolute; inset-block:0; left:0; width:3px; border-radius:1px; background:var(--orange); transform:translateX(-50%); }
+.recording-playhead { position:absolute; inset:0 3px 0 0; pointer-events:none; transform:translateX(0%); }
+.recording-playhead::before { content:""; position:absolute; inset-block:0; left:0; width:3px; border-radius:1px; background:var(--orange); }
 .recording-axis:has([data-slot="slider-thumb"]:focus-visible) { outline:2px solid var(--orange); outline-offset:3px; }
 /* This is essential media position, with no easing or decorative motion, including reduced-motion mode. */
 @media (prefers-reduced-motion:reduce) {
@@ -103,3 +103,14 @@
 .recording-player-linked :is(.recording-play,.recording-rewind) { color:var(--ink); box-shadow:none; }
 .evidence-reader .transcript-linked .utterance-meta .hit-label { display:inline-flex; margin-left:auto; color:var(--accent-ink); background:var(--surface); }
 .recording-player-linked .evidence-locate-actions button { width:32px; padding:0; }
+
+/* Explicit states avoid the global outline background overriding utility hover styles. */
+.recording-player-linked .recording-controls button:not(:disabled) { cursor:pointer; transition:background-color 150ms ease, border-color 150ms ease; }
+@media (hover:hover) and (pointer:fine) {
+  .recording-player-linked .recording-controls button:hover:not(:disabled) { background:var(--surface-subtle); color:var(--ink); border-color:var(--scrollbar-hover); }
+}
+.recording-player-linked .recording-controls button:active:not(:disabled) { background:var(--line); border-color:var(--scrollbar-active); }
+.recording-player-linked .recording-controls button:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce) {
+  .recording-player-linked .recording-controls button:not(:disabled) { transition:none; }
+}
