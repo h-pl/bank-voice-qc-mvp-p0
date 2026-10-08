@@ -1,5 +1,6 @@
 "use client";
-import { defaultTaskDeadline, taskDeadlineLimit } from "../lib/task-deadlines";
+import { defaultTaskDeadline, taskDeadlineLimit, lateWarningSubmission, warningTask } from "../lib/task-deadlines";
+import { useDemoClock } from "../lib/store";
 import { CopyRecordId } from "./record-id";
 import { DatePicker } from "./ui/date-picker";
 import { EvidenceSelection } from "./evidence-selection";
@@ -28,6 +29,7 @@ import {
   supplementExecutors,
   linkableFindings,
   type Review,
+  type Entity,
   callFor,
   entity,
   latest,
@@ -44,6 +46,11 @@ const localInput = (d: Date) =>
   new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 16);
+function LateSubmissionNotice({state, target, action}:{state:State;target:Entity;action:string}) {
+  const now = useDemoClock();
+  const overrun = lateWarningSubmission(state, target, action, now);
+  return overrun ? <p className="callout" role="status">已超时，提交后将记录超限事件。原截止时间保留，流程照常继续。</p> : null;
+}
 export function ActionForm(props: Parameters<typeof StandardActionForm>[0]) {
   return props.action === "dispatch" ? <DirectReminderForm {...props}/> : <StandardActionForm {...props}/>;
 }
@@ -316,6 +323,7 @@ function StandardActionForm({
         if (field.dataset.formInvalid) { field.removeAttribute("aria-invalid"); field.removeAttribute("aria-describedby"); delete field.dataset.formInvalid; setError(""); }
       }}>
         <div className="action-form-body">
+        <LateSubmissionNotice state={state} target={target} action={requestedAction}/>
         {embedded && <div className="form-context">
           <b>
             {action === "create_resource" ? "新资源" : "title" in target
@@ -426,7 +434,7 @@ function StandardActionForm({
             />
           </label>
         )}
-        {needsDue && deadlineLimit && <p className="subtle">最晚提交：{new Date(deadlineLimit).toLocaleString("zh-CN", {timeZone:"Asia/Shanghai"})}（已考虑上级期限及主管处理时间）。剩余时间不足请联系主管升级处理。</p>}
+        {needsDue && deadlineLimit && <p className="subtle">最晚提交：{new Date(deadlineLimit).toLocaleString("zh-CN", {timeZone:"Asia/Shanghai"})}（已考虑上级期限及主管处理时间）。{warningTask(state,target) ? "超过期限仍可按原流程提交，保留原截止时间并记录超限事件。" : "剩余时间不足请联系主管升级处理。"}</p>}
         {["decide", "return_appeal"].includes(action) && appealReview?.status === "supervisor" && <div className="requirements">
           <h3>质检员核查结论：{reviewResultLabel(appealReview.opinions[f?.id ?? ""]?.value, "appeal")}</h3>
           <p>{appealReview.opinions[f?.id ?? ""]?.note}</p>
@@ -912,6 +920,7 @@ function DirectReminderForm({ state, id, onClose, onSubmit, embedded = false }: 
   };
   return <Surface title={verification ? '调整核验要求' : '直接提醒坐席'} onClose={close} {...(!embedded ? { variant: 'action' as const, description: `${id} · ${finding?.title ?? ''}` } : {})}>
     <form ref={form} className="action-form direct-reminder-form" noValidate onSubmit={submit}>
+      {finding && <LateSubmissionNotice state={state} target={finding} action="dispatch"/>}
       <div ref={body} className="action-form-body">
         {verification ? <>
           <label>所需样例数 *<TextInput aria-label="所需样例数" required type="number" min={1} max={20} step={1} value={verification.sampleCount || ''} onChange={event => { setVerification({ ...verification, sampleCount: Number(event.target.value) }); setError(''); }}/></label>

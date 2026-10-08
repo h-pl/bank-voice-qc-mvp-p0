@@ -1,4 +1,4 @@
-import { taskDeadlineLimit } from './task-deadlines.ts';
+import { taskDeadlineLimit, retainedWarningDeadline, lateWarningSubmission } from './task-deadlines.ts';
 import type { AlertTiming } from "./alert-deadlines.ts";
 import { prepareNewPolicyAssociations } from "./policy-associations.ts";
 import { withPolicyBindingFeatures, validateBindings, bindingPolicyVersions, refreshPolicyReferences, type IndicatorBinding } from "./indicator-bindings.ts";
@@ -338,6 +338,10 @@ export type Log = {
   actor: string;
   action: string;
   note: string;
+  overrun?: {
+    requestId: string; operation: string; deadlineLabel: string; deadlineAt: string;
+    submittedAt: string; exceededByMs: number; owner: string;
+  };
 };
 export type State = {
   schema: 2;
@@ -1072,14 +1076,18 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     if (Date.parse(d.dueAt) <= now.getTime()) d.completionOverdueAt ??= d.dueAt;
   }
   const due = () => {
-    must(future(i.dueAt, now), "请选择晚于当前时间的期限。");
+    must(!!i.dueAt && Number.isFinite(Date.parse(i.dueAt)), "请选择有效的办理期限。");
+    const retained = retainedWarningDeadline(s, e, a, now.getTime());
+    // The picker edits minutes; restore the exact recorded timestamp without moving its clock.
+    const keepsExpired = !!retained && Math.floor(Date.parse(i.dueAt!) / 60000) === Math.floor(Date.parse(retained) / 60000);
+    must(keepsExpired || future(i.dueAt, now), "请选择晚于当前时间的期限；超时办理可保留原截止时间提交。");
     const limit = taskDeadlineLimit(s, e);
-    must(!limit || Date.parse(i.dueAt!) <= Date.parse(limit), "办理期限超过上级处置期限（含主管预留时间）；剩余时间不足时请联系主管升级处理，不得重置总期限。");
+    must(keepsExpired || !limit || Date.parse(i.dueAt!) <= Date.parse(limit), "办理期限超过上级处置期限（含主管预留时间）；超时办理请保留原截止时间提交，不会重置总期限。");
     if (s.appeals.some(ap => ap.id === e.id)) {
       const child = s.reviews.find(r => r.appealId === e.id && !["done", "cancelled"].includes(r.status));
       if (a === "extend" && child) must(Date.parse(child.dueAt) <= Date.parse(i.dueAt!), "申诉截止不能早于未完成的核查期限，请先调整核查期限。");
     }
-    return i.dueAt!;
+    return keepsExpired ? retained! : i.dueAt!;
   };
   const inspector = () => {
     must(validInspector(i.owner), "请选择有效质检员。");
@@ -2070,6 +2078,18 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   e.rev++;
   s.revision++;
   s.requests.push(cmd.requestId);
+  const original = entity(state, cmd.id)!;
+  const overrun = lateWarningSubmission(state, original, a, now.getTime());
+  if (overrun) {
+    const owner = currentOwner(state, original);
+    const format = (value: string) => new Date(value).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai', hour12:false});
+    const seconds = Math.ceil(overrun.exceededByMs / 1000);
+    s.logs.push({
+      id: uid("EV"), target: e.id, callId: callFor(s,e.id)?.id, at, actor:s.identity, action:"超时提交",
+      note:`${actionLabel(state,cmd.id,a)}；原${overrun.label}：${format(overrun.at)}；实际提交：${format(at)}；超限 ${Math.floor(seconds / 3600)} 小时 ${Math.floor(seconds % 3600 / 60)} 分 ${seconds % 60} 秒；当时责任人：${people.find(p=>p.id===owner)?.name ?? '未记录'}。`,
+      overrun:{requestId:cmd.requestId, operation:a, deadlineLabel:overrun.label, deadlineAt:overrun.at, submittedAt:at, exceededByMs:overrun.exceededByMs, owner},
+    });
+  }
   s.logs.push({
     id: uid("EV"),
     target: e.id,
