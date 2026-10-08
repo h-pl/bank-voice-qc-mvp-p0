@@ -114,3 +114,10 @@
 @media (prefers-reduced-motion:reduce) {
   .recording-player-linked .recording-controls button:not(:disabled) { transition:none; }
 }
+
+/* Match waveform roles to the transcript's blue-gray agent and warm-brown customer. */
+.evidence-reader { --wave-agent:#7d9fb6; --wave-customer:#b69a77; --wave-agent-played:#496a80; --wave-customer-played:#756247; }
+.recording-waveform > span[data-speaker="agent"] { background:var(--wave-agent); }
+.recording-waveform > span[data-speaker="customer"] { background:var(--wave-customer); }
+.recording-waveform-played > span[data-speaker="agent"] { background:var(--wave-agent-played); }
+.recording-waveform-played > span[data-speaker="customer"] { background:var(--wave-customer-played); }

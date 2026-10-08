@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef, useImperativeHandle, useCallback, type RefObject, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useState, useRef, useImperativeHandle, useCallback, useMemo, type RefObject, type PointerEvent, type ReactNode } from "react";
 import { Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
@@ -30,6 +30,11 @@ export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = 
   const [error, setError] = useState(false), [waiting, setWaiting] = useState(false);
   const [hoverTime, setHoverTime] = useState<number>();
   const ranges = recordingRanges(transcript, evidence, duration);
+  const waveformBars = useMemo(() => waveform.map((height, index) => {
+    const time = (index + 0.5) / waveform.length * duration;
+    const segment = recordingSegmentAt(transcript, time, duration);
+    return { height, speaker: transcript[segment]?.speaker };
+  }), [waveform, transcript, duration]);
   const paintPosition = useCallback((time: number) => {
     const percent = duration > 0 ? Math.max(0, Math.min(100, time / duration * 100)) : 0;
     if (playhead.current) playhead.current.style.transform = `translateX(${percent}%)`;
@@ -102,8 +107,8 @@ export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = 
       <div className="recording-axis" onPointerMove={hoverAxis} onPointerLeave={clearHover}>
         <div className="recording-regions" aria-hidden="true">{ranges.map(range => <span key={range.index} data-hit={range.hit} data-selected={selected === range.index} data-hovered={hovered === range.index} style={{ left: `${range.start / duration * 100}%`, width: `${(range.end - range.start) / duration * 100}%` }}/>)}</div>
         {waveform.length ? <>
-          <div className="recording-waveform" aria-hidden="true">{waveform.map((height, index) => <span key={index} style={{ height: `${Math.max(2, height * 42)}px` }}/>)}</div>
-          <div ref={playedWaveform} className="recording-waveform recording-waveform-played" aria-hidden="true">{waveform.map((height, index) => <span key={index} style={{ height: `${Math.max(2, height * 42)}px` }}/>)}</div>
+          <div className="recording-waveform" aria-hidden="true">{waveformBars.map(({ height, speaker }, index) => <span key={index} data-speaker={speaker} style={{ height: `${Math.max(2, height * 42)}px` }}/>)}</div>
+          <div ref={playedWaveform} className="recording-waveform recording-waveform-played" aria-hidden="true">{waveformBars.map(({ height, speaker }, index) => <span key={index} data-speaker={speaker} style={{ height: `${Math.max(2, height * 42)}px` }}/>)}</div>
         </> : <div className="recording-axis-baseline" aria-hidden="true"/>}
         <Slider className="recording-wave-slider" aria-label="录音播放进度" aria-valuetext={`${clock(current)} / ${clock(duration)}`} disabled={!ready || error} min={0} max={duration || 1} step={0.1} value={[Math.min(current, duration || 0)]} onValueChange={value => seek(value[0])}/>
         <span className="recording-playhead-track" aria-hidden="true"><span ref={playhead} className="recording-playhead"/></span>
