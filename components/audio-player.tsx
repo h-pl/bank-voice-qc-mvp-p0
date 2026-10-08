@@ -68,7 +68,7 @@ export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = 
     setHoverTime(time); onHover(recordingSegmentAt(transcript, time, duration));
   };
   const clearHover = () => { setHoverTime(undefined); onHover(undefined); };
-  const ticks = Array.from({ length: 5 }, (_, index) => duration * index / 4);
+  const ticks = [0, duration];
   return <section className="recording-player recording-player-linked" aria-label="通话录音播放器">
     <audio ref={media} data-qc-recording src={src} preload="metadata"
       onLoadedMetadata={event => {
@@ -91,8 +91,8 @@ export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = 
       onTimeUpdate={event => updateTime(event.currentTarget.currentTime)}/>
     {waiting && !error && <small className="recording-buffering" role="status">正在缓冲…</small>}
     <div className="recording-controls">
-      <Button type="button" className="recording-play" aria-label={playing ? "暂停录音" : "播放录音"} disabled={!ready || error} onClick={play}>{playing ? <Pause aria-hidden="true"/> : <Play aria-hidden="true"/>}<span>{playing ? "暂停" : "播放"}</span></Button>
-      <Button type="button" variant="ghost" className="recording-rewind" aria-label="后退 5 秒" disabled={!ready || error} onClick={() => seek(current - 5)}><RotateCcw aria-hidden="true"/><span>后退5秒</span></Button>
+      <Button type="button" className="recording-play" size="icon" title={playing ? "暂停录音" : "播放录音"} aria-label={playing ? "暂停录音" : "播放录音"} disabled={!ready || error} onClick={play}>{playing ? <Pause aria-hidden="true"/> : <Play aria-hidden="true"/>}</Button>
+      <Button type="button" variant="ghost" className="recording-rewind" size="icon" title="后退 5 秒" aria-label="后退 5 秒" disabled={!ready || error} onClick={() => seek(current - 5)}><RotateCcw aria-hidden="true"/></Button>
       <span className="recording-time" aria-label={`当前 ${clock(current)}，总时长 ${clock(duration)}`}>{clock(current)}<span> / {clock(duration)}</span></span>
       <div className="recording-options">{navigation}
         <Select value={speed} onValueChange={value => { setSpeed(value); if (media.current) media.current.playbackRate = Number(value); }}><SelectTrigger aria-label="播放倍速" className="recording-speed"><SelectValue/></SelectTrigger><SelectContent>{["0.75", "1", "1.25", "1.5", "2"].map(value => <SelectItem key={value} value={value}>{value}×</SelectItem>)}</SelectContent></Select>

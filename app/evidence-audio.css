@@ -34,7 +34,7 @@
 .recording-axis-hover { position:absolute; top:-24px; transform:translateX(-50%); padding:2px 5px; border-radius:3px; background:#303942; color:white; font-size:11px; line-height:18px; font-variant-numeric:tabular-nums; pointer-events:none; }
 .recording-axis-ticks { display:flex; justify-content:space-between; margin-top:6px; color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
 
-.recording-axis-ticks > span:nth-child(2), .recording-axis-ticks > span:nth-child(4) { display:none; }
+
 
 .recording-player-linked .recording-hint { margin:0; font-size:12px; }
 .recording-error { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
@@ -60,9 +60,6 @@
 .evidence-reader .transcript-linked .utterance .speaker { padding:0 5px; font-weight:400; font-size:12px; border-radius:4px; }
 .evidence-reader .transcript-linked .utterance-text { min-width:0; color:var(--ink); overflow-wrap:anywhere; font-weight:400; }
 .evidence-reader .transcript-linked .utterance .hit-label { padding:0 4px; border-radius:3px; color:#99521c; background:#ffffffa6; line-height:20px; font-weight:400; font-size:12px; white-space:nowrap; }
-.evidence-reader .transcript-linked .utterance-state { margin-left:auto; color:#99521c; font-size:12px; white-space:nowrap; line-height:24px; visibility:hidden; }
-.evidence-reader .transcript-linked .utterance-state[data-active="true"],
-.evidence-reader .transcript-linked .utterance:is(:hover,:focus-visible) .utterance-state { visibility:visible; }
 @container (max-width:380px) {
   .recording-player-linked .recording-options { flex-basis:100%; margin-left:0; }
   .recording-waveform { gap:1px; }
@@ -100,3 +97,12 @@
 .recording-player-linked .evidence-locate-actions button { height:34px; min-height:34px; padding:0 10px; font-weight:400; }
 .evidence-reader > .evidence-locate-actions { margin-bottom:12px; justify-content:flex-end; }
 .recording-player-linked .recording-speed [data-slot="select-value"] { overflow:visible; }
+
+/* Icon transport and sentence-end evidence markers. */
+.recording-player-linked .recording-controls > button { width:34px; padding:0; }
+.recording-player-linked .recording-play { background:#c45515; color:#fff; box-shadow:none; }
+.recording-player-linked .recording-play:hover { background:#a84410; }
+.recording-player-linked .recording-rewind { background:#fff1e5; color:#a84410; }
+.recording-player-linked .recording-rewind:hover { background:#ffe2c7; }
+.evidence-reader .transcript-linked .utterance-text .hit-label { display:inline-block; margin-left:8px; vertical-align:baseline; }
+.recording-player-linked .evidence-locate-actions button { width:32px; padding:0; }

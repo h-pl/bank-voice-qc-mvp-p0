@@ -43,7 +43,7 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
     if (source) controller.current?.seek(time);
     else locate(time);
   };
-  const navigation = <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} transcript={call.transcript} current={lastEvidence} onLocate={select}/>;
+  const navigation = <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} current={lastEvidence} onLocate={select}/>;
   return <>
     {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={updatePosition} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered} navigation={navigation}/> : <div className="audio-missing"><Icon name="mic" size={16}/><div><b>暂无可用录音</b>{!inline && <small>可查看通话转写与已关联证据。</small>}</div></div>}
     {children}
@@ -55,10 +55,9 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
         <span className="utterance-meta">
           <span className="timecode">{clock(segment.at)}</span>
           <span className={`speaker ${segment.speaker}`}>{segment.speaker === "agent" ? "坐席" : "客户"}</span>
-          {segments.includes(index) && <span className="hit-label">命中</span>}
-          <span className="utterance-state" data-active={selected === index} aria-hidden={selected !== index}>{selected === index ? playing ? "播放中" : "已定位" : "定位"}</span>
         </span>
         <span className="utterance-text">{corrected ? call.corrections?.find(correction => correction.segment === index)?.text ?? segment.text : segment.text}
+          {segments.includes(index) && <span className="hit-label">证据</span>}
           {corrected && call.corrections?.some(correction => correction.segment === index) && <small className="correction-original">原文：{segment.text}<br/>{call.corrections.find(correction => correction.segment === index)?.reason}</small>}
         </span>
       </button>)}
