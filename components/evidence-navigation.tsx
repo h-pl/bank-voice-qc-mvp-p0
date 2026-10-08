@@ -21,7 +21,7 @@ export function EvidenceNavigation({ transcriptRef, segments, total, transcript,
     row?.focus({ preventScroll: true });
   };
   return <div className="evidence-transcript-heading">
-    <div><h3>通话转写</h3><span>· {total}段</span></div>
+    <span aria-label={`转写共${total}段`}>共{total}段</span>
     {!!segments.length && <div className="evidence-locate-actions">
       <span>{segments.length > 1 ? `命中 ${currentIndex + 1}/${segments.length} 段` : "命中1段"}</span>
       {segments.length > 1 ? <><Button onClick={() => locate(-1)}>上一段</Button><Button onClick={() => locate(1)}>下一段</Button></> : <Button onClick={() => locate(0)}>定位 {clock(transcript[segments[0]].at)}</Button>}

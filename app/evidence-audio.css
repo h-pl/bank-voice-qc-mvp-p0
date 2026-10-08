@@ -77,3 +77,19 @@
 @media (prefers-reduced-motion:reduce) {
   .recording-playhead, .recording-waveform-played { animation:none; transition:none; }
 }
+
+/* Keep the alert transport visible; the transcript owns the desktop reading scroll. */
+.recording-buffering { font-size:12px; color:var(--muted); }
+.evidence-reader .transcript-linked:focus-visible { outline:2px solid var(--orange); outline-offset:-2px; }
+@media (min-width:1251px) {
+  .case-workspace .alert-detail-shell .case-content:has(> .alert-evidence:only-child) { display:flex; flex:1; min-height:0; overflow:hidden; padding-bottom:12px; }
+  .case-workspace .alert-detail-shell .case-content > .alert-evidence:only-child { display:flex; flex:1; min-height:0; overflow:visible; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child > .evidence-reader { display:flex; flex-direction:column; flex:1; min-height:0; min-width:0; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child .evidence-reader > :not(.transcript-linked) { flex-shrink:0; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child .recording-player-linked { position:relative; margin:0 0 10px; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child .evidence-transcript-heading { margin-bottom:8px; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child .transcript-linked { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain; scrollbar-gutter:stable; scrollbar-width:thin; scrollbar-color:#b7bdc5 transparent; padding-right:8px; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child .transcript-linked::-webkit-scrollbar { width:7px; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child .transcript-linked::-webkit-scrollbar-thumb { background:#b7bdc5; border-radius:4px; }
+  .case-workspace .alert-detail-shell .alert-evidence:only-child .transcript-linked .utterance { scroll-margin-block:8px; }
+}

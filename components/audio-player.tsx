@@ -89,7 +89,7 @@ export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = 
       onWaiting={() => setWaiting(true)} onPlaying={() => setWaiting(false)}
       onSeeked={event => updateTime(event.currentTarget.currentTime)}
       onTimeUpdate={event => updateTime(event.currentTarget.currentTime)}/>
-    <div className="recording-heading"><span>通话录音</span><small role="status" data-error={error}>{error ? "录音加载失败" : waiting ? "正在缓冲…" : ""}</small></div>
+    {waiting && !error && <small className="recording-buffering" role="status">正在缓冲…</small>}
     <div className="recording-controls">
       <Button type="button" className="recording-play" aria-label={playing ? "暂停录音" : "播放录音"} disabled={!ready || error} onClick={play}>{playing ? <Pause aria-hidden="true"/> : <Play aria-hidden="true"/>}<span>{playing ? "暂停" : "播放"}</span></Button>
       <Button type="button" variant="ghost" className="recording-rewind" aria-label="后退 5 秒" disabled={!ready || error} onClick={() => seek(current - 5)}><RotateCcw aria-hidden="true"/><span>后退5秒</span></Button>
