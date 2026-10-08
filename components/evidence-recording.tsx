@@ -20,9 +20,15 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
   const [playing, setPlaying] = useState(false), [hovered, setHovered] = useState<number>();
   const [corrected, setCorrected] = useState(false);
   const segments = call.transcript.flatMap((_, index) => evidence.includes(index) ? [index] : []);
+  const [lastEvidence, setLastEvidence] = useState(segments.includes(initialSegment ?? -1) ? initialSegment! : segments[0]);
+  const updatePosition = (time: number) => {
+    setCurrent(time); setPositioned(true);
+    const index = recordingSegmentAt(call.transcript, time, duration);
+    if (segments.includes(index)) setLastEvidence(index);
+  };
   const selected = positioned ? recordingSegmentAt(call.transcript, current, duration) : -1;
   const locate = (time: number) => {
-    setCurrent(time); setPositioned(true);
+    updatePosition(time);
     const index = recordingSegmentAt(call.transcript, time, duration);
     transcriptRef.current?.children[index]?.scrollIntoView({ block: "nearest" });
   };
@@ -38,21 +44,22 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
     else locate(time);
   };
   return <>
-    {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={time => { setCurrent(time); setPositioned(true); }} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered}/> : <div className="audio-missing"><Icon name="mic" size={16}/><div><b>暂无可用录音</b>{!inline && <small>可查看通话转写与已关联证据。</small>}</div></div>}
+    {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={updatePosition} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered}/> : <div className="audio-missing"><Icon name="mic" size={16}/><div><b>暂无可用录音</b>{!inline && <small>可查看通话转写与已关联证据。</small>}</div></div>}
     {children}
-    <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} total={call.transcript.length} onLocate={select}/>
-    <p className="evidence-reading-hint">{!!segments.length && <span className="evidence-hit-legend">命中片段</span>}<span>{source ? "点击原话定位录音，结合上下文核对" : "结合上下文核对原话"}</span></p>
+    <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} total={call.transcript.length} transcript={call.transcript} current={lastEvidence} onLocate={select}/>
     {!!call.corrections?.length && <div className="correction-toggle"><Button onClick={() => setCorrected(!corrected)}>{corrected ? "查看原始转写" : "查看修订对照"}</Button><small>修订独立保留，不覆盖原文</small></div>}
     {!call.transcript.length && <p className="evidence-empty" role="status">暂无通话转写</p>}
     <div className="transcript transcript-linked" ref={transcriptRef}>
       {call.transcript.map((segment, index) => <button type="button" key={index} className={`utterance ${segments.includes(index) ? "hit" : ""}`} aria-label={`${source ? "定位到" : "选择片段"} ${clock(segment.at)} ${segment.speaker === "agent" ? "坐席" : "客户"}${segments.includes(index) ? "，命中片段" : ""}`} aria-pressed={selected === index} data-selected={selected === index} data-hovered={hovered === index} data-playing={selected === index && playing} onClick={() => select(index)} onPointerEnter={() => setHovered(index)} onPointerLeave={() => setHovered(undefined)} onFocus={() => setHovered(index)} onBlur={() => setHovered(undefined)}>
-        <span className="timecode">{clock(segment.at)}</span>
-        <span className={`speaker ${segment.speaker}`}>{segment.speaker === "agent" ? "坐席" : "客户"}</span>
-        <span className="utterance-text">{corrected ? call.corrections?.find(correction => correction.segment === index)?.text ?? segment.text : segment.text}
+        <span className="utterance-meta">
+          <span className="timecode">{clock(segment.at)}</span>
+          <span className={`speaker ${segment.speaker}`}>{segment.speaker === "agent" ? "坐席" : "客户"}</span>
           {segments.includes(index) && <span className="hit-label">命中</span>}
+          <span className="utterance-state" data-active={selected === index} aria-hidden={selected !== index}>{selected === index ? playing ? "播放中" : "已定位" : "定位"}</span>
+        </span>
+        <span className="utterance-text">{corrected ? call.corrections?.find(correction => correction.segment === index)?.text ?? segment.text : segment.text}
           {corrected && call.corrections?.some(correction => correction.segment === index) && <small className="correction-original">原文：{segment.text}<br/>{call.corrections.find(correction => correction.segment === index)?.reason}</small>}
         </span>
-        <span className="utterance-state" data-active={selected === index} aria-hidden={selected !== index}>{selected === index ? playing ? "播放中" : "已定位" : "定位"}</span>
       </button>)}
     </div>
   </>;
