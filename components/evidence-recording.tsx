@@ -7,10 +7,10 @@ import { recordingTimestamp as clock } from "../lib/evidence-clip";
 import { AudioPlayer, type RecordingController } from "./audio-player";
 import { EvidenceNavigation } from "./evidence-navigation";
 import { Button } from "./ui";
-import { Icon } from "./icon";
+import { Headphones } from "lucide-react";
 
-export function EvidenceRecording({ call, evidence, initialSegment, inline, children }: {
-  call: Call; evidence: number[]; initialSegment?: number; inline?: boolean; children?: ReactNode;
+export function EvidenceRecording({ call, evidence, initialSegment, children }: {
+  call: Call; evidence: number[]; initialSegment?: number; children?: ReactNode;
 }) {
   const source = recordingSource(call);
   const controller = useRef<RecordingController>(null);
@@ -46,7 +46,7 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
   };
   const navigation = <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} current={lastEvidence} onLocate={select}/>;
   return <>
-    {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={updatePosition} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered} navigation={navigation}/> : <div className="audio-missing"><Icon name="mic" size={16}/><div><b>暂无可用录音</b>{!inline && <small>可查看通话转写与已关联证据。</small>}</div></div>}
+    {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={updatePosition} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered} navigation={navigation}/> : <div className="recording-unavailable" role="status"><Headphones size={18} aria-hidden="true"/><span>暂无可用音频</span></div>}
     {children}
     {!source && navigation}
     {!!call.corrections?.length && <div className="correction-toggle"><Button onClick={() => setCorrected(!corrected)}>{corrected ? "查看原始转写" : "查看修订对照"}</Button><small>修订独立保留，不覆盖原文</small></div>}

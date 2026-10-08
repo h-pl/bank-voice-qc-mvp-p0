@@ -746,6 +746,8 @@ export function Detail({
   const distinctNote=caseNote && caseNote!==caseTitle(state,item) && !(review2 && "findingIds" in item && item.type==="candidate") ? caseNote : undefined;
   const hasSummary=("findingIds" in item && !item.findingIds.length) || !!supervisorComment || !!verdict || "conclusions" in item && !!call && !inPreview && !alertDetail || !!distinctNote || "findingIds" in item && !!item.evidenceRequest || "pause" in item && !!item.pause || "standardVersion" in item || "executor" in item;
   const hasDocuments=!!verdict && !("findingIds" in item) || "conclusionVersion" in item || "standardVersion" in item || supplements.length>0;
+  const hasAlertResult = alertDetail && (hasSummary || hasDocuments);
+  const showCaseMaterials = inPreview || !alertDetail || tab === "outcome";
   return <>
     <div className={`case-shell${alertDetail && !inPreview ? " alert-detail-shell" : ""}`}>
       <div className="case-main">
@@ -789,10 +791,10 @@ export function Detail({
       </div>
 
         </div>
-        {!inPreview && <Tabs value={tab} label="事项详情" className="subtabs case-tabs" panelId={detailPanelId} options={[{value:"overview",label:alertDetail ? "告警详情" : review2 && "findingIds" in item ? "问题与证据" : "办理概览"},{value:"history",label:"处理记录"},{value:"related",label:`关联事项 ${related.length + otherFindings.length}`}]} onChange={setTab}/>}
+        {!inPreview && <Tabs value={tab} label="事项详情" className="subtabs case-tabs" panelId={detailPanelId} options={[{value:"overview",label:alertDetail ? "告警详情" : review2 && "findingIds" in item ? "问题与证据" : "办理概览"},...(hasAlertResult ? [{value:"outcome",label:"处理结果"}] : []),{value:"history",label:"处理记录"},{value:"related",label:`关联事项 ${related.length + otherFindings.length}`}]} onChange={setTab}/>}
         <div className="case-content" role={inPreview ? "region" : "tabpanel"} aria-label={inPreview ? "详情内容" : undefined} id={detailPanelId} aria-labelledby={inPreview ? undefined : `${detailPanelId}-tab-${tab}`}>
-          {(inPreview || tab === "overview") && <>
-            {hasSummary && <section className="case-section" aria-label="案件摘要">
+          {(inPreview || tab === "overview" || alertDetail && tab === "outcome") && <>
+            {hasSummary && showCaseMaterials && <section className="case-section" aria-label="案件摘要">
               {verdict && <div className="case-verdict"><span>{closure ? "原结论" : "当前结论"}</span><Badge tone={verdict.value === "risk" ? "danger" : "neutral"}>{verdictNames[verdict.value]}</Badge></div>}
               {!inPreview && !alertDetail && "conclusions" in item && call && <div className="evidence-summary"><h3>命中片段</h3>{item.evidence.map(index=>call.transcript[index] && <ShadcnButton variant="ghost" key={index} className="evidence-excerpt" onClick={()=>showEvidence()}><time>{clock(call.transcript[index].at)}</time><span>{call.transcript[index].text}</span><Icon name="chevron" size={14}/></ShadcnButton>)}<p>{latest(item) ? "结论与原始证据保留供追溯。" : "自动结果待核对，请结合上下文确认。"}</p></div>}
               {distribution && <div className="requirements"><h3>{distribution.title}</h3><p>{distribution.goal}</p><p>完成标准：{distribution.standard}</p><p>资料要求：{distribution.observation} · {distribution.sampleCount} 通样例</p><p>期限：{stamp(distribution.dueAt)} · 质检员：{distribution.inspector}</p>{distribution.status === "pending" && <><p>回应期限：{distribution.responseDueAt ? stamp(distribution.responseDueAt) : "未记录"}{distribution.responseDueAt && <span className={Date.parse(distribution.responseDueAt)<=now ? "red" : ""}> · {deadlineRemaining(distribution.responseDueAt, now)}</span>}</p>{Date.parse(distribution.dueAt)<=now && <p className="callout">整改完成期限已过，接受后不会重新起算。可申请调整分发期限。</p>}{distribution.extensionRequest && <p>待主管处理期限申请：{distribution.extensionRequest.note}</p>}{distribution.responseOverdueAt && <p>曾超过回应期限：{stamp(distribution.responseOverdueAt)}</p>}</>}{distribution.guidance && <small>{distribution.guidance}</small>}</div>}
@@ -806,7 +808,7 @@ export function Detail({
               {"pause" in item && item.pause && <p className="case-pause">申诉处理中，整改暂停。可以补充材料，暂不能验收通过或结案。</p>}
               {"standardVersion" in item && <div className="case-progress"><span>本轮样例 <b>{new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount}</b></span><span>第 {item.round} 轮整改</span></div>}
             </section>}
-            {!inPreview && alertDetail && "conclusions" in item && <section className="case-section alert-evidence inline-evidence-surface" aria-label="录音与证据">
+            {!inPreview && alertDetail && tab === "overview" && "conclusions" in item && <section className="case-section alert-evidence inline-evidence-surface" aria-label="录音与证据">
               {call ? <Evidence key={item.id} state={state} call={call} findings={[item]} primary={item} inline/> : <p className="subtle">原始通话与证据暂不可用。</p>}
             </section>}
             {inPreview && "findingIds" in item && item.summary && <section className="readonly-review-note"><h3>{["supervisor","done"].includes(item.status) ? "核查说明" : "已记录说明"}</h3><p>{item.summary}</p></section>}
@@ -815,7 +817,7 @@ export function Detail({
               const sourceCall=state.calls.find(source=>source.id===finding.callId);
               return sourceCall && canSeeCall(state,sourceCall) ? <Evidence key={finding.id} state={state} call={sourceCall} findings={[finding]} primary={finding} evidenceOverride={item.opinions[finding.id]?.evidence} problemDetail inline/> : <p className="subtle">原始通话与证据暂不可用。</p>;
             }}/> : <section className="case-section" aria-label="问题与意见"><div className="case-section-title"><h3>复核意见</h3><span>{item.status === "supervisor" ? "待主管确认 · " : ""}{item.findingIds.length} 项</span></div><div className="case-findings">{item.findingIds.map(id=>{const f=state.findings.find(x=>x.id===id);return f && <div key={id}><div><b>{f.title}</b><div className="finding-verdict">{item.opinions[id] ? <><Badge tone={item.opinions[id].value==='risk' ? 'danger' : item.opinions[id].value==='false_positive' ? 'success' : 'warning'}>{verdictNames[item.opinions[id].value]}</Badge><p>{item.opinions[id].note}</p></> : <span>待填写复核意见</span>}</div></div><Button onClick={()=>showEvidence(id)}>查看证据</Button></div>;})}</div></section>)}
-            {hasDocuments && !(inPreview && "conclusions" in item) && <section className="case-section" aria-label="证据与材料"><div className="case-section-title"><h3>证据与材料</h3></div>
+            {hasDocuments && showCaseMaterials && !(inPreview && "conclusions" in item) && <section className="case-section" aria-label="证据与材料"><div className="case-section-title"><h3>证据与材料</h3></div>
               <CaseDocuments inline={inPreview} item={item} primary={primary} onOpen={onOpen}/>
               {supplements.map(sp=><div className="case-supplement" key={sp.id}>{inPreview ? <section className="inline-document-detail"><header><h4>补件记录</h4><Badge>{stateLabel(sp,state)}</Badge></header><p className="subtle">{person(sp.executor)?.name ?? "执行人未记录"} · 截止 {stamp(sp.dueAt)}</p><p>{sp.note}</p>{sp.reply && <p>已提交材料：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason}</p>}</section> : <><DocumentRow title={openSupplement(sp) ? "待补材料" : "补件记录"} summary={`${person(sp.executor)?.name ?? "执行人未记录"} · 截止 ${stamp(sp.dueAt)}`} status={stateLabel(sp,state)} onView={()=>onOpen(sp.id)}/><div>{contextActions(state,sp.id).map(action=><Button key={action} onClick={()=>onAction(sp.id,action)}>{actionLabel(state,sp.id,action)}</Button>)}</div></>}</div>)}
             </section>}
@@ -1142,7 +1144,7 @@ function Evidence({
         <Badge>{call.endedAt ? "通话已结束" : "通话进行中"}</Badge>
       </div>}
       {!problemDetail && !inline && <p className="evidence-call-reference">来源通话：<CopyRecordId id={call.id}/></p>}
-      <EvidenceRecording key={call.id} call={call} evidence={evidence} initialSegment={initialSegment} inline={inline}>
+      <EvidenceRecording key={call.id} call={call} evidence={evidence} initialSegment={initialSegment}>
       {findings.length > 1 && (
         <label className="finding-switch">
           查看问题证据

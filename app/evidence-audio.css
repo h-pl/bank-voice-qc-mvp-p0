@@ -124,3 +124,9 @@
 
 .evidence-reader .transcript-linked .speaker.agent { color:var(--wave-agent-played); background:var(--speaker-agent-bg); }
 .evidence-reader .transcript-linked .speaker.customer { color:var(--wave-customer-played); background:var(--speaker-customer-bg); }
+
+/* Shared audio absence is a quiet, honest placeholder across evidence readers. */
+.evidence-reader .recording-unavailable { display:flex; align-items:center; justify-content:center; gap:8px; min-height:64px; padding:16px; margin:0 0 16px; border:1px solid var(--line); border-radius:6px; background:var(--surface-subtle); color:var(--muted); font-size:13px; font-weight:400; }
+.evidence-reader .recording-unavailable svg { flex-shrink:0; }
+.alert-detail-shell .case-tabs { flex-wrap:nowrap; overflow-x:auto; }
+.alert-detail-shell .case-tabs > button { flex-shrink:0; white-space:nowrap; }
