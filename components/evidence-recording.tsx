@@ -41,7 +41,7 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
     {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={time => { setCurrent(time); setPositioned(true); }} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered}/> : <div className="audio-missing"><Icon name="mic" size={16}/><div><b>暂无可用录音</b>{!inline && <small>可查看通话转写与已关联证据。</small>}</div></div>}
     {children}
     <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} total={call.transcript.length} onLocate={select}/>
-    {!!evidence.length && <p className="evidence-reading-hint">浅橙标记为命中片段，请结合前后文核对。</p>}
+    <p className="evidence-reading-hint">{!!segments.length && <span className="evidence-hit-legend">命中片段</span>}<span>{source ? "点击原话定位录音，结合上下文核对" : "结合上下文核对原话"}</span></p>
     {!!call.corrections?.length && <div className="correction-toggle"><Button onClick={() => setCorrected(!corrected)}>{corrected ? "查看原始转写" : "查看修订对照"}</Button><small>修订独立保留，不覆盖原文</small></div>}
     {!call.transcript.length && <p className="evidence-empty" role="status">暂无通话转写</p>}
     <div className="transcript transcript-linked" ref={transcriptRef}>
@@ -52,7 +52,7 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
           {segments.includes(index) && <span className="hit-label">命中</span>}
           {corrected && call.corrections?.some(correction => correction.segment === index) && <small className="correction-original">原文：{segment.text}<br/>{call.corrections.find(correction => correction.segment === index)?.reason}</small>}
         </span>
-        {selected === index && <span className="utterance-state">{playing ? "播放中" : "已定位"}</span>}
+        <span className="utterance-state" data-active={selected === index} aria-hidden={selected !== index}>{selected === index ? playing ? "播放中" : "已定位" : "定位"}</span>
       </button>)}
     </div>
   </>;

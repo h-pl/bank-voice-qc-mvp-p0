@@ -76,7 +76,7 @@ export function AudioPlayer({ controller, src, synthetic, expectedDuration = 0, 
       onWaiting={() => setWaiting(true)} onPlaying={() => setWaiting(false)}
       onSeeked={event => updateTime(event.currentTarget.currentTime)}
       onTimeUpdate={event => updateTime(event.currentTarget.currentTime)}/>
-    <div className="recording-heading"><span><Headphones size={16} aria-hidden="true"/>通话录音</span><small role="status">{error ? "录音加载失败" : waiting ? "正在缓冲…" : synthetic ? "合成音频" : ""}</small></div>
+    <div className="recording-heading"><span><Headphones size={16} aria-hidden="true"/>通话录音</span><small role="status" data-error={error}>{error ? "录音加载失败" : waiting ? "正在缓冲…" : synthetic ? "合成音频" : ""}</small></div>
     <div className="recording-controls">
       <Button type="button" size="icon" aria-label={playing ? "暂停录音" : "播放录音"} disabled={!ready || error} onClick={play}>{playing ? <Pause aria-hidden="true"/> : <Play aria-hidden="true"/>}</Button>
       <Button type="button" size="icon" variant="ghost" aria-label="后退 5 秒" disabled={!ready || error} onClick={() => seek(current - 5)}><RotateCcw aria-hidden="true"/></Button>
@@ -93,7 +93,7 @@ export function AudioPlayer({ controller, src, synthetic, expectedDuration = 0, 
         {hoverTime !== undefined && <span className="recording-axis-hover" aria-hidden="true" style={{ left: `${Math.max(6, Math.min(94, hoverTime / duration * 100))}%` }}>{clock(hoverTime)}</span>}
       </div>
       <div className="recording-axis-ticks" aria-hidden="true">{ticks.map((time, index) => <span key={index}>{clock(time)}</span>)}</div>
-      {ranges.some(range => range.hit) && <div className="recording-hit-lane" aria-label="音频命中片段">{ranges.filter(range => range.hit).map(range => <button type="button" className="recording-hit-range" key={range.index} aria-label={`定位命中片段 ${clock(range.start)} 至 ${clock(range.end)}`} aria-pressed={selected === range.index} data-hovered={hovered === range.index} disabled={!ready || error} style={{ left: `${range.start / duration * 100}%`, width: `${(range.end - range.start) / duration * 100}%` }} onClick={() => seek(range.start)} onPointerEnter={() => onHover(range.index)} onPointerLeave={clearHover} onFocus={() => onHover(range.index)} onBlur={clearHover}><span>命中 {clock(range.start)}</span></button>)}</div>}
+      {ranges.some(range => range.hit) && <div className="recording-hit-lane" aria-label="音频命中片段">{ranges.filter(range => range.hit).map(range => <button type="button" className="recording-hit-range" key={range.index} aria-label={`定位命中片段 ${clock(range.start)} 至 ${clock(range.end)}`} aria-pressed={selected === range.index} data-hovered={hovered === range.index} disabled={!ready || error} style={{ left: `${range.start / duration * 100}%`, width: `${(range.end - range.start) / duration * 100}%` }} onClick={() => seek(range.start)} onPointerEnter={() => onHover(range.index)} onPointerLeave={clearHover} onFocus={() => onHover(range.index)} onBlur={clearHover}><span><span className="recording-hit-prefix">命中 </span>{clock(range.start)}</span></button>)}</div>}
     </div>
     {error ? <p className="recording-hint recording-error" role="alert">录音暂不可用，可继续查看转写。<Button type="button" variant="link" onClick={() => { setError(false); setWaiting(true); media.current?.load(); }}>重新加载</Button></p> : null}
   </section>;
