@@ -1,12 +1,11 @@
 "use client";
 import { type RefObject } from "react";
-import { Button } from "./ui";
+import { Button } from "./ui/button";
 import { recordingTimestamp as clock } from "../lib/evidence-clip";
 
-export function EvidenceNavigation({ transcriptRef, segments, total, transcript, current, onLocate }: {
+export function EvidenceNavigation({ transcriptRef, segments, transcript, current, onLocate }: {
   transcriptRef: RefObject<HTMLDivElement | null>;
   segments: number[];
-  total: number;
   transcript: { at: number }[];
   current?: number;
   onLocate: (index: number) => void;
@@ -20,11 +19,11 @@ export function EvidenceNavigation({ transcriptRef, segments, total, transcript,
     row?.scrollIntoView({ block: "nearest" });
     row?.focus({ preventScroll: true });
   };
-  return <div className="evidence-transcript-heading">
-    <span aria-label={`转写共${total}段`}>共{total}段</span>
-    {!!segments.length && <div className="evidence-locate-actions">
-      <span>{segments.length > 1 ? `命中 ${currentIndex + 1}/${segments.length} 段` : "命中1段"}</span>
-      {segments.length > 1 ? <><Button onClick={() => locate(-1)}>上一段</Button><Button onClick={() => locate(1)}>下一段</Button></> : <Button onClick={() => locate(0)}>定位 {clock(transcript[segments[0]].at)}</Button>}
-    </div>}
+  if (!segments.length) return null;
+  return <div className="evidence-locate-actions" role="group" aria-label="命中片段导航">
+    {segments.length > 1 ? <>
+      <span aria-label={`命中第${currentIndex + 1}段，共${segments.length}段`}>{currentIndex + 1}/{segments.length}</span>
+      <Button type="button" variant="outline" onClick={() => locate(-1)}>上一段</Button><Button type="button" variant="outline" onClick={() => locate(1)}>下一段</Button>
+    </> : <Button type="button" variant="outline" title={`定位到 ${clock(transcript[segments[0]].at)}`} onClick={() => locate(0)}>定位命中</Button>}
   </div>;
 }

@@ -11,7 +11,7 @@
 .recording-player-linked .recording-time { color:var(--ink); white-space:nowrap; font-weight:400; font-size:13px; font-variant-numeric:tabular-nums; }
 .recording-player-linked .recording-time > span { color:var(--muted); }
 .recording-player-linked .recording-options { margin-left:auto; display:flex; align-items:center; gap:6px; }
-.recording-player-linked .recording-speed { width:64px; min-height:32px; border:1px solid #e1e5e9; box-shadow:none; background:#fff; }
+.recording-player-linked .recording-speed { width:84px; min-width:84px; white-space:nowrap; flex-shrink:0; min-height:32px; border:1px solid #e1e5e9; box-shadow:none; background:#fff; }
 .recording-player-linked .recording-timeline { min-width:0; margin:0; }
 .recording-axis { height:48px; background:#f7f8fa; border-radius:4px; position:relative; touch-action:none; }
 .recording-regions { position:absolute; inset:0; overflow:hidden; border-radius:3px; pointer-events:none; }
@@ -93,3 +93,10 @@
   .case-workspace .alert-detail-shell .alert-evidence:only-child .transcript-linked::-webkit-scrollbar-thumb { background:#b7bdc5; border-radius:4px; }
   .case-workspace .alert-detail-shell .alert-evidence:only-child .transcript-linked .utterance { scroll-margin-block:8px; }
 }
+
+/* Evidence navigation shares the transport row; keep rates readable at every width. */
+.recording-player-linked .recording-controls { align-items:center; }
+.recording-player-linked .evidence-locate-actions { flex-wrap:nowrap; white-space:nowrap; gap:6px; }
+.recording-player-linked .evidence-locate-actions button { height:34px; min-height:34px; padding:0 10px; font-weight:400; }
+.evidence-reader > .evidence-locate-actions { margin-bottom:12px; justify-content:flex-end; }
+.recording-player-linked .recording-speed [data-slot="select-value"] { overflow:visible; }

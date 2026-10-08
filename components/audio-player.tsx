@@ -1,10 +1,9 @@
 "use client";
-import { useEffect, useState, useRef, useImperativeHandle, useCallback, type RefObject, type PointerEvent } from "react";
-import { Play, Pause, Volume2, VolumeX, RotateCcw } from "lucide-react";
+import { useEffect, useState, useRef, useImperativeHandle, useCallback, type RefObject, type PointerEvent, type ReactNode } from "react";
+import { Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { recordingTimestamp as clock } from "../lib/evidence-clip";
 import { recordingRanges, recordingSegmentAt } from "../lib/recording-timeline";
 import { observeRecordingPosition } from "../lib/recording-position";
@@ -14,19 +13,20 @@ type Props = {
   controller: RefObject<RecordingController | null>;
   src: string; synthetic?: boolean; expectedDuration?: number; waveform?: number[];
   transcript: { at: number; speaker: string; text: string }[]; evidence: number[];
+  navigation?: ReactNode;
   initialTime?: number; selected: number; hovered?: number;
   onTime: (time: number) => void; onPlaying: (playing: boolean) => void;
   onDuration: (duration: number) => void; onSeek: (time: number) => void; onHover: (index?: number) => void;
 };
 
-export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = [], transcript, evidence, initialTime, selected, hovered, onTime, onPlaying, onDuration, onSeek, onHover }: Props) {
+export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = [], transcript, evidence, initialTime, selected, hovered, onTime, onPlaying, onDuration, onSeek, onHover, navigation }: Props) {
   const media = useRef<HTMLAudioElement>(null);
   const playhead = useRef<HTMLSpanElement>(null);
   const playedWaveform = useRef<HTMLDivElement>(null);
   const pendingSeek = useRef<number | undefined>(initialTime);
   const [playing, setPlaying] = useState(false), [current, setCurrent] = useState(initialTime ?? 0);
   const [duration, setDuration] = useState(expectedDuration), [ready, setReady] = useState(false);
-  const [volume, setVolume] = useState(1), [speed, setSpeed] = useState("1");
+  const [speed, setSpeed] = useState("1");
   const [error, setError] = useState(false), [waiting, setWaiting] = useState(false);
   const [hoverTime, setHoverTime] = useState<number>();
   const ranges = recordingRanges(transcript, evidence, duration);
@@ -94,7 +94,7 @@ export function AudioPlayer({ controller, src, expectedDuration = 0, waveform = 
       <Button type="button" className="recording-play" aria-label={playing ? "暂停录音" : "播放录音"} disabled={!ready || error} onClick={play}>{playing ? <Pause aria-hidden="true"/> : <Play aria-hidden="true"/>}<span>{playing ? "暂停" : "播放"}</span></Button>
       <Button type="button" variant="ghost" className="recording-rewind" aria-label="后退 5 秒" disabled={!ready || error} onClick={() => seek(current - 5)}><RotateCcw aria-hidden="true"/><span>后退5秒</span></Button>
       <span className="recording-time" aria-label={`当前 ${clock(current)}，总时长 ${clock(duration)}`}>{clock(current)}<span> / {clock(duration)}</span></span>
-      <div className="recording-options"><Popover><PopoverTrigger asChild><Button type="button" variant="ghost" size="icon" aria-label="音量设置">{volume ? <Volume2 aria-hidden="true"/> : <VolumeX aria-hidden="true"/>}</Button></PopoverTrigger><PopoverContent className="recording-volume" align="end"><span>音量 {Math.round(volume * 100)}%</span><Slider aria-label="录音音量" min={0} max={1} step={0.01} value={[volume]} onValueChange={value => { setVolume(value[0]); if (media.current) media.current.volume = value[0]; }}/></PopoverContent></Popover>
+      <div className="recording-options">{navigation}
         <Select value={speed} onValueChange={value => { setSpeed(value); if (media.current) media.current.playbackRate = Number(value); }}><SelectTrigger aria-label="播放倍速" className="recording-speed"><SelectValue/></SelectTrigger><SelectContent>{["0.75", "1", "1.25", "1.5", "2"].map(value => <SelectItem key={value} value={value}>{value}×</SelectItem>)}</SelectContent></Select>
       </div>
     </div>

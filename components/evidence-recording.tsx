@@ -43,10 +43,11 @@ export function EvidenceRecording({ call, evidence, initialSegment, inline, chil
     if (source) controller.current?.seek(time);
     else locate(time);
   };
+  const navigation = <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} transcript={call.transcript} current={lastEvidence} onLocate={select}/>;
   return <>
-    {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={updatePosition} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered}/> : <div className="audio-missing"><Icon name="mic" size={16}/><div><b>暂无可用录音</b>{!inline && <small>可查看通话转写与已关联证据。</small>}</div></div>}
+    {source ? <AudioPlayer controller={controller} {...source} expectedDuration={source.duration} transcript={call.transcript} evidence={segments} initialTime={call.transcript[initialSegment ?? -1]?.at} selected={selected} hovered={hovered} onTime={updatePosition} onPlaying={setPlaying} onDuration={setDuration} onSeek={locate} onHover={setHovered} navigation={navigation}/> : <div className="audio-missing"><Icon name="mic" size={16}/><div><b>暂无可用录音</b>{!inline && <small>可查看通话转写与已关联证据。</small>}</div></div>}
     {children}
-    <EvidenceNavigation key={segments.join(",")} transcriptRef={transcriptRef} segments={segments} total={call.transcript.length} transcript={call.transcript} current={lastEvidence} onLocate={select}/>
+    {!source && navigation}
     {!!call.corrections?.length && <div className="correction-toggle"><Button onClick={() => setCorrected(!corrected)}>{corrected ? "查看原始转写" : "查看修订对照"}</Button><small>修订独立保留，不覆盖原文</small></div>}
     {!call.transcript.length && <p className="evidence-empty" role="status">暂无通话转写</p>}
     <div className="transcript transcript-linked" ref={transcriptRef} role="region" aria-label="通话转写内容" tabIndex={0}>
