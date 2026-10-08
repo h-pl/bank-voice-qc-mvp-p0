@@ -1,4 +1,5 @@
-import { activeAppeal, currentOwner, needsRead, needsWork, person, roleOf, terminalRemedy, type Entity, type Finding, type State } from './workflow.ts';
+import { activeAppeal, currentOwner, needsRead, needsWork, openSupplement, person, roleOf, terminalRemedy, type Entity, type Finding, type State } from './workflow.ts';
+import { activeDeadline, alertDeadlineLabel } from './alert-deadlines.ts';
 
 /** Display the responsibility of this stage, including parallel assignment and read-only acknowledgements. */
 export function responsibilityContext(state: State, item: Entity) {
@@ -8,6 +9,44 @@ export function responsibilityContext(state: State, item: Entity) {
   const owner = person(readOnly || assignment ? state.identity : currentOwner(state, item));
   const badge = paused ? '申诉暂停' : readOnly ? '待确认知悉' : assignment ? '待指派核验人' : needsWork(state, item) ? '轮到我处理' : owner?.id === state.identity ? '当前负责' : owner ? '等待他人' : '无待办';
   return { owner, badge, readOnly, paused };
+}
+
+/** One current-stage clock for queues, responsibility cards, exports and reminders. */
+export function currentTaskContext(state: State, item: Entity) {
+  const responsibility = responsibilityContext(state, item);
+  let dueAt:string|undefined;
+  let deadlineLabel = '完成期限';
+  if (!responsibility.readOnly && responsibility.owner) {
+    if ('conclusions' in item) {
+      if (item.distribution?.status === 'pending') {
+        dueAt = item.distribution.responseDueAt;
+        deadlineLabel = '回应期限';
+      } else {
+        dueAt = activeDeadline(item);
+        deadlineLabel = alertDeadlineLabel(item);
+      }
+    } else if ('dueAt' in item) {
+      dueAt = item.dueAt;
+      deadlineLabel = 'standardVersion' in item ? '整改完成期限' : 'executor' in item ? '补件期限'
+        : 'findingIds' in item ? item.type === 'appeal' ? '核查期限' : '复核完成期限' : '裁定期限';
+      // The owner of a parent waiting for evidence is already the supplement owner.
+      const supplement = state.supplements.find(sp => sp.target === item.id && openSupplement(sp));
+      const appeal = 'findingIds' in item && item.appealId ? state.appeals.find(ap => ap.id === item.appealId) : undefined;
+      const appealSupplement = appeal?.status === 'supplement' ? state.supplements.find(sp => sp.target === appeal.id && openSupplement(sp)) : undefined;
+      const child = supplement ?? appealSupplement ?? ('findingId' in item && !('standardVersion' in item) && item.status === 'reviewing'
+        ? state.reviews.find(review => review.id === item.reviewId && !['done','cancelled'].includes(review.status)) : undefined);
+      if (child && !responsibility.paused) {
+        dueAt = child.dueAt;
+        deadlineLabel = 'executor' in child ? '补件期限' : '核查期限';
+      }
+    }
+  }
+  return {...responsibility, dueAt, deadlineLabel};
+}
+
+export function taskIsOverdue(state:State, item:Entity, now:number) {
+  const {owner,readOnly,paused,dueAt} = currentTaskContext(state,item);
+  return !!owner && !readOnly && !paused && !!dueAt && Date.parse(dueAt) <= now;
 }
 
 /** Original distribution is historical during appeals; remedy pages use the current round's requirements. */

@@ -2,8 +2,8 @@
 import { caseSearchText } from "../lib/case-search";
 import { ResetFiltersButton } from "./reset-filters-button";
 import { CallReference, CopyRecordId, RecordReference, RecordRow } from "./record-id";
-import { distributionContext, responsibilityContext, supervisorReturnNote } from "../lib/case-context";
-import { activeDeadline, alertDeadlineLabel, alertFinished, deadlineRemaining } from "../lib/alert-deadlines";
+import { currentTaskContext, distributionContext, taskIsOverdue, supervisorReturnNote } from "../lib/case-context";
+import { alertFinished, deadlineRemaining } from "../lib/alert-deadlines";
 import { lifecycleLabel } from "../lib/lifecycle-labels";
 import { alertTabs, alertCategory, problemRecords, problemLogs } from "../lib/alert-records";
 import { callTriggers } from "../lib/call-triggers";
@@ -237,12 +237,12 @@ export function Workspace({
         .includes(search.toLowerCase())
     );
   });
-  const isOverdue = (e: Entity) => !!activeDeadline(e) && Date.parse(activeDeadline(e)!) <= now && !!currentOwner(state,e) && !("pause" in e && e.pause);
+  const isOverdue = (e: Entity) => taskIsOverdue(state, e, now);
   const filtered = searched.filter((e) => match(e, tab) && (!splitWorkspace || !overdueOnly || isOverdue(e))).sort((a,b)=>{
     // Workorders retain their original record order; overdue is a separate filter/marker.
     if (view === "workorders") return 0;
     const rank=(e:Entity)=> splitWorkspace && isOverdue(e) ? 0 : isTodo(state,e) ? (isOverdue(e) ? 0 : "severity" in e && e.severity==="high" ? 1 : 2) : 3;
-    return rank(a)-rank(b) || ((activeDeadline(a) ? Date.parse(activeDeadline(a)!) : Infinity) - (activeDeadline(b) ? Date.parse(activeDeadline(b)!) : Infinity) || 0);
+    return rank(a)-rank(b) || ((currentTaskContext(state, a).dueAt ? Date.parse(currentTaskContext(state, a).dueAt!) : Infinity) - (currentTaskContext(state, b).dueAt ? Date.parse(currentTaskContext(state, b).dueAt!) : Infinity) || 0);
   });
   // A queue click preserves the current filter and loaded window; an external target may change scope.
   if(focus!==previousFocus){
@@ -343,8 +343,8 @@ export function Workspace({
                       c?.business,
                       c ? person(c.agentId)?.name : "",
                       stateLabel(e, state),
-                      person(currentOwner(state, e))?.name ?? "",
-                      activeDeadline(e) ? stamp(activeDeadline(e)) : "",
+                      currentTaskContext(state, e).owner?.name ?? "",
+                      currentTaskContext(state, e).dueAt ? stamp(currentTaskContext(state, e).dueAt) : "",
                       e.deadlineChanges?.map(h=>`${stamp(h.at)} ${stamp(h.from)} → ${stamp(h.to)} ${h.reason}`).join("；") ?? "",
                       ...(triggers ? [triggers.ruleCount ?? "", triggers.indicatorCount ?? "", triggers.complete ? "已完成" : triggers.ruleCount === null ? "待统计" : "暂计"] : []),
                     ];
@@ -483,8 +483,8 @@ export function Workspace({
                           <span className="status-dot" />
                           {stateLabel(e, state)}
                           <span className="queue-time">
-                            {activeDeadline(e)
-                              ? `${splitWorkspace ? "截止 " : ""}${stamp(activeDeadline(e))}`
+                            {currentTaskContext(state, e).dueAt
+                              ? `${splitWorkspace ? "截止 " : ""}${stamp(currentTaskContext(state, e).dueAt)}`
                               : stamp(c?.startedAt)}
                           </span>
                         </div>
@@ -784,7 +784,7 @@ export function Detail({
         {"findingIds" in item ? !inPreview && review2 ? <Review2Indicators state={state} findingIds={item.findingIds} onRule={(id, matchingIds)=>showRule(id,false,matchingIds)}/> : <span>问题 <b>{item.findingIds.length} 项</b></span> : !inPreview && alertDetail && primary ? <Review2Indicators state={state} findingIds={[primary.id]} onRule={(id, matchingIds)=>showRule(id,false,matchingIds)}/> : primary && <span>指标 <b>{ruleCategories.find(([id])=>id===primary.indicator)?.[1] ?? primary.indicator}</b></span>}
         {inPreview && "conclusions" in item && <span>问题来源 <b>{item.source === "auto" ? "系统检出" : "人工发现"}</b></span>}
         {inPreview && owner && <span>负责人 <b>{owner.name}</b></span>}
-        {inPreview && activeDeadline(item) && <span>完成期限 <b>{stamp(activeDeadline(item))}</b></span>}
+        {inPreview && currentTaskContext(state, item).dueAt && <span>{currentTaskContext(state, item).deadlineLabel} <b>{stamp(currentTaskContext(state, item).dueAt)}</b></span>}
         {!modernDetail && call && !("batches" in item) && <Badge tone={call.endedAt ? "neutral" : "success"}>{call.endedAt ? "通话已结束" : "通话中"}</Badge>}
       </div>
 
@@ -1076,20 +1076,19 @@ function CaseMaterials({state,item,primary,onOpen,onAction,readOnly=false}: {rea
 }
 
 function CaseResponsibility({ state, item, now }: { state: State; item: Entity; now: number }) {
-  const { owner, badge, readOnly, paused } = responsibilityContext(state, item);
+  const { owner, badge, readOnly, paused, dueAt: due, deadlineLabel } = currentTaskContext(state, item);
   const warning = "conclusions" in item && item.source === "auto" ? item : undefined;
-  const due = activeDeadline(item);
   const warningReview = warning?.status === "review" ? state.reviews.find(r => r.type !== "appeal" && r.findingIds.includes(warning.id) && !["done", "cancelled"].includes(r.status)) : undefined;
-  const overdue = !!owner && !paused && !!due && Date.parse(due) <= now;
+  const overdue = taskIsOverdue(state, item, now);
   return <section className="case-responsibility-card">
     <div className="case-section-title"><h3>{"batches" in item ? "通话状态" : readOnly ? "结果知悉" : "当前责任"}</h3><Badge tone={!owner ? "neutral" : paused || owner.id === state.identity ? "warning" : "neutral"}>{badge}</Badge></div>
     <div className="case-person"><span aria-hidden="true">{owner?.name.slice(-1) ?? "✓"}</span><div><b>{owner?.name ?? ("batches" in item ? item.endedAt ? "通话已结束" : "通话进行中" : "当前无待办")}</b><small>{owner ? roleNames[owner.role] : "结果与记录可继续查看"}</small></div></div>
     {readOnly && <p className="callout">请查看并确认知悉结果，确认知悉不会改变业务结论或启动整改。</p>}
     {"standardVersion" in item && !item.inspector && item.origin === "direct" && <p className="callout">主管待办：指定核验质检员。坐席可先整改、提交资料；指派前无法核验。</p>}
-    {due && <dl><div><dt>{warning ? alertDeadlineLabel(warning) : "完成期限"}</dt><dd>{stamp(due)}{owner && <small className={overdue ? "red" : ""}>{paused ? "暂停计时" : deadlineRemaining(due, now)}</small>}</dd></div></dl>}
+    {due && <dl><div><dt>{deadlineLabel}</dt><dd>{stamp(due)}{owner && <small className={overdue ? "red" : ""}>{paused ? "暂停计时" : deadlineRemaining(due, now)}</small>}</dd></div></dl>}
     {warning?.alertTiming && alertFinished(warning) && <dl><div><dt>预警处置截止</dt><dd>{stamp(warning.alertTiming.resolutionDueAt)}<small>{alertFinished(warning) ? "预警处置已结束" : deadlineRemaining(warning.alertTiming.resolutionDueAt, now)}</small></dd></div></dl>}
     {warningReview && <dl><div><dt>复核完成期限</dt><dd>{stamp(warningReview.dueAt)}</dd></div></dl>}
-    {warning && !warning.alertTiming && <dl><div><dt>{alertDeadlineLabel(warning)}</dt><dd>时限未记录</dd></div></dl>}
+    {warning && !alertFinished(warning) && !warning.alertTiming && <dl><div><dt>{deadlineLabel}</dt><dd>时限未记录</dd></div></dl>}
   </section>;
 }
 
