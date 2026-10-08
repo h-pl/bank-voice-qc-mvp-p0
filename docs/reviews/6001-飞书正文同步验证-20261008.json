@@ -1,0 +1,72 @@
+{
+  "base_revision": 582,
+  "content_revision": 595,
+  "patches": [
+    {
+      "old_block": "doxcnKZsSoRy0U0iIf5SgZx4EWd",
+      "revision": 583,
+      "verified": true
+    },
+    {
+      "old_block": "doxcn9VPI6jBJDuiVMQjSENzVUW",
+      "revision": 584,
+      "verified": true
+    },
+    {
+      "old_block": "doxcn3nVhkBESvZE6Rty3m4Ndgc",
+      "revision": 585,
+      "verified": true
+    },
+    {
+      "old_block": "doxcnlaKdW7Z9fN1MjAeyvU9Fad",
+      "revision": 586,
+      "verified": true
+    },
+    {
+      "old_block": "doxcn1emZVPJ891bmeSt8K7C5R1",
+      "revision": 587,
+      "verified": true
+    },
+    {
+      "old_block": "doxcnhgnQQ3L1frhAjllGMmBYPh",
+      "revision": 588,
+      "verified": true
+    },
+    {
+      "old_block": "doxcnq3I05QiZyfpWJQ2J5vKKrg",
+      "revision": 589,
+      "verified": true
+    },
+    {
+      "old_block": "doxcnML080A6n2GYvCJ0xvcDlXd",
+      "revision": 590,
+      "verified": true
+    },
+    {
+      "old_block": "doxcnCS6YL3nWwTn9dBzc8cDKVc",
+      "revision": 591,
+      "verified": true
+    },
+    {
+      "old_block": "doxcn6qO1v8up2S7lv5NiVPow8d",
+      "revision": 592,
+      "verified": true
+    },
+    {
+      "old_block": "doxcnbAxY2MrDnHIRsW4Vj23KNd",
+      "revision": 593,
+      "verified": true
+    },
+    {
+      "old_block": "doxcnhXFOAMTyvNhMsBtiQtvVJf",
+      "revision": 594,
+      "verified": true
+    },
+    {
+      "old_block": "doxcntq0arJBv2FwDS1NZtnoLgf",
+      "revision": 595,
+      "verified": true
+    }
+  ],
+  "note": "发布指针在生产部署核验后更新；正文逐段回读通过。"
+}

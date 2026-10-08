@@ -1,4 +1,7 @@
 "use client";
+import { distributionReminders } from "../lib/distribution-reminders";
+import { useDemoClock } from "../lib/store";
+import { RecordText } from "../components/record-id";
 import CallDemo from "../components/call-demo";
 import callDemoStyles from "../components/call-demo.module.css";
 import { flushSync } from "react-dom";
@@ -11,7 +14,7 @@ import dynamic from "next/dynamic";
 import { allowNavigation } from "../components/rule-editor";
 const ActionForm = dynamic(() => import("../components/action-form").then(m => m.ActionForm));
 import { NotificationCenter } from "../components/notification-center";
-import { Workspace, viewFor } from "../components/workspace";
+import { Workspace, RecordPreviewDialog, viewFor } from "../components/workspace";
 import { ResourceCatalog } from "../components/resource-catalog";
 import { Strategy } from "../components/strategy";
 import { ReportPage } from "../components/report-page";
@@ -83,6 +86,7 @@ const pages: Record<
 };
 const subscribeReady = () => () => {};
 export default function Home() {
+  const clock = useDemoClock();
   const ready = useSyncExternalStore(
     subscribeReady,
     () => true,
@@ -92,6 +96,7 @@ export default function Home() {
     role = roleOf(state),
     allowedNav = nav[role];
   const routeRef = useRef("");
+  const [recordPreview,setRecordPreview]=useState<string>();
   const [reportModule,setReportModule]=useState<ReportModule>("overview");
   const [visitedReports,setVisitedReports]=useState<Set<ReportModule>>(()=>new Set(["overview"]));
   const [visited, setVisited] = useState<Set<View>>(() => new Set());
@@ -147,7 +152,17 @@ export default function Home() {
     const initialModule=readReportModule(params.get("module"));
     queueMicrotask(()=>{setReportModule(initialModule);setVisitedReports(previous=>new Set([...previous,initialModule]));});
     if (id && canSee(getSnapshot(), id)) {
-      queueMicrotask(() => setFocus(id));
+      const currentState = getSnapshot(), targetId = visibleTaskTarget(currentState,id);
+      queueMicrotask(() => {
+        setFocus(targetId);
+        if (targetId !== id) {
+          const destination = viewFor(currentState,targetId);
+          updateState({...getSnapshot(),view:destination});
+          setVisited(previous=>new Set([...previous,destination]));
+          history.replaceState(history.state,"",`?view=${destination}&id=${encodeURIComponent(targetId)}`);
+          routeRef.current=location.href;
+        }
+      });
     }
     const pop = () => {
       const p = new URLSearchParams(location.search),
@@ -193,6 +208,7 @@ export default function Home() {
     setForm(undefined);
     setFocus(undefined);
     setNoticeOpen(false);
+    setRecordPreview(undefined);
     history.replaceState(null, "", `?view=${view}`);
     routeRef.current = location.href;
   };
@@ -222,7 +238,7 @@ export default function Home() {
     }
     setToast(
       saved
-        ? archived ? "已归档，可在『误报归档』中查看" : `${({save_rule_configuration:"预警配置已保存",save_resource_content:"资源已保存",create_resource_content:"资源已创建",create_policy_configuration:"策略已创建",save_policy_associations:"策略关联已保存",save_policy_bindings:"关联草稿已保存，可在当前页检查并发布",create_policy:"策略及关联草稿已保存，检查后可一并发布",save_rule:"参数草稿已保存，当前生效版本未改变",check_rule:"草稿检查已完成",publish_rule:"新规则版本已生效",save_resource:"资源草稿已保存",publish_resource:"资源版本已发布，规则引用保持不变",switch_resource:"所选规则引用已切换，历史检测保持原版本"} as Record<string,string>)[command.action] ?? `${actionLabel(before, command.id, command.action)}已完成`}`
+        ? archived ? "已归档，可在『误报归档』中查看" : `${({save_rule_configuration:"预警配置已保存",save_resource_content:"资源已保存",create_resource_content:"资源已创建",create_policy_configuration:"策略已创建",save_policy_associations:"策略关联已保存",save_policy_bindings:"关联草稿已保存，可在当前页检查并发布",create_policy:"策略及关联草稿已保存，检查后可一并发布",save_rule:"参数草稿已保存，当前生效配置未改变",check_rule:"草稿检查已完成",publish_rule:"规则已生效",save_resource:"资源草稿已保存",publish_resource:"资源已发布，规则引用保持不变",switch_resource:"所选规则引用已切换，历史检测依据保持不变"} as Record<string,string>)[command.action] ?? `${actionLabel(before, command.id, command.action)}已完成`}`
         : "本次已更新，但浏览器存储不可用，刷新可能恢复示例",
     );
   };
@@ -237,10 +253,10 @@ export default function Home() {
   const returnSource = sourceLabel ? {label:sourceLabel, onBack:()=>{if(history.state?.qc)history.go(-(history.state.returnSteps ?? 1));else open("");}} : undefined;
   const tasks = notices(state),
     current = state.view === "reports" ? {...pages.reports,title:reportModuleTitle(reportModule),group:"质量报表"} : pages[state.view],
-    events = state.logs
+    events = [...state.logs, ...distributionReminders(state, clock)]
       .filter((l) => canSee(state, l.target) && l.action !== "示例场景已载入")
       .slice()
-      .reverse(),
+      .sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)),
     readEvents = state.readEvents?.[state.identity] ?? [];
   const readEvent = (id: string) => {
     const s = getSnapshot();
@@ -251,6 +267,20 @@ export default function Home() {
         [s.identity]: [...new Set([...(s.readEvents?.[s.identity] ?? []), id])],
       },
     });
+  };
+  const readAllEvents = () => {
+    const s = getSnapshot();
+    if (s.identity !== state.identity) return [];
+    const existing = s.readEvents?.[s.identity] ?? [];
+    const ids = events.filter(event => !existing.includes(event.id)).map(event => event.id);
+    if (ids.length) updateState({...s, readEvents:{...s.readEvents, [s.identity]:[...new Set([...existing,...ids])]}});
+    return ids;
+  };
+  const undoReadEvents = (ids: string[]) => {
+    const s = getSnapshot();
+    if (s.identity !== state.identity || !ids.length) return;
+    const removed = new Set(ids);
+    updateState({...s, readEvents:{...s.readEvents, [s.identity]:(s.readEvents?.[s.identity] ?? []).filter(id=>!removed.has(id))}});
   };
   useEffect(() => {
     const pointer = () => { document.documentElement.dataset.input = "pointer"; };
@@ -358,7 +388,7 @@ export default function Home() {
                 ))}
               </SelectField>
             </label>
-            <NotificationCenter events={events} readIds={readEvents} open={noticeOpen} onOpenChange={setNoticeOpen} onRead={readEvent} onNavigate={targetId=>{const target=entity(state,targetId);const id=target && "executor" in target ? target.target : targetId;go(viewFor(state,id),id);}}/>
+            <NotificationCenter key={state.identity} events={events} readIds={readEvents} open={noticeOpen} onOpenChange={setNoticeOpen} onRead={readEvent} onReadAll={readAllEvents} onUndoRead={undoReadEvents} onNavigate={targetId=>{const target=entity(state,targetId);const id=visibleTaskTarget(state,target?.id ?? targetId);go(viewFor(state,id),id);}}/>
           </div>
         </header>
         <main id="main-content" tabIndex={-1} aria-labelledby="page-title">
@@ -384,13 +414,14 @@ export default function Home() {
                   onSubmit={submit}
                 />
               ) : (
-                <>{reportModules.filter(module=>visitedReports.has(module.id) || reportModule===module.id).map(module=><Activity key={module.id} mode={reportModule===module.id ? "visible" : "hidden"}><ReportPage state={state} onOpen={open} module={module.id}/></Activity>)}</>
+                <>{reportModules.filter(module=>visitedReports.has(module.id) || reportModule===module.id).map(module=><Activity key={module.id} mode={reportModule===module.id ? "visible" : "hidden"}><ReportPage state={state} onOpen={setRecordPreview} module={module.id}/></Activity>)}</>
               )}
             </div></Activity>
           ))}
         </main>
       </div>
-      <div className={`toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">{toast ? <><Icon name="bell" size={17}/>{toast}{archivedTarget ? <SurfaceButton className="toast-history" onClick={()=>{go("alerts",archivedTarget);requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent("qc:show-archive",{detail:archivedTarget})));setToast("");}}>查看归档</SurfaceButton> : toastTarget && <SurfaceButton className="toast-history" onClick={()=>{flushSync(()=>open(toastTarget));window.dispatchEvent(new CustomEvent("qc:show-history",{detail:toastTarget}));setToast("");}}>查看处理记录</SurfaceButton>}</> : null}</div>
+      <div className={`toast ${toast ? "is-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">{toast ? <><Icon name="bell" size={17}/><RecordText text={toast}/>{archivedTarget ? <SurfaceButton className="toast-history" onClick={()=>{go("alerts",archivedTarget);requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent("qc:show-archive",{detail:archivedTarget})));setToast("");}}>查看归档</SurfaceButton> : toastTarget && <SurfaceButton className="toast-history" onClick={()=>{flushSync(()=>open(toastTarget));window.dispatchEvent(new CustomEvent("qc:show-history",{detail:toastTarget}));setToast("");}}>查看处理记录</SurfaceButton>}</> : null}</div>
+      {recordPreview && <RecordPreviewDialog key={recordPreview} state={state} id={recordPreview} onClose={()=>setRecordPreview(undefined)}/>}
       {form && (
         <ActionForm
           key={`${form.id}-${form.action}`}

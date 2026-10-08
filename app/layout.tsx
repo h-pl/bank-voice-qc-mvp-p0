@@ -5,6 +5,10 @@ import "./shadcn.css";
 import "./review-workspace2.css";
 import "./strategy-design.css";
 import "./catalog-report-design.css";
+import "./record-id.css";
+import "./form-table-design.css";
+import "./control-states.css";
+import "./evidence-audio.css";
 export const metadata: Metadata = {
   description: "三核心角色、七个业务模块的银行呼入客服质检高保真原型",
 };

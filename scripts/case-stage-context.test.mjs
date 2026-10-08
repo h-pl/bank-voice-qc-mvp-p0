@@ -24,7 +24,7 @@ const rows=[
  ['Q02','REC-UI-2',['verify']],
  ['Q02','REC-REC-RESPONSE',['agree_remedy_return','explain_remedy']],
  ['Q01','REC-UI-2',[]],
- ['A1048','F-1032',['accept_result','ack','appeal']],
+ ['A1048','F-1032',['accept_result','ack','appeal','request_distribution_extension']],
  ['A1048','F-1035',['ack']],
  ['A1048','REC-1036',['adjust_request','material']],
  ['A1186','REC-REC-FAIL',['adjust_request','material']],

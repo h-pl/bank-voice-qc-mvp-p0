@@ -1,3 +1,4 @@
+import { CopyRecordId } from "./record-id";
 import { BindingRead } from "./binding-read";
 import { actions } from "../lib/workflow";
 import { Button } from "./ui";
@@ -22,7 +23,7 @@ export function IndicatorDetail({ rule, snapshot, state, historical, canConfigur
         <div className="rule-detail-wide"><dt>判断边界</dt><dd>{definition?.boundary || "暂无记录"}</dd></div>
         <div className="rule-detail-wide"><dt>输出证据</dt><dd>{definition?.output || "暂无记录"}</dd></div>
       </dl>
-      {!definition && historical && <p className="rule-peer-note">原版本说明：{snapshot.trigger}</p>}
+      {!definition && historical && <p className="rule-peer-note">检测时的说明：{snapshot.trigger}</p>}
       {peers.length>0 && <p className="rule-peer-note">同属{indicatorName(rule.indicator)}的其他规则：{peers.map(r=>r.name).join("、")}。各自按检查范围独立判断。</p>}
     </section>
     <section className="policy-section indicator-resource-fields">
@@ -34,7 +35,7 @@ export function IndicatorDetail({ rule, snapshot, state, historical, canConfigur
       </div>
       {resources.length ? resources.map(ref=><div className="rule-basis" data-resource-id={ref.id} key={ref.id}>
         <div className="rule-basis-heading"><dl className="rule-detail-fields">
-          <div><dt>引用资源</dt><dd><strong>{ref.resource?.name ?? ref.id}</strong></dd></div>
+          <div><dt>引用资源</dt><dd><strong>{ref.resource?.name ?? <CopyRecordId id={ref.id}/>}</strong></dd></div>
         </dl>
         </div>
         {!ref.available && <p className="form-error">引用的资源不可用，请核对业务依据。</p>}

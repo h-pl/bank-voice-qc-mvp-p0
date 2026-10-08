@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './call-demo.module.css';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { Badge } from './ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 
@@ -217,9 +218,9 @@ export default function CallDemo() {
   const displayedError = source === 'mic' ? error : uploadError;
 
   return <>
-    <button ref={trigger} className={`${styles.trigger} ${open ? styles.selected : ''}`} title="模拟电话接入" aria-label="模拟电话接入" aria-expanded={open} aria-controls={open ? 'call-demo-panel' : undefined} onClick={() => setOpen(true)}>
+    <Button type="button" variant="ghost" ref={trigger} className={`${styles.trigger} ${open ? styles.selected : ''}`} title="模拟电话接入" aria-label="模拟电话接入" aria-expanded={open} aria-controls={open ? 'call-demo-panel' : undefined} onClick={() => setOpen(true)}>
       <DemoIcon name="phone"/>{phase === 'live' && <i className={styles.liveDot}/>}
-    </button>
+    </Button>
     {open && createPortal(<section id="call-demo-panel" className={styles.panel} aria-label="模拟电话接入">
       <header className={styles.header}>
         <div><div className={styles.heading}><h2>模拟电话接入</h2><Badge>演示</Badge></div><p>实时拾音或上传通话录音</p></div>
@@ -233,11 +234,11 @@ export default function CallDemo() {
           </TabsList>
           <TabsContent value={source} className={styles.sourceContent}>
         {source === 'upload' && <>
-          <input ref={input} type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac,.aac" className="sr-only" tabIndex={-1} aria-label="选择演示音频" onChange={event => { void loadFile(event.target.files?.[0]); event.target.value = ''; }}/>
+          <Input ref={input} type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac,.aac" className="sr-only" tabIndex={-1} aria-label="选择演示音频" onChange={event => { void loadFile(event.target.files?.[0]); event.target.value = ''; }}/>
           {uploadClip && uploadPhase === 'ready' ? <div className={styles.uploadedFile}>
             <span className={styles.fileName} title={uploadClip.name}>{uploadClip.name}</span>
             <Button variant="ghost" size="icon-sm" className={styles.removeFile} aria-label="移除已接入音频" title="移除音频" onClick={removeUpload}><DemoIcon name="close"/></Button>
-          </div> : <button ref={uploadTarget} className={`${styles.dropzone} ${dragging ? styles.dragging : ''}`} disabled={busy} onClick={() => input.current?.click()} onDragOver={event => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); void loadFile(event.dataTransfer.files[0]); }}><b>{uploadPhase === 'loading' ? '正在读取音频…' : '选择或拖入通话录音'}</b><small>WAV、MP3、M4A 等 · 最大 50 MB</small></button>}
+          </div> : <Button type="button" variant="ghost" ref={uploadTarget} className={`${styles.dropzone} ${dragging ? styles.dragging : ''}`} disabled={busy} onClick={() => input.current?.click()} onDragOver={event => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); void loadFile(event.dataTransfer.files[0]); }}><b>{uploadPhase === 'loading' ? '正在读取音频…' : '选择或拖入通话录音'}</b><small>WAV、MP3、M4A 等 · 最大 50 MB</small></Button>}
         </>}
         <div className={styles.status}>
           <span role="status"><Badge tone={statusTone}>{status}</Badge></span><time>{timeLabel(displayedSeconds)}</time>

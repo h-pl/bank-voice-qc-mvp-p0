@@ -11,7 +11,7 @@ function upgradeV5(input:State):State {
  const legacyTriggers=Object.fromEntries(s.rules.filter(r=>r.indicator==="6.3.4").map(r=>[r.id,policyTriggers(r,s)]));
  for(const [kind,schema] of Object.entries(resourceSchemas)){
   const id=`RES-CFG-${kind.toUpperCase()}`;if(s.resources.some(r=>r.id===id))continue;
-  s.resources.push({id,rev:0,name:`${schema.name} · 银行示例`,type:schema.group,kind,versions:[{version:1,at,content:serializeRows([schema.fields,...schema.rows]),scope:"全部业务",role:"双方",exception:"",...(schema.csv?{sourceFile:`${schema.name}_v2.csv`}:{})}]});
+  s.resources.push({id,rev:0,name:schema.name,type:schema.group,kind,versions:[{version:1,at,content:serializeRows([schema.fields,...schema.rows]),scope:"全部业务",role:"双方",exception:"",...(schema.csv?{sourceFile:`${schema.name}_v2.csv`}:{})}]});
  }
  for(const [id,name,indicator] of [["R-VOICE-001","声纹识别","6.2.1"],["R-ASR-001","语音识别","6.2.2"],["R-CORR-001","文本纠错","6.2.4"]]){
   if(!s.rules.some(r=>r.id===id))s.rules.push({id,rev:0,name,indicator,description:`依据对应业务资源输出${name}结果。`,severity:"medium",versions:[{version:1,at,threshold:15,scope:"全部业务",trigger:"所有候选",config:{},resources:{}}]});

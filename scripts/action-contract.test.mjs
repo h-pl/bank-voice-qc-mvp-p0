@@ -45,7 +45,7 @@ const cases=[
  ['S01','REC-UI-8',[]],
  ['A1186','REC-UI-8',[]],
  ['Q02','REC-UI-8',[]],
- ['A1048','F-1032',['accept_result','ack','appeal']],
+ ['A1048','F-1032',['accept_result','ack','appeal','request_distribution_extension']],
  ['A1048','F-1037',['ack']],
  ['A1048','F-1036',[]],
  ['A1186','F-1032',[]],
@@ -60,7 +60,7 @@ test('supplement and withdrawal have no alternate entry that bypasses the curren
  assert.throws(()=>run(as(s,'Q02'),row.reviewId,'submit_review'),/不允许/);
  s=run(as(s,'A1048'),row.appealId,'withdraw');
  for(const p of people)for(const id of [row.appealId,row.reviewId,sp.id])assert.deepEqual(contextActions(as(s,p.id),id),[]);
- assert.deepEqual(contextActions(as(s,'A1048'),row.findingId).sort(),['accept_result','appeal']);
+ assert.deepEqual(contextActions(as(s,'A1048'),row.findingId).sort(),['accept_result','appeal','request_distribution_extension']);
 });
 test('later assigned and replacement inspectors can open submitted sample calls from material links',()=>{
  let s=seed(),id='REC-UI-1';const samples=entity(s,id).materials.flatMap(m=>m.samples);
@@ -87,7 +87,8 @@ test('manual finding rule selector must reject retired rules and alert policies'
  assert.throws(()=>run(s,'WO-SPOT-1','add_finding',{title:'本轮新发现事实',ruleId:rule.id,evidence:[2]}),/有效的指标规则/);
 });
 test('returned review exposes the actual reason; adjustment request prioritizes its resolution',()=>{
- const s=run(seed(),'WO-1039','return_review',{note:'请核对业务时限说明与受理记录'});
+ const base=seed();for(const id of entity(base,'WO-1039').findingIds){const f=entity(base,id);if(f.alertTiming)f.alertTiming={...f.alertTiming,triggeredAt:now.toISOString(),resolutionDueAt:new Date(+now+8*3600000).toISOString()};}
+ const s=run(base,'WO-1039','return_review',{note:'请核对业务时限说明与受理记录',dueAt:new Date(+now+3600000).toISOString()});
  assert.equal(entity(s,'WO-1039').supervisorComment,'请核对业务时限说明与受理记录');
  const row=ctx(s,'REC-ADJUST');assert.equal(primaryAction(s,row.remedyId),'change_standard');
 });

@@ -1,0 +1,11 @@
+REPORT_STATES {"total":12,"covered":11,"missing":["REC-REC-RESPONSE"]}
+FALSE_POSITIVES {"overview":"自动候选中误报 3 /（误报 + 成立）24；不是模型 FPR","teamFalsePositives":4,"manualRevoked":["F-SPOT-5"]}
+ALERT_DEADLINE {"alertDue":"2026-09-27T06:59:59.000Z","assignedReviewDue":"2026-09-28T05:00:00.000Z","accepted":true}
+REASSIGN_DUE {"id":"REC-UI-2","before":"2026-09-29T05:00:00.000Z","after":"2026-09-28T05:00:00.000Z","original":"2026-09-29T05:00:00.000Z"}
+APPEAL_DUE {"id":"AP-UI-7","review":"WO-AP-UI-7","appeal":"2026-09-29T05:00:00.000Z","reviewDue":"2026-10-02T05:00:00.000Z"}
+ADJUST_BLOCK {"id":"REC-1036","status":"supervisor","agentActions":[],"supervisorActions":["change_standard","extend","assign_inspector"],"original":["adjust_request","material"]}
+TODOS_WITHOUT_DIRECT_ACTION S01 [{"id":"WO-AP-AP-DECISION","owner":"S01","status":"supervisor"},{"id":"WO-CTX-EVIDENCE-SUBMITTED-WO-1039-B","owner":"S01","status":"supervisor"},{"id":"WO-CTX-AP-UPHELD-WO-AP-AP-DECISION","owner":"S01","status":"supervisor"},{"id":"WO-CTX-AP-EXPLAIN-WO-AP-UI-7","owner":"S01","status":"supervisor"}]
+TODOS_WITHOUT_DIRECT_ACTION Q01 []
+TODOS_WITHOUT_DIRECT_ACTION Q02 [{"id":"AP-CTX-AP-SUBMITTED-AP-AP-SUPPLEMENT","owner":"Q02","status":"supplement"}]
+TODOS_WITHOUT_DIRECT_ACTION A1048 []
+TODOS_WITHOUT_DIRECT_ACTION A1186 []

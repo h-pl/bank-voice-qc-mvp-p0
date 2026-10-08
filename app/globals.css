@@ -1199,7 +1199,7 @@ tr.selected td {
   font-size: 11px;
   margin-top: 6px;
 }
-.related-list > button {
+.related-list > :is(button,.record-row) {
   display: flex;
   align-items: center;
   gap: 12px;

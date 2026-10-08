@@ -1,0 +1,1468 @@
+TAP version 13
+# Subtest: flow exit contract: S01 / F-1041
+ok 1 - flow exit contract: S01 / F-1041
+  ---
+  duration_ms: 318.146542
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / F-1031
+ok 2 - flow exit contract: S01 / F-1031
+  ---
+  duration_ms: 248.037625
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / F-1037
+ok 3 - flow exit contract: S01 / F-1037
+  ---
+  duration_ms: 161.631834
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / WO-1038
+ok 4 - flow exit contract: S01 / WO-1038
+  ---
+  duration_ms: 172.496167
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q01 / WO-1038
+ok 5 - flow exit contract: Q01 / WO-1038
+  ---
+  duration_ms: 159.513166
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / WO-1038
+ok 6 - flow exit contract: Q02 / WO-1038
+  ---
+  duration_ms: 165.746167
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / WO-1038
+ok 7 - flow exit contract: A1048 / WO-1038
+  ---
+  duration_ms: 159.024459
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / WO-1039
+ok 8 - flow exit contract: S01 / WO-1039
+  ---
+  duration_ms: 155.449625
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q01 / WO-1039
+ok 9 - flow exit contract: Q01 / WO-1039
+  ---
+  duration_ms: 149.773917
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / WO-SPOT-2
+ok 10 - flow exit contract: S01 / WO-SPOT-2
+  ---
+  duration_ms: 147.116375
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / WO-SPOT-1
+ok 11 - flow exit contract: Q02 / WO-SPOT-1
+  ---
+  duration_ms: 146.22025
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / WO-SPOT-3
+ok 12 - flow exit contract: S01 / WO-SPOT-3
+  ---
+  duration_ms: 141.215792
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / WO-SPOT-3
+ok 13 - flow exit contract: Q02 / WO-SPOT-3
+  ---
+  duration_ms: 140.496375
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / AP-1033
+ok 14 - flow exit contract: S01 / AP-1033
+  ---
+  duration_ms: 141.396
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / AP-1033
+ok 15 - flow exit contract: A1048 / AP-1033
+  ---
+  duration_ms: 136.501458
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / AP-AP-DECISION
+ok 16 - flow exit contract: S01 / AP-AP-DECISION
+  ---
+  duration_ms: 140.103
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / AP-AP-DECISION
+ok 17 - flow exit contract: Q02 / AP-AP-DECISION
+  ---
+  duration_ms: 135.867625
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / AP-AP-SUPPLEMENT
+ok 18 - flow exit contract: S01 / AP-AP-SUPPLEMENT
+  ---
+  duration_ms: 136.693917
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / WO-AP-AP-SUPPLEMENT
+ok 19 - flow exit contract: Q02 / WO-AP-AP-SUPPLEMENT
+  ---
+  duration_ms: 134.306958
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / AP-AP-SUPPLEMENT
+ok 20 - flow exit contract: A1048 / AP-AP-SUPPLEMENT
+  ---
+  duration_ms: 135.534
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / WO-AP-UI-7
+ok 21 - flow exit contract: Q02 / WO-AP-UI-7
+  ---
+  duration_ms: 135.699042
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / REC-1036
+ok 22 - flow exit contract: S01 / REC-1036
+  ---
+  duration_ms: 136.369667
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / REC-1036
+ok 23 - flow exit contract: A1048 / REC-1036
+  ---
+  duration_ms: 142.378583
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / REC-UI-1
+ok 24 - flow exit contract: S01 / REC-UI-1
+  ---
+  duration_ms: 141.266
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / REC-UI-1
+ok 25 - flow exit contract: A1048 / REC-UI-1
+  ---
+  duration_ms: 135.670458
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / REC-UI-2
+ok 26 - flow exit contract: Q02 / REC-UI-2
+  ---
+  duration_ms: 135.712
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q01 / REC-UI-2
+ok 27 - flow exit contract: Q01 / REC-UI-2
+  ---
+  duration_ms: 135.266375
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / REC-UI-3
+ok 28 - flow exit contract: S01 / REC-UI-3
+  ---
+  duration_ms: 134.632375
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / REC-UI-3
+ok 29 - flow exit contract: A1048 / REC-UI-3
+  ---
+  duration_ms: 135.644542
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / REC-REC-RESPONSE
+ok 30 - flow exit contract: Q02 / REC-REC-RESPONSE
+  ---
+  duration_ms: 142.829333
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / REC-REC-RESPONSE
+ok 31 - flow exit contract: S01 / REC-REC-RESPONSE
+  ---
+  duration_ms: 144.074875
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1186 / REC-REC-RESPONSE
+ok 32 - flow exit contract: A1186 / REC-REC-RESPONSE
+  ---
+  duration_ms: 146.098083
+  type: 'test'
+  ...
+# Subtest: flow exit contract: S01 / REC-UI-8
+ok 33 - flow exit contract: S01 / REC-UI-8
+  ---
+  duration_ms: 147.780709
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1186 / REC-UI-8
+ok 34 - flow exit contract: A1186 / REC-UI-8
+  ---
+  duration_ms: 149.580583
+  type: 'test'
+  ...
+# Subtest: flow exit contract: Q02 / REC-UI-8
+ok 35 - flow exit contract: Q02 / REC-UI-8
+  ---
+  duration_ms: 145.392042
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / F-1032
+ok 36 - flow exit contract: A1048 / F-1032
+  ---
+  duration_ms: 146.758167
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / F-1037
+ok 37 - flow exit contract: A1048 / F-1037
+  ---
+  duration_ms: 146.070834
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1048 / F-1036
+ok 38 - flow exit contract: A1048 / F-1036
+  ---
+  duration_ms: 145.60625
+  type: 'test'
+  ...
+# Subtest: flow exit contract: A1186 / F-1032
+ok 39 - flow exit contract: A1186 / F-1032
+  ---
+  duration_ms: 147.378209
+  type: 'test'
+  ...
+# Subtest: supplement and withdrawal have no alternate entry that bypasses the current receiver
+ok 40 - supplement and withdrawal have no alternate entry that bypasses the current receiver
+  ---
+  duration_ms: 151.68
+  type: 'test'
+  ...
+# Subtest: later assigned and replacement inspectors can open submitted sample calls from material links
+ok 41 - later assigned and replacement inspectors can open submitted sample calls from material links
+  ---
+  duration_ms: 150.068833
+  type: 'test'
+  ...
+# Subtest: spotcheck links only unresolved candidate facts and cannot reopen a final conclusion
+ok 42 - spotcheck links only unresolved candidate facts and cannot reopen a final conclusion
+  ---
+  duration_ms: 292.947375
+  type: 'test'
+  ...
+# Subtest: manual finding rule selector must reject retired rules and alert policies
+ok 43 - manual finding rule selector must reject retired rules and alert policies
+  ---
+  duration_ms: 203.805375
+  type: 'test'
+  ...
+# Subtest: returned review exposes the actual reason; adjustment request prioritizes its resolution
+ok 44 - returned review exposes the actual reason; adjustment request prioritizes its resolution
+  ---
+  duration_ms: 152.273458
+  type: 'test'
+  ...
+# Subtest: v2 mock upgrade appends missing branches without changing v1 work or identity
+ok 45 - v2 mock upgrade appends missing branches without changing v1 work or identity
+  ---
+  duration_ms: 256.644416
+  type: 'test'
+  ...
+# Subtest: warning preset durations and minute display match PRD
+ok 46 - warning preset durations and minute display match PRD
+  ---
+  duration_ms: 0.575333
+  type: 'test'
+  ...
+# Subtest: existing demo migrates once from earliest trigger, never refresh time or unknown history
+ok 47 - existing demo migrates once from earliest trigger, never refresh time or unknown history
+  ---
+  duration_ms: 330.95625
+  type: 'test'
+  ...
+# Subtest: assign advances to original total deadline; archive or distribution ends alert clock
+ok 48 - assign advances to original total deadline; archive or distribution ends alert clock
+  ---
+  duration_ms: 211.2705
+  type: 'test'
+  ...
+# Subtest: archive retains the original issue and evidence and occupies only the archive category
+ok 49 - archive retains the original issue and evidence and occupies only the archive category
+  ---
+  duration_ms: 6.903333
+  type: 'test'
+  ...
+# Subtest: problem history follows only linked tasks, including supplements, not other problems on the call
+ok 50 - problem history follows only linked tasks, including supplements, not other problems on the call
+  ---
+  duration_ms: 0.893667
+  type: 'test'
+  ...
+# Subtest: a call aggregates multiple rules under the same indicator without counting repeated hits twice
+ok 51 - a call aggregates multiple rules under the same indicator without counting repeated hits twice
+  ---
+  duration_ms: 13.77825
+  type: 'test'
+  ...
+# Subtest: rechecks, manual discoveries and other calls do not inflate automatic trigger counts; archived hits remain
+ok 52 - rechecks, manual discoveries and other calls do not inflate automatic trigger counts; archived hits remain
+  ---
+  duration_ms: 0.795875
+  type: 'test'
+  ...
+# Subtest: completed zero, incomplete unknown and provisional hits are distinct
+ok 53 - completed zero, incomplete unknown and provisional hits are distinct
+  ---
+  duration_ms: 0.76875
+  type: 'test'
+  ...
+# Subtest: agent counts use only visible findings
+ok 54 - agent counts use only visible findings
+  ---
+  duration_ms: 1.127916
+  type: 'test'
+  ...
+# Subtest: Feishu three workflows: exact stage decisions for 22 role/object boundaries
+ok 55 - Feishu three workflows: exact stage decisions for 22 role/object boundaries
+  ---
+  duration_ms: 280.7985
+  type: 'test'
+  ...
+# Subtest: acknowledgement is attributed to its reader without inventing a business task
+ok 56 - acknowledgement is attributed to its reader without inventing a business task
+  ---
+  duration_ms: 282.788167
+  type: 'test'
+  ...
+# Subtest: parallel assignment belongs to supervisor while agent continues to own material submission
+ok 57 - parallel assignment belongs to supervisor while agent continues to own material submission
+  ---
+  duration_ms: 163.138042
+  type: 'test'
+  ...
+# Subtest: appeal context never instructs a second acceptance or assignment
+ok 58 - appeal context never instructs a second acceptance or assignment
+  ---
+  duration_ms: 164.233084
+  type: 'test'
+  ...
+# Subtest: remedy summary uses current amended requirements, deadline and inspector, preserving original distribution
+ok 59 - remedy summary uses current amended requirements, deadline and inspector, preserving original distribution
+  ---
+  duration_ms: 160.832541
+  type: 'test'
+  ...
+# Subtest: inspector supplement is a stable mock with a complete reply-receive-resume lifecycle
+ok 60 - inspector supplement is a stable mock with a complete reply-receive-resume lifecycle
+  ---
+  duration_ms: 175.58475
+  type: 'test'
+  ...
+# Subtest: version 2 migration appends only the new inspector fixture and preserves every existing record
+ok 61 - version 2 migration appends only the new inspector fixture and preserves every existing record
+  ---
+  duration_ms: 268.588958
+  type: 'test'
+  ...
+# Subtest: legacy supervisor return is available to both appeal and remedy response dialogs
+ok 62 - legacy supervisor return is available to both appeal and remedy response dialogs
+  ---
+  duration_ms: 149.131416
+  type: 'test'
+  ...
+# Subtest: Direct warning save is complete, atomic, idempotent and preserves issued evidence
+ok 63 - Direct warning save is complete, atomic, idempotent and preserves issued evidence
+  ---
+  duration_ms: 368.679667
+  type: 'test'
+  ...
+# Subtest: Incomplete, duplicate, conflicting and incompatible warning saves preserve the full original state
+ok 64 - Incomplete, duplicate, conflicting and incompatible warning saves preserve the full original state
+  ---
+  duration_ms: 225.905083
+  type: 'test'
+  ...
+# Subtest: Shared resource saves refresh all referencing rules and retain previous snapshots
+ok 65 - Shared resource saves refresh all referencing rules and retain previous snapshots
+  ---
+  duration_ms: 172.321042
+  type: 'test'
+  ...
+# Subtest: Invalid resource content and unauthorized saves do not mutate state
+ok 66 - Invalid resource content and unauthorized saves do not mutate state
+  ---
+  duration_ms: 167.510584
+  type: 'test'
+  ...
+# Subtest: Shared policy saves refresh active references and reject incompatible changes atomically
+ok 67 - Shared policy saves refresh active references and reject incompatible changes atomically
+  ---
+  duration_ms: 173.362209
+  type: 'test'
+  ...
+# Subtest: Policy management cannot silently turn the last association into no-warning
+ok 68 - Policy management cannot silently turn the last association into no-warning
+  ---
+  duration_ms: 166.689167
+  type: 'test'
+  ...
+# Subtest: New policies and resources save without draft or reason steps
+ok 69 - New policies and resources save without draft or reason steps
+  ---
+  duration_ms: 178.557375
+  type: 'test'
+  ...
+# Subtest: Hotword multiline save tolerates a final newline and rejects blank or repeated terms
+ok 70 - Hotword multiline save tolerates a final newline and rejects blank or repeated terms
+  ---
+  duration_ms: 180.775084
+  type: 'test'
+  ...
+# Subtest: supervisor confirmation shows only the correct decisions, without unrelated management routes
+ok 71 - supervisor confirmation shows only the correct decisions, without unrelated management routes
+  ---
+  duration_ms: 290.913625
+  type: 'test'
+  ...
+# Subtest: every exposed action is authorized, unique and labelable for all seeded entities and five identities
+ok 72 - every exposed action is authorized, unique and labelable for all seeded entities and five identities
+  ---
+  duration_ms: 257.527667
+  type: 'test'
+  ...
+# Subtest: supplement buttons follow the actual recipient and restore the original review
+ok 73 - supplement buttons follow the actual recipient and restore the original review
+  ---
+  duration_ms: 165.794459
+  type: 'test'
+  ...
+# Subtest: return routes expose agreement or explanation to the assigned inspector, and a replacement must investigate again
+ok 74 - return routes expose agreement or explanation to the assigned inspector, and a replacement must investigate again
+  ---
+  duration_ms: 173.69825
+  type: 'test'
+  ...
+# Subtest: new-flow material shortages return to the agent and distributed/archived findings cannot restart via follow-up
+ok 75 - new-flow material shortages return to the agent and distributed/archived findings cannot restart via follow-up
+  ---
+  duration_ms: 160.99775
+  type: 'test'
+  ...
+# Subtest: the new upheld appeal can be confirmed and cancels the finding without creating a remedy
+ok 76 - the new upheld appeal can be confirmed and cancels the finding without creating a remedy
+  ---
+  duration_ms: 168.417042
+  type: 'test'
+  ...
+# Subtest: new resubmitted remedy has a complete prior round and can proceed through verification and archive
+ok 77 - new resubmitted remedy has a complete prior round and can proceed through verification and archive
+  ---
+  duration_ms: 166.30075
+  type: 'test'
+  ...
+# Subtest: adding scenarios is idempotent and preserves all prior entities, progress, identity, read events and requests
+ok 78 - adding scenarios is idempotent and preserves all prior entities, progress, identity, read events and requests
+  ---
+  duration_ms: 253.690542
+  type: 'test'
+  ...
+# Subtest: warning triage has exactly three routes for live and ended calls; evidence requests belong to review
+ok 79 - warning triage has exactly three routes for live and ended calls; evidence requests belong to review
+  ---
+  duration_ms: 159.024666
+  type: 'test'
+  ...
+# Subtest: ordinary review supplement is reachable in executor queue and notifications without exposing its parent
+ok 80 - ordinary review supplement is reachable in executor queue and notifications without exposing its parent
+  ---
+  duration_ms: 308.62475
+  type: 'test'
+  ...
+# Subtest: standalone supplement reply leaves executor todo, appears on supervisor parent and returns to original reviewer
+ok 81 - standalone supplement reply leaves executor todo, appears on supervisor parent and returns to original reviewer
+  ---
+  duration_ms: 230.324083
+  type: 'test'
+  ...
+# Subtest: an inspector executing another reviewer supplement also receives a standalone task
+ok 82 - an inspector executing another reviewer supplement also receives a standalone task
+  ---
+  duration_ms: 171.36125
+  type: 'test'
+  ...
+# Subtest: legacy returned review displays the latest supervisor reason without mutating records or using adjacent facts
+ok 83 - legacy returned review displays the latest supervisor reason without mutating records or using adjacent facts
+  ---
+  duration_ms: 181.528959
+  type: 'test'
+  ...
+# Subtest: F01: distribution is not rectification; read does not accept; acceptance is atomic and scoped
+ok 84 - F01: distribution is not rectification; read does not accept; acceptance is atomic and scoped
+  ---
+  duration_ms: 5.242625
+  type: 'test'
+  ...
+# Subtest: F02: direct acceptance allows materials before assignment, with parallel supervisor todo and no data or deadline reset
+ok 85 - F02: direct acceptance allows materials before assignment, with parallel supervisor todo and no data or deadline reset
+  ---
+  duration_ms: 6.129959
+  type: 'test'
+  ...
+# Subtest: F03: review confirmation inherits reviewer, needs binary conclusion and requirements, never immediately creates remedy
+ok 86 - F03: review confirmation inherits reviewer, needs binary conclusion and requirements, never immediately creates remedy
+  ---
+  duration_ms: 2.351834
+  type: 'test'
+  ...
+# Subtest: F04: verification fail goes to agent; supervisor return goes to inspector; disagreement returns explanation to supervisor
+ok 87 - F04: verification fail goes to agent; supervisor return goes to inspector; disagreement returns explanation to supervisor
+  ---
+  duration_ms: 6.386917
+  type: 'test'
+  ...
+# Subtest: F05: inspector agrees with supervisor and asks agent for specific missing items; direct QA failure uses same loop
+ok 88 - F05: inspector agrees with supervisor and asks agent for specific missing items; direct QA failure uses same loop
+  ---
+  duration_ms: 6.440625
+  type: 'test'
+  ...
+# Subtest: F06: appeal supplement is issued and received by assigned inspector, supervisor return has two distinct routes
+ok 89 - F06: appeal supplement is issued and received by assigned inspector, supervisor return has two distinct routes
+  ---
+  duration_ms: 7.516375
+  type: 'test'
+  ...
+# Subtest: F07: appeal not upheld starts rectification with appeal inspector, and cannot bypass or contradict QA review
+ok 90 - F07: appeal not upheld starts rectification with appeal inspector, and cannot bypass or contradict QA review
+  ---
+  duration_ms: 4.056208
+  type: 'test'
+  ...
+# Subtest: F08: upheld appeal archives automatic false positive with evidence and optimisation feedback; rules are immutable
+ok 91 - F08: upheld appeal archives automatic false positive with evidence and optimisation feedback; rules are immutable
+  ---
+  duration_ms: 5.397583
+  type: 'test'
+  ...
+# Subtest: F09: no-hit manual check is independent, requires QA summary and supervisor confirmation, creates no false positive
+ok 92 - F09: no-hit manual check is independent, requires QA summary and supervisor confirmation, creates no false positive
+  ---
+  duration_ms: 1.873333
+  type: 'test'
+  ...
+# Subtest: F10: manual discovery inherits inspecting employee through distribution and acceptance
+ok 93 - F10: manual discovery inherits inspecting employee through distribution and acceptance
+  ---
+  duration_ms: 3.959
+  type: 'test'
+  ...
+# Subtest: F11: supervisor confirmation has exactly confirm and return branches; management applies during inspector work
+ok 94 - F11: supervisor confirmation has exactly confirm and return branches; management applies during inspector work
+  ---
+  duration_ms: 4.39425
+  type: 'test'
+  ...
+# Subtest: F12: supervisor cannot rewrite QA verdict, evidence or reasoning during confirmation
+ok 95 - F12: supervisor cannot rewrite QA verdict, evidence or reasoning during confirmation
+  ---
+  duration_ms: 5.52025
+  type: 'test'
+  ...
+# Subtest: F13: false positive confirmation archives; non-false-positive confirmation distributes without rectification
+ok 96 - F13: false positive confirmation archives; non-false-positive confirmation distributes without rectification
+  ---
+  duration_ms: 5.597875
+  type: 'test'
+  ...
+# Subtest: F14: no-issue spotcheck can return to original inspector or finish, with no supplement or task management at confirmation
+ok 97 - F14: no-issue spotcheck can return to original inspector or finish, with no supplement or task management at confirmation
+  ---
+  duration_ms: 1.967333
+  type: 'test'
+  ...
+# Subtest: F15: evidence request has coordination action, insufficient legacy opinion must return for a concrete result
+ok 98 - F15: evidence request has coordination action, insufficient legacy opinion must return for a concrete result
+  ---
+  duration_ms: 0.853125
+  type: 'test'
+  ...
+# Subtest: calendar retains date-only and datetime values without UTC day shifts
+ok 99 - calendar retains date-only and datetime values without UTC day shifts
+  ---
+  duration_ms: 29.630041
+  type: 'test'
+  ...
+# Subtest: evidence timestamps carry minutes rather than raw seconds
+ok 100 - evidence timestamps carry minutes rather than raw seconds
+  ---
+  duration_ms: 0.598542
+  type: 'test'
+  ...
+# Subtest: evidence playback stops at next segment or actual audio end
+ok 101 - evidence playback stops at next segment or actual audio end
+  ---
+  duration_ms: 0.953084
+  type: 'test'
+  ...
+# Subtest: Rich demo adds coherent scenarios once without changing existing user work
+ok 102 - Rich demo adds coherent scenarios once without changing existing user work
+  ---
+  duration_ms: 27.786917
+  type: 'test'
+  ...
+# Subtest: Demo history is ordered, idempotent and consistent with pending review
+ok 103 - Demo history is ordered, idempotent and consistent with pending review
+  ---
+  duration_ms: 36.424041
+  type: 'test'
+  ...
+# Subtest: Backfill preserves existing actions and never invents events for progressed records
+ok 104 - Backfill preserves existing actions and never invents events for progressed records
+  ---
+  duration_ms: 0.789166
+  type: 'test'
+  ...
+# Subtest: reminder preserves explicit requirements and audit text through acceptance
+ok 105 - reminder preserves explicit requirements and audit text through acceptance
+  ---
+  duration_ms: 6.457292
+  type: 'test'
+  ...
+# Subtest: reminder rejects incomplete requirements and invalid verification parameters
+ok 106 - reminder rejects incomplete requirements and invalid verification parameters
+  ---
+  duration_ms: 0.15525
+  type: 'test'
+  ...
+# Subtest: reminder retains evidence, deadline, permission and revision guards atomically
+ok 107 - reminder retains evidence, deadline, permission and revision guards atomically
+  ---
+  duration_ms: 2.798584
+  type: 'test'
+  ...
+# Subtest: untouched demo problems retain separate rules and evidence without changing verdicts
+ok 108 - untouched demo problems retain separate rules and evidence without changing verdicts
+  ---
+  duration_ms: 4.186125
+  type: 'test'
+  ...
+# Subtest: saved review or formal conclusion is never overwritten by seed repair
+ok 109 - saved review or formal conclusion is never overwritten by seed repair
+  ---
+  duration_ms: 1.747625
+  type: 'test'
+  ...
+# Subtest: pinned rule lookup never falls back to latest version
+ok 110 - pinned rule lookup never falls back to latest version
+  ---
+  duration_ms: 0.623583
+  type: 'test'
+  ...
+# Subtest: Multiline paste replaces the selection without losing surrounding rows or text
+ok 111 - Multiline paste replaces the selection without losing surrounding rows or text
+  ---
+  duration_ms: 0.787416
+  type: 'test'
+  ...
+# Subtest: Explicit empty table rows survive serialization and fail visible-row validation
+ok 112 - Explicit empty table rows survive serialization and fail visible-row validation
+  ---
+  duration_ms: 1.226667
+  type: 'test'
+  ...
+# Subtest: N01: false_positive cancels pending remedy supplements and rejects stale replies
+ok 113 - N01: false_positive cancels pending remedy supplements and rejects stale replies
+  ---
+  duration_ms: 9.043167
+  type: 'test'
+  ...
+# Subtest: N01: false_positive cancels submitted remedy supplements and rejects stale replies
+ok 114 - N01: false_positive cancels submitted remedy supplements and rejects stale replies
+  ---
+  duration_ms: 4.167833
+  type: 'test'
+  ...
+# Subtest: N01: insufficient cancels pending remedy supplements and rejects stale replies
+ok 115 - N01: insufficient cancels pending remedy supplements and rejects stale replies
+  ---
+  duration_ms: 4.761792
+  type: 'test'
+  ...
+# Subtest: N01: insufficient cancels submitted remedy supplements and rejects stale replies
+ok 116 - N01: insufficient cancels submitted remedy supplements and rejects stale replies
+  ---
+  duration_ms: 4.199167
+  type: 'test'
+  ...
+# Subtest: N01: maintaining an appeal resumes the original supplement without deleting work
+ok 117 - N01: maintaining an appeal resumes the original supplement without deleting work
+  ---
+  duration_ms: 2.287958
+  type: 'test'
+  ...
+# Subtest: N01: stored legacy terminal parents repair dangling children idempotently
+ok 118 - N01: stored legacy terminal parents repair dangling children idempotently
+  ---
+  duration_ms: 5.74975
+  type: 'test'
+  ...
+# Subtest: N02: supplement handoff has exactly one active task, then restores the assigned review
+ok 119 - N02: supplement handoff has exactly one active task, then restores the assigned review
+  ---
+  duration_ms: 3.818792
+  type: 'test'
+  ...
+# Subtest: N03: live reminders share the agent queue and notice source while read and feedback stay independent
+ok 120 - N03: live reminders share the agent queue and notice source while read and feedback stay independent
+  ---
+  duration_ms: 1.733084
+  type: 'test'
+  ...
+# Subtest: N04: saved acceptance restores result, reason and basis after serialization; submission archives it
+ok 121 - N04: saved acceptance restores result, reason and basis after serialization; submission archives it
+  ---
+  duration_ms: 2.206209
+  type: 'test'
+  ...
+# Subtest: N04: changed standard preserves reference draft, requires confirmation and archives old basis
+ok 122 - N04: changed standard preserves reference draft, requires confirmation and archives old basis
+  ---
+  duration_ms: 2.259708
+  type: 'test'
+  ...
+# Subtest: N04: legacy drafts and reassigned drafts require explicit review, and old inspector loses write access
+ok 123 - N04: legacy drafts and reassigned drafts require explicit review, and old inspector loses write access
+  ---
+  duration_ms: 2.502375
+  type: 'test'
+  ...
+# Subtest: N04: appeal pause permits draft updates but never formal acceptance
+ok 124 - N04: appeal pause permits draft updates but never formal acceptance
+  ---
+  duration_ms: 1.608458
+  type: 'test'
+  ...
+# Subtest: review deadlines reserve supervisor time; assign/extend/return/reassign reject overflow
+ok 125 - review deadlines reserve supervisor time; assign/extend/return/reassign reject overflow
+  ---
+  duration_ms: 375.47475
+  type: 'test'
+  ...
+# Subtest: reassignment retains expired deadline and history unless explicitly changed
+ok 126 - reassignment retains expired deadline and history unless explicitly changed
+  ---
+  duration_ms: 181.571917
+  type: 'test'
+  ...
+# Subtest: appeal child deadline cannot exceed parent deadline
+ok 127 - appeal child deadline cannot exceed parent deadline
+  ---
+  duration_ms: 158.787875
+  type: 'test'
+  ...
+# Subtest: visible appeal title is searchable; unrelated sibling title is excluded
+ok 128 - visible appeal title is searchable; unrelated sibling title is excluded
+  ---
+  duration_ms: 165.245333
+  type: 'test'
+  ...
+# Subtest: manual revoked findings open a visible original case without manufacturing alerts
+ok 129 - manual revoked findings open a visible original case without manufacturing alerts
+  ---
+  duration_ms: 166.204041
+  type: 'test'
+  ...
+# Subtest: remedy stages conserve every record; appeals and manual revocations have contextual labels in CSV
+ok 130 - remedy stages conserve every record; appeals and manual revocations have contextual labels in CSV
+  ---
+  duration_ms: 173.786042
+  type: 'test'
+  ...
+# Subtest: rejecting an adjustment and approving only a deadline both restore agent work without changing standard
+ok 131 - rejecting an adjustment and approving only a deadline both restore agent work without changing standard
+  ---
+  duration_ms: 313.514209
+  type: 'test'
+  ...
+# Subtest: response reminders are stable, scoped, and accepting late keeps original completion deadline
+ok 132 - response reminders are stable, scoped, and accepting late keeps original completion deadline
+  ---
+  duration_ms: 156.712708
+  type: 'test'
+  ...
+# Subtest: pending distribution extension does not accept or create remedy, preserves overdue facts
+ok 133 - pending distribution extension does not accept or create remedy, preserves overdue facts
+  ---
+  duration_ms: 156.934
+  type: 'test'
+  ...
+# Subtest: Policy-side multi-rule save is draft-only, visible in rule editor and publishes through existing gate
+ok 134 - Policy-side multi-rule save is draft-only, visible in rule editor and publishes through existing gate
+  ---
+  duration_ms: 17.388
+  type: 'test'
+  ...
+# Subtest: Policy-side add preserves other policy bindings, custom parameters and existing draft metadata
+ok 135 - Policy-side add preserves other policy bindings, custom parameters and existing draft metadata
+  ---
+  duration_ms: 15.145959
+  type: 'test'
+  ...
+# Subtest: Removing this policy retains other policies and marks no-warning only when the last association is removed
+ok 136 - Removing this policy retains other policies and marks no-warning only when the last association is removed
+  ---
+  duration_ms: 4.944583
+  type: 'test'
+  ...
+# Subtest: A stale second rule rolls back the entire multi-rule update
+ok 137 - A stale second rule rolls back the entire multi-rule update
+  ---
+  duration_ms: 11.6295
+  type: 'test'
+  ...
+# Subtest: Authorization, retired/unpublished policies, duplicate rules and incompatible selections are rejected
+ok 138 - Authorization, retired/unpublished policies, duplicate rules and incompatible selections are rejected
+  ---
+  duration_ms: 2.992042
+  type: 'test'
+  ...
+# Subtest: An existing checked draft is invalidated; rule-side edits are reflected in policy selections after reload
+ok 139 - An existing checked draft is invalidated; rule-side edits are reflected in policy selections after reload
+  ---
+  duration_ms: 4.88925
+  type: 'test'
+  ...
+# Subtest: New policy selections remain pending and are visible from rules without modifying published bindings
+ok 140 - New policy selections remain pending and are visible from rules without modifying published bindings
+  ---
+  duration_ms: 26.297583
+  type: 'test'
+  ...
+# Subtest: Publishing a checked new policy publishes all selected bindings atomically and preserves prior history and other policies
+ok 141 - Publishing a checked new policy publishes all selected bindings atomically and preserves prior history and other policies
+  ---
+  duration_ms: 25.606917
+  type: 'test'
+  ...
+# Subtest: Creation rejects existing rule drafts, stale selections and invalid features without partial writes
+ok 142 - Creation rejects existing rule drafts, stale selections and invalid features without partial writes
+  ---
+  duration_ms: 25.568291
+  type: 'test'
+  ...
+# Subtest: A target update after checking blocks entire publication including the policy and first target
+ok 143 - A target update after checking blocks entire publication including the policy and first target
+  ---
+  duration_ms: 46.273417
+  type: 'test'
+  ...
+# Subtest: Editing or discarding new-policy scope leaves target rules untouched; unbound creation remains valid
+ok 144 - Editing or discarding new-policy scope leaves target rules untouched; unbound creation remains valid
+  ---
+  duration_ms: 11.9635
+  type: 'test'
+  ...
+# Subtest: An incompatible policy configuration and unauthorized creation are rejected
+ok 145 - An incompatible policy configuration and unauthorized creation are rejected
+  ---
+  duration_ms: 5.320292
+  type: 'test'
+  ...
+# Subtest: legacy label cleanup preserves saved decisions and user-written content
+ok 146 - legacy label cleanup preserves saved decisions and user-written content
+  ---
+  duration_ms: 6.064875
+  type: 'test'
+  ...
+# Subtest: R01: supplement adds second sample to original round and reaches supervisor closure
+ok 147 - R01: supplement adds second sample to original round and reaches supervisor closure
+  ---
+  duration_ms: 12.457875
+  type: 'test'
+  ...
+# Subtest: R02: executor options and command reject a different agent, inspectors get scoped access on assignment
+ok 148 - R02: executor options and command reject a different agent, inspectors get scoped access on assignment
+  ---
+  duration_ms: 9.759417
+  type: 'test'
+  ...
+# Subtest: R03: active appeal cannot be overwritten from finding or another review and can still withdraw
+ok 149 - R03: active appeal cannot be overwritten from finding or another review and can still withdraw
+  ---
+  duration_ms: 1.322791
+  type: 'test'
+  ...
+# Subtest: R03: ordinary follow-up conclusion change terminates old personnel remedy and its supplements
+ok 150 - R03: ordinary follow-up conclusion change terminates old personnel remedy and its supplements
+  ---
+  duration_ms: 10.15575
+  type: 'test'
+  ...
+# Subtest: R04: inspector submitted evidence is immutable per conclusion version
+ok 151 - R04: inspector submitted evidence is immutable per conclusion version
+  ---
+  duration_ms: 2.763583
+  type: 'test'
+  ...
+# Subtest: R05: failed round retains material, samples and standards while new round starts empty
+ok 152 - R05: failed round retains material, samples and standards while new round starts empty
+  ---
+  duration_ms: 1.715459
+  type: 'test'
+  ...
+# Subtest: R06: returning an overdue review retains first overdue and deadline change in CSV
+ok 153 - R06: returning an overdue review retains first overdue and deadline change in CSV
+  ---
+  duration_ms: 19.924875
+  type: 'test'
+  ...
+# Subtest: R07: separate requirements wait for each agent decision and retain original reviewer
+ok 154 - R07: separate requirements wait for each agent decision and retain original reviewer
+  ---
+  duration_ms: 3.861125
+  type: 'test'
+  ...
+# Subtest: R07: unresolved existing fact can be linked without a new Finding or changing its source
+ok 155 - R07: unresolved existing fact can be linked without a new Finding or changing its source
+  ---
+  duration_ms: 1.401416
+  type: 'test'
+  ...
+# Subtest: R08: live call allows draft, rejects formal submission, and reuses the task after ending
+ok 156 - R08: live call allows draft, rejects formal submission, and reuses the task after ending
+  ---
+  duration_ms: 4.156916
+  type: 'test'
+  ...
+# Subtest: R09: inspector requests evidence before verdict, supervisor assigns, supplement returns to same draft
+ok 157 - R09: inspector requests evidence before verdict, supervisor assigns, supplement returns to same draft
+  ---
+  duration_ms: 7.118791
+  type: 'test'
+  ...
+# Subtest: R10/R12: pending reads are tasks, paused remedies are not, next business action is primary
+ok 158 - R10/R12: pending reads are tasks, paused remedies are not, next business action is primary
+  ---
+  duration_ms: 0.475167
+  type: 'test'
+  ...
+# Subtest: C03: compound acceptance is atomic, records both events, and request retry is idempotent
+ok 159 - C03: compound acceptance is atomic, records both events, and request retry is idempotent
+  ---
+  duration_ms: 5.790875
+  type: 'test'
+  ...
+# Subtest: R09: appeal review evidence request returns via supervisor to the same inspector
+ok 160 - R09: appeal review evidence request returns via supervisor to the same inspector
+  ---
+  duration_ms: 2.278917
+  type: 'test'
+  ...
+# Subtest: V01: daily count and weighted ratios reconcile with source metrics, excluding live calls
+ok 161 - V01: daily count and weighted ratios reconcile with source metrics, excluding live calls
+  ---
+  duration_ms: 48.068125
+  type: 'test'
+  ...
+# Subtest: V02: Beijing midnight is the inclusive attribution boundary for drill-down and CSV
+ok 162 - V02: Beijing midnight is the inclusive attribution boundary for drill-down and CSV
+  ---
+  duration_ms: 1.588959
+  type: 'test'
+  ...
+# Subtest: V03: long ranges aggregate at most 31 buckets with no duplicate or lost samples
+ok 163 - V03: long ranges aggregate at most 31 buckets with no duplicate or lost samples
+  ---
+  duration_ms: 91.143417
+  type: 'test'
+  ...
+# Subtest: V04: empty ratio dates and future dates remain absent, while historical count zero stays zero
+ok 164 - V04: empty ratio dates and future dates remain absent, while historical count zero stays zero
+  ---
+  duration_ms: 105.8185
+  type: 'test'
+  ...
+# Subtest: V05: indicator bars, verdict segments and agent matrix reconcile and update with latest conclusions
+ok 165 - V05: indicator bars, verdict segments and agent matrix reconcile and update with latest conclusions
+  ---
+  duration_ms: 25.022792
+  type: 'test'
+  ...
+# Subtest: V06: agent and business filters apply to every visualization; restricted roles expose no report rows
+ok 166 - V06: agent and business filters apply to every visualization; restricted roles expose no report rows
+  ---
+  duration_ms: 12.33825
+  type: 'test'
+  ...
+# Subtest: V07: selected-period ratio, denominator and export note use the selected period rather than overall totals
+ok 167 - V07: selected-period ratio, denominator and export note use the selected period rather than overall totals
+  ---
+  duration_ms: 44.711125
+  type: 'test'
+  ...
+# Subtest: V08: issue cards, indicator bars and verdicts use one warning population for each selection
+ok 168 - V08: issue cards, indicator bars and verdicts use one warning population for each selection
+  ---
+  duration_ms: 3.538833
+  type: 'test'
+  ...
+# Subtest: V09: false-positive distribution and export retain only the confirmed automatic denominator
+ok 169 - V09: false-positive distribution and export retain only the confirmed automatic denominator
+  ---
+  duration_ms: 4.815958
+  type: 'test'
+  ...
+# Subtest: V10: issue linkage respects filters, missing denominators, latest conclusions and role permissions
+ok 170 - V10: issue linkage respects filters, missing denominators, latest conclusions and role permissions
+  ---
+  duration_ms: 8.09725
+  type: 'test'
+  ...
+# Subtest: V11: team cards drive agent groups and matrices, preserving normal calls and warning dimensions
+ok 171 - V11: team cards drive agent groups and matrices, preserving normal calls and warning dimensions
+  ---
+  duration_ms: 3.527208
+  type: 'test'
+  ...
+# Subtest: V12: team risk-call ratios use completed calls per agent and a weighted aggregate
+ok 172 - V12: team risk-call ratios use completed calls per agent and a weighted aggregate
+  ---
+  duration_ms: 1.631541
+  type: 'test'
+  ...
+# Subtest: Deletion rejects active and draft references without changing state
+ok 173 - Deletion rejects active and draft references without changing state
+  ---
+  duration_ms: 5.477875
+  type: 'test'
+  ...
+# Subtest: Deletion retains historical snapshots and audit while preventing edits or republication
+ok 174 - Deletion retains historical snapshots and audit while preventing edits or republication
+  ---
+  duration_ms: 2.189417
+  type: 'test'
+  ...
+# Subtest: Deletion rejects read-only roles and stale revisions
+ok 175 - Deletion rejects read-only roles and stale revisions
+  ---
+  duration_ms: 0.710667
+  type: 'test'
+  ...
+# Subtest: CSV preserves escaped quotes and rejects unclosed quotes
+ok 176 - CSV preserves escaped quotes and rejects unclosed quotes
+  ---
+  duration_ms: 0.759209
+  type: 'test'
+  ...
+# Subtest: SOP parses named collections and reports duplicate, empty and malformed rows
+ok 177 - SOP parses named collections and reports duplicate, empty and malformed rows
+  ---
+  duration_ms: 0.301166
+  type: 'test'
+  ...
+# Subtest: Only single-column UTF-8 CSV is supported; template is importable
+ok 178 - Only single-column UTF-8 CSV is supported; template is importable
+  ---
+  duration_ms: 4.854334
+  type: 'test'
+  ...
+# Subtest: Legacy snapshots remain unchanged while edit text becomes a named rule
+ok 179 - Legacy snapshots remain unchanged while edit text becomes a named rule
+  ---
+  duration_ms: 0.204916
+  type: 'test'
+  ...
+# Subtest: Imported SOP draft and source survive serialization; publish leaves rule references unchanged
+ok 180 - Imported SOP draft and source survive serialization; publish leaves rule references unchanged
+  ---
+  duration_ms: 5.503542
+  type: 'test'
+  ...
+# Subtest: Structured imports report file lines while form validation reports content lines
+ok 181 - Structured imports report file lines while form validation reports content lines
+  ---
+  duration_ms: 0.319958
+  type: 'test'
+  ...
+# Subtest: Hotword CSV round-trips BOM and quoted values; errors use file row numbers
+ok 182 - Hotword CSV round-trips BOM and quoted values; errors use file row numbers
+  ---
+  duration_ms: 0.251916
+  type: 'test'
+  ...
+# Subtest: P01: publishing only creates a resource version; all rule and detection snapshots remain unchanged
+ok 183 - P01: publishing only creates a resource version; all rule and detection snapshots remain unchanged
+  ---
+  duration_ms: 8.488708
+  type: 'test'
+  ...
+# Subtest: P02: selected reference adoption is versioned, scoped, logged and idempotent
+ok 184 - P02: selected reference adoption is versioned, scoped, logged and idempotent
+  ---
+  duration_ms: 5.577083
+  type: 'test'
+  ...
+# Subtest: P03: stale rule revision and empty selection reject without changing any snapshot
+ok 185 - P03: stale rule revision and empty selection reject without changing any snapshot
+  ---
+  duration_ms: 3.995708
+  type: 'test'
+  ...
+# Subtest: P04: one drafted rule blocks the whole multi-rule transaction
+ok 186 - P04: one drafted rule blocks the whole multi-rule transaction
+  ---
+  duration_ms: 2.301166
+  type: 'test'
+  ...
+# Subtest: P05: read-only roles cannot adopt references and stale resource forms fail
+ok 187 - P05: read-only roles cannot adopt references and stale resource forms fail
+  ---
+  duration_ms: 1.563209
+  type: 'test'
+  ...
+# Subtest: catalog keeps 14 checks and reuses four active policies with unchanged warning behavior
+ok 188 - catalog keeps 14 checks and reuses four active policies with unchanged warning behavior
+  ---
+  duration_ms: 244.522083
+  type: 'test'
+  ...
+# Subtest: professional checks select distinct, real pinned resource entries
+ok 189 - professional checks select distinct, real pinned resource entries
+  ---
+  duration_ms: 168.597125
+  type: 'test'
+  ...
+# Subtest: upgrade is idempotent and preserves all case data and historical rule/policy snapshots
+ok 190 - upgrade is idempotent and preserves all case data and historical rule/policy snapshots
+  ---
+  duration_ms: 202.830042
+  type: 'test'
+  ...
+# Subtest: upgrade preserves edited rules, drafts, policy settings and resource content
+ok 191 - upgrade preserves edited rules, drafts, policy settings and resource content
+  ---
+  duration_ms: 198.894583
+  type: 'test'
+  ...
+# Subtest: retired policies remain readable but cannot be edited or newly associated
+ok 192 - retired policies remain readable but cannot be edited or newly associated
+  ---
+  duration_ms: 156.545375
+  type: 'test'
+  ...
+# Subtest: resource refresh retains selected check scope and historical evidence, reports removed entries
+ok 193 - resource refresh retains selected check scope and historical evidence, reports removed entries
+  ---
+  duration_ms: 156.949875
+  type: 'test'
+  ...
+# Subtest: publishing a shared policy updates all its users and preserves independent check definitions
+ok 194 - publishing a shared policy updates all its users and preserves independent check definitions
+  ---
+  duration_ms: 158.081292
+  type: 'test'
+  ...
+# Subtest: PRD 7.11: every problem has a valid call, pinned rule/resource and evidence; manual findings are not automatic warnings
+ok 195 - PRD 7.11: every problem has a valid call, pinned rule/resource and evidence; manual findings are not automatic warnings
+  ---
+  duration_ms: 229.903875
+  type: 'test'
+  ...
+# Subtest: PRD 7.8/7.9: detection and strategy decisions are distinct; frozen policy conditions really satisfy each warning
+ok 196 - PRD 7.8/7.9: detection and strategy decisions are distinct; frozen policy conditions really satisfy each warning
+  ---
+  duration_ms: 178.011542
+  type: 'test'
+  ...
+# Subtest: PRD 7.5/7.11.3: each ordinary warning has its own review; insufficient evidence stays in investigation with no third verdict
+ok 197 - PRD 7.5/7.11.3: each ordinary warning has its own review; insufficient evidence stays in investigation with no third verdict
+  ---
+  duration_ms: 170.52025
+  type: 'test'
+  ...
+# Subtest: PRD 7.7: remedies require acceptance or adverse appeal; direct unassigned submissions retain materials and original deadline
+ok 198 - PRD 7.7: remedies require acceptance or adverse appeal; direct unassigned submissions retain materials and original deadline
+  ---
+  duration_ms: 165.605709
+  type: 'test'
+  ...
+# Subtest: PRD 7.6/7.7: appeal and remedy return branches have real operator events, immutable opinions, and correct rounds
+ok 199 - PRD 7.6/7.7: appeal and remedy return branches have real operator events, immutable opinions, and correct rounds
+  ---
+  duration_ms: 156.2675
+  type: 'test'
+  ...
+# Subtest: PRD 7.3/7.11: no-findings spotchecks create no false positives; revoked manual issues never manufacture an automatic warning
+ok 200 - PRD 7.3/7.11: no-findings spotchecks create no false positives; revoked manual issues never manufacture an automatic warning
+  ---
+  duration_ms: 154.6115
+  type: 'test'
+  ...
+# Subtest: all seed timestamps, evidence ranges and submitted histories occur in a possible order
+ok 201 - all seed timestamps, evidence ranges and submitted histories occur in a possible order
+  ---
+  duration_ms: 152.586708
+  type: 'test'
+  ...
+# Subtest: legacy migration backs away from all user changes; both untouched generations rebuild against PRD 464
+ok 202 - legacy migration backs away from all user changes; both untouched generations rebuild against PRD 464
+  ---
+  duration_ms: 447.457417
+  type: 'test'
+  ...
+# Subtest: the generated pending review follows the same publish/accept commands without changing the sibling problem
+ok 203 - the generated pending review follows the same publish/accept commands without changing the sibling problem
+  ---
+  duration_ms: 146.252792
+  type: 'test'
+  ...
+# Subtest: PRD lifecycle terms distinguish handling state, judgment and receiving a result
+ok 204 - PRD lifecycle terms distinguish handling state, judgment and receiving a result
+  ---
+  duration_ms: 143.198709
+  type: 'test'
+  ...
+# Subtest: Migration retains source, drafts, history, snapshots and is idempotent
+ok 205 - Migration retains source, drafts, history, snapshots and is idempotent
+  ---
+  duration_ms: 13.714584
+  type: 'test'
+  ...
+# Subtest: All CSV templates validate all records beyond preview row 5
+ok 206 - All CSV templates validate all records beyond preview row 5
+  ---
+  duration_ms: 1.335917
+  type: 'test'
+  ...
+# Subtest: Reject conflicting corrections, invalid SOP sequence and dates
+ok 207 - Reject conflicting corrections, invalid SOP sequence and dates
+  ---
+  duration_ms: 0.120083
+  type: 'test'
+  ...
+# Subtest: Indicators own features and association; policies own common conditions and dispositions
+ok 208 - Indicators own features and association; policies own common conditions and dispositions
+  ---
+  duration_ms: 4.269208
+  type: 'test'
+  ...
+# Subtest: Blank is distinct from explicit no-warning; unpublished policy cannot be bound
+ok 209 - Blank is distinct from explicit no-warning; unpublished policy cannot be bound
+  ---
+  duration_ms: 7.053042
+  type: 'test'
+  ...
+# Subtest: Binding compatibility respects policy roles, stages and continuous capability
+ok 210 - Binding compatibility respects policy roles, stages and continuous capability
+  ---
+  duration_ms: 4.917583
+  type: 'test'
+  ...
+# Subtest: Save incomplete draft survives reload and blocks check; complete bindings publish frozen policy refs
+ok 211 - Save incomplete draft survives reload and blocks check; complete bindings publish frozen policy refs
+  ---
+  duration_ms: 9.622834
+  type: 'test'
+  ...
+# Subtest: Policy publishes uniformly update references, invalidate checked drafts and preserve running snapshots
+ok 212 - Policy publishes uniformly update references, invalidate checked drafts and preserve running snapshots
+  ---
+  duration_ms: 8.997625
+  type: 'test'
+  ...
+# Subtest: Resource publication preserves bindings and policies; removed intent requires reconfiguration
+ok 213 - Resource publication preserves bindings and policies; removed intent requires reconfiguration
+  ---
+  duration_ms: 6.730417
+  type: 'test'
+  ...
+# Subtest: Authorization, stale revisions, action recipients and new policy lifecycle
+ok 214 - Authorization, stale revisions, action recipients and new policy lifecycle
+  ---
+  duration_ms: 5.456292
+  type: 'test'
+  ...
+# Subtest: A feature cannot mix explicit no-warning with active or duplicate tiers
+ok 215 - A feature cannot mix explicit no-warning with active or duplicate tiers
+  ---
+  duration_ms: 4.178875
+  type: 'test'
+  ...
+# Subtest: Common policy stage offsets validate only while active and allow zero
+ok 216 - Common policy stage offsets validate only while active and allow zero
+  ---
+  duration_ms: 2.126917
+  type: 'test'
+  ...
+# Subtest: Updating a policy invalidates a draft-only reference and advances its revision
+ok 217 - Updating a policy invalidates a draft-only reference and advances its revision
+  ---
+  duration_ms: 9.802208
+  type: 'test'
+  ...
+# Subtest: A policy edit cannot make a published binding incompatible
+ok 218 - A policy edit cannot make a published binding incompatible
+  ---
+  duration_ms: 4.423375
+  type: 'test'
+  ...
+# Subtest: V7 preserves differing V6 trigger profiles in separate reusable policies
+ok 219 - V7 preserves differing V6 trigger profiles in separate reusable policies
+  ---
+  duration_ms: 8.666666
+  type: 'test'
+  ...
+# Subtest: T01: real-time ending reuses valid assignment; missing assignment returns supervisor; duplicate request id is idempotent
+ok 220 - T01: real-time ending reuses valid assignment; missing assignment returns supervisor; duplicate request id is idempotent
+  ---
+  duration_ms: 9.750167
+  type: 'test'
+  ...
+# Subtest: T02: false positive closes only candidate and never creates remediation
+ok 221 - T02: false positive closes only candidate and never creates remediation
+  ---
+  duration_ms: 2.133791
+  type: 'test'
+  ...
+# Subtest: T03: insufficient evidence has owned and dated supplement loop and is excluded from false positives
+ok 222 - T03: insufficient evidence has owned and dated supplement loop and is excluded from false positives
+  ---
+  duration_ms: 20.139208
+  type: 'test'
+  ...
+# Subtest: T04: distributed risk waits for acceptance is delivered, remains risk, can appeal; ack cannot close or alter verdict
+ok 223 - T04: distributed risk waits for acceptance is delivered, remains risk, can appeal; ack cannot close or alter verdict
+  ---
+  duration_ms: 4.459958
+  type: 'test'
+  ...
+# Subtest: T05: issue once, agent accepts/materials, assigned inspector passes, supervisor closes
+ok 224 - T05: issue once, agent accepts/materials, assigned inspector passes, supervisor closes
+  ---
+  duration_ms: 2.488625
+  type: 'test'
+  ...
+# Subtest: T06: insufficient samples retain inspector ownership; agent supplements; failed verification returns concrete requirements to agent
+ok 225 - T06: insufficient samples retain inspector ownership; agent supplements; failed verification returns concrete requirements to agent
+  ---
+  duration_ms: 8.558542
+  type: 'test'
+  ...
+# Subtest: T07: preacceptance and in-review appeal supplements both return through supervisor, preserving reviewer
+ok 226 - T07: preacceptance and in-review appeal supplements both return through supervisor, preserving reviewer
+  ---
+  duration_ms: 3.54475
+  type: 'test'
+  ...
+# Subtest: T08: withdraw, reject, maintain restore phase and elapsed pause; old overdue retained
+ok 227 - T08: withdraw, reject, maintain restore phase and elapsed pause; old overdue retained
+  ---
+  duration_ms: 3.330709
+  type: 'test'
+  ...
+# Subtest: T09: false positive / insufficient terminate separately; risk adjustment invalidates old acceptance
+ok 228 - T09: false positive / insufficient terminate separately; risk adjustment invalidates old acceptance
+  ---
+  duration_ms: 4.781459
+  type: 'test'
+  ...
+# Subtest: T10: rule bounds, resource duplicate/SOP validation, failed checks keep draft, publish creates immutable versions
+ok 229 - T10: rule bounds, resource duplicate/SOP validation, failed checks keep draft, publish creates immutable versions
+  ---
+  duration_ms: 3.398583
+  type: 'test'
+  ...
+# Subtest: T11: multi-risk counts separate from calls, zero denominators show dash, CSV uses drilldown rows and protects formulas
+ok 230 - T11: multi-risk counts separate from calls, zero denominators show dash, CSV uses drilldown rows and protects formulas
+  ---
+  duration_ms: 3.314541
+  type: 'test'
+  ...
+# Subtest: T12: 3 roles, 7 business routes with one review workspace, identity-scoped objects and actions, stale version rejected
+ok 231 - T12: 3 roles, 7 business routes with one review workspace, identity-scoped objects and actions, stale version rejected
+  ---
+  duration_ms: 0.899625
+  type: 'test'
+  ...
+# Subtest: T13: normal spot check creates no fake false positive; multi findings retained independently
+ok 232 - T13: normal spot check creates no fake false positive; multi findings retained independently
+  ---
+  duration_ms: 2.332417
+  type: 'test'
+  ...
+# Subtest: T14: human-added finding never enters automatic-candidate precision denominator
+ok 233 - T14: human-added finding never enters automatic-candidate precision denominator
+  ---
+  duration_ms: 4.501417
+  type: 'test'
+  ...
+# Subtest: T15: withdrawal cancels open appeal review and invalidates captured form, retains draft opinions
+ok 234 - T15: withdrawal cancels open appeal review and invalidates captured form, retains draft opinions
+  ---
+  duration_ms: 4.5585
+  type: 'test'
+  ...
+# Subtest: T16: changing a completion standard invalidates prior approval; supplement executor cannot close
+ok 235 - T16: changing a completion standard invalidates prior approval; supplement executor cannot close
+  ---
+  duration_ms: 2.084292
+  type: 'test'
+  ...
+# Subtest: T17: resource publish during running detection preserves in-flight rule/resource snapshot and re-detection appends a batch
+ok 236 - T17: resource publish during running detection preserves in-flight rule/resource snapshot and re-detection appends a batch
+  ---
+  duration_ms: 7.244667
+  type: 'test'
+  ...
+# Subtest: T18: overlapping pauses count their union, first overdue and original deadline never disappear
+ok 237 - T18: overlapping pauses count their union, first overdue and original deadline never disappear
+  ---
+  duration_ms: 1.143583
+  type: 'test'
+  ...
+# Subtest: D01: withdrawn or unaccepted can resubmit, substantive decision cannot repeat same version, changed adverse version can appeal
+ok 238 - D01: withdrawn or unaccepted can resubmit, substantive decision cannot repeat same version, changed adverse version can appeal
+  ---
+  duration_ms: 8.691542
+  type: 'test'
+  ...
+# Subtest: D03: preferred alternate reviewer exists; same reviewer needs a recorded reason
+ok 239 - D03: preferred alternate reviewer exists; same reviewer needs a recorded reason
+  ---
+  duration_ms: 1.330166
+  type: 'test'
+  ...
+# Subtest: Detection failures are execution states and do not become successful after human review
+ok 240 - Detection failures are execution states and do not become successful after human review
+  ---
+  duration_ms: 0.529125
+  type: 'test'
+  ...
+# Subtest: Resources: creating an item requires references; draft/publish updates future rule snapshot only
+ok 241 - Resources: creating an item requires references; draft/publish updates future rule snapshot only
+  ---
+  duration_ms: 7.746834
+  type: 'test'
+  ...
+# Subtest: Reassignment: old inspector loses submit permission and original draft remains
+ok 242 - Reassignment: old inspector loses submit permission and original draft remains
+  ---
+  duration_ms: 1.151458
+  type: 'test'
+  ...
+# Subtest: Appeal submitted review becomes completed after substantive adjudication; new adverse version can appeal
+ok 243 - Appeal submitted review becomes completed after substantive adjudication; new adverse version can appeal
+  ---
+  duration_ms: 1.6765
+  type: 'test'
+  ...
+1..243
+# tests 243
+# suites 0
+# pass 243
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7294.768875

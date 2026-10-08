@@ -38,7 +38,7 @@ test('return routes expose agreement or explanation to the assigned inspector, a
  let s=seed();assert.deepEqual(sorted(contextActions(as(s,'Q02'),'WO-AP-UI-7')),['agree_appeal_return','explain_appeal']);
  assert.deepEqual(sorted(contextActions(as(s,'Q02'),'REC-REC-RESPONSE')),['agree_remedy_return','explain_remedy']);
  assert.throws(()=>run(s,'WO-AP-UI-7','reassign',{owner:'Q02'}),/另一位/);
- s=run(s,'WO-AP-UI-7','reassign',{owner:'Q01'});assert.equal(entity(s,'WO-AP-UI-7').status,'working');assert.ok(!contextActions(as(s,'Q01'),'WO-AP-UI-7').includes('explain_appeal'));
+ s=run(s,'WO-AP-UI-7','reassign',{owner:'Q01',dueAt:undefined});assert.equal(entity(s,'WO-AP-UI-7').status,'working');assert.ok(!contextActions(as(s,'Q01'),'WO-AP-UI-7').includes('explain_appeal'));
 });
 test('new-flow material shortages return to the agent and distributed/archived findings cannot restart via follow-up',()=>{
  const s=seed();assert.throws(()=>run(as(s,'Q02'),'REC-UI-2','verify',{value:'insufficient'}),/不满足/);
@@ -73,9 +73,10 @@ test('warning triage has exactly three routes for live and ended calls; evidence
   assert.ok(!actions(s,id).includes('supplement'));
   assert.throws(()=>run(s,id,'supplement',{owner:'A1048'}),/不允许/);
  }
- let next=run(s,'F-1031','assign',{owner:'Q01'});const id=next.reviews.at(-1).id;
+ const warning=entity(s,'F-1031');warning.alertTiming={...warning.alertTiming,triggeredAt:now.toISOString(),resolutionDueAt:new Date(+now+8*3600000).toISOString()};
+ let next=run(s,'F-1031','assign',{owner:'Q01',dueAt:new Date(+now+3600000).toISOString()});const id=next.reviews.at(-1).id;
  next=run(as(next,'Q01'),id,'request_evidence');
  assert.ok(contextActions(as(next,'S01'),id).includes('supplement'));
- next=run(as(next,'S01'),id,'supplement',{owner:'A1048'});
+ next=run(as(next,'S01'),id,'supplement',{owner:'A1048',dueAt:new Date(+now+1800000).toISOString()});
  assert.equal(next.supplements.at(-1).target,id);
 });

@@ -54,3 +54,18 @@ test('New policies and resources save without draft or reason steps',()=>{
  const createdState=save(next,resource.id,'create_resource_content',{title:'验收词库',resourceType:'词库',resourceKind:'keyword',content:'关键词,同义词\n测试词,近义测试'});
  const newResource=createdState.resources.find(r=>r.name==='验收词库');assert.ok(newResource?.versions.length);assert.equal(newResource.draft,undefined);
 });
+
+
+test('Hotword multiline save tolerates a final newline and rejects blank or repeated terms',()=>{
+ const s=seed(),resource=s.resources.find(r=>r.kind==='hotword'),before=structuredClone(s);
+ const content='词条\n慧盈存\n惠民贷\n';
+ const next=save(s,resource.id,'save_resource_content',{content});
+ assert.equal(entity(next,resource.id).versions.at(-1).content,content.trim());
+ assert.equal(resourceRows('hotword',entity(next,resource.id).versions.at(-1).content).length,2);
+ for(const content of ['词条\n慧盈存\n\n惠民贷','词条\n慧盈存\n慧盈存','错误表头\n慧盈存']){
+  assert.throws(()=>save(s,resource.id,'save_resource_content',{content}));
+ }
+ assert.throws(()=>save(s,resource.id,'save_resource_content',{content:'词条\n慧盈存\n慧盈存'}),/第 2 行：词条重复/);
+ assert.throws(()=>save(s,resource.id,'save_resource_content',{content:'词条\n慧盈存\n\n惠民贷'}),/第 2 行：词条必填/);
+ assert.deepEqual(s,before);
+});

@@ -22,7 +22,7 @@ export function switchResourceReferences(state: State, resource: Resource, input
     const rule = eligible.find(item => item.id === id);
     if (!rule) throw new Error("规则引用已变化，请重新核对影响范围");
     if (rule.draft) throw new Error(`${rule.name}存在参数草稿，请先完成或放弃草稿`);
-    if (input.referenceRevs?.[id] !== rule.rev) throw new Error("关联规则已更新，请重新打开表单核对版本");
+    if (input.referenceRevs?.[id] !== rule.rev) throw new Error("关联规则已更新，请重新打开表单核对内容");
     return rule;
   });
   for (const rule of rules) {

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {parseCsv, validateImportedContent, readResourceFile} from '../lib/resource-import.ts';
+import {parseCsv, validateImportedContent, readResourceFile, validateResourceRows} from '../lib/resource-import.ts';
 import {parseSopRules,readSopRules,sopEditingText} from '../lib/sop-rules.ts';
 import {createInitial} from '../lib/fixtures.ts';
 import {apply,entity} from '../lib/workflow.ts';
@@ -37,4 +37,24 @@ test('Imported SOP draft and source survive serialization; publish leaves rule r
  run('save_resource',{content:'身份核验：核对身份，确认结果；',scope:'全部业务',resourceRole:'坐席',exception:'保留例外',sourceFile:'sop-template.csv'});
  s=JSON.parse(JSON.stringify(s));assert.equal(entity(s,'RES-SOP').draft.sourceFile,'sop-template.csv');assert.deepEqual(entity(s,'RES-SOP').versions,original);
  run('check_resource',{checkPass:true});run('publish_resource');assert.deepEqual(s.rules,rules);assert.deepEqual(entity(s,'RES-SOP').versions.slice(0,-1),original);
+});
+
+test('Structured imports report file lines while form validation reports content lines',async()=>{
+ const content='关键词,同义词\n投诉,申诉\n投诉,抱怨';
+ await assert.rejects(readResourceFile(new File([content],'keywords.csv'),'keyword'),/第 3 行：关键词重复/);
+ assert.throws(()=>validateResourceRows('keyword',content,1),/第 2 行：关键词重复/);
+ const quoted='意图名称,定义,正例,反例\n挂失,"核对卡片,登记挂失","卡丢了\n需要挂失",查询余额';
+ const read=await readResourceFile(new File([quoted],'intent.csv'),'intent');
+ assert.equal(validateResourceRows('intent',read,1)[0][2],'卡丢了\n需要挂失');
+});
+
+
+test('Hotword CSV round-trips BOM and quoted values; errors use file row numbers',async()=>{
+ const content='\uFEFF词条\r\n慧盈存\r\n"带,逗号"\r\n';
+ const imported=await readResourceFile(new File([content],'hotwords.csv'),'hotword');
+ assert.deepEqual(validateResourceRows('hotword',imported,1),[['慧盈存'],['带,逗号']]);
+ await assert.rejects(readResourceFile(new File(['词条\n慧盈存\n慧盈存'],'duplicate.csv'),'hotword'),/第 3 行：词条重复/);
+ await assert.rejects(readResourceFile(new File(['词条\n""\n慧盈存'],'blank.csv'),'hotword'),/第 2 行：词条必填/);
+ await assert.rejects(readResourceFile(new File(['错误表头\n慧盈存'],'header.csv'),'hotword'),/表头必须为：词条/);
+ await assert.rejects(readResourceFile(new File(['词条\n慧盈存,额外列'],'columns.csv'),'hotword'),/第 2 行：应有 1 列/);
 });

@@ -69,7 +69,7 @@ export function fixedResourceReferences(rule:Rule,state:State):Record<string,num
 export const resourceKindsFor=(rule:Rule)=>Object.entries(resourceSchemas).filter(([kind,schema])=>schema.indicator===rule.indicator && (!rule.versions.at(-1)?.definition || rule.versions.at(-1)!.definition!.basis.some(b=>b.kind===kind)));
 export function validateRuleResources(rule:Rule,refs:Record<string,number>,state:State){
  const kinds=resourceKindsFor(rule).map(([kind])=>kind);
- for(const [id,version] of Object.entries(refs)){const r=state.resources.find(r=>r.id===id && !r.deletedAt);if(!r?.kind || resourceSchemas[r.kind]?.indicator!==rule.indicator)throw new Error("请选择该指标对应类型的业务资源");if(!r.versions.some(v=>v.version===version))throw new Error("只能引用资源的已发布版本");}
+ for(const [id,version] of Object.entries(refs)){const r=state.resources.find(r=>r.id===id && !r.deletedAt);if(!r?.kind || resourceSchemas[r.kind]?.indicator!==rule.indicator)throw new Error("请选择该指标对应类型的业务资源");if(!r.versions.some(v=>v.version===version))throw new Error("只能引用已生效的资源内容");}
  for(const kind of kinds)if(!Object.keys(refs).some(id=>state.resources.find(r=>r.id===id)?.kind===kind))throw new Error(`请先发布${resourceSchemas[kind].name}`);
 }
 export function validateRuleConfig(rule:Rule,config:Record<string,string>,state:State,triggers=policyTriggers(rule,state)){
@@ -97,7 +97,7 @@ export function configurationDiff(rule:Rule,state:State):Array<[string,string,st
 export const configLabel=(key:string,value:string,state:State)=>key==="alertPolicy"?state.rules.find(r=>r.id===value)?.name ?? value:value;
 export type ResourceSchema={name:string;group:Resource["type"];fields:string[];required:number[];rows:string[][];csv:boolean;indicator:string;note?:string};
 export const resourceSchemas:Record<string,ResourceSchema>={
- voice:{name:"声纹库",group:"业务知识",fields:["坐席/工号","注册语音","启用状态"],required:[0,1,2],rows:[["A1048","A1048-注册语音.wav","启用"],["A1186","A1186-注册语音.wav","停用"]],csv:false,indicator:"6.2.1",note:"音频仅记录文件名，尚未接入声纹注册服务。"},
+ voice:{name:"声纹库",group:"业务知识",fields:["坐席/工号","注册语音","启用状态"],required:[0,1,2],rows:[["A1048","A1048-注册语音.wav","启用"],["A1186","A1186-注册语音.wav","停用"]],csv:false,indicator:"6.2.1"},
  hotword:{name:"识别热词",group:"词库",fields:["词条"],required:[0],rows:["慧盈存","惠民贷","跨行汇款","对公账户","自动还款","信用卡分期","大额存单"].map(x=>[x]),csv:true,indicator:"6.2.2"},
  keyword:{name:"关键词库",group:"词库",fields:["关键词","同义词"],required:[0],rows:[["投诉","申诉；我要投诉"],["提前还款","提前结清"],["挂失","卡丢了；遗失银行卡"],["费用争议","乱扣费"],["转账失败","汇款失败"],["账户冻结","账户受限"]],csv:true,indicator:"6.2.3"},
  correction:{name:"纠错词库",group:"词库",fields:["易错文本","正确文本"],required:[0,1],rows:[["跨行会款","跨行汇款"],["帐单日","账单日"],["慧赢存","慧盈存"]],csv:true,indicator:"6.2.4"},

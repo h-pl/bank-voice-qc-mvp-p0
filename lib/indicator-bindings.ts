@@ -68,7 +68,7 @@ export function bindingSummary(b:IndicatorBinding,state:State,snapshot?:RuleVers
  const policy=state.rules.find(r=>r.id===b.policyId);const version=snapshot?.policyVersions?.[b.policyId];
  const selected=version?policy?.versions.find(v=>v.version===version):policy?.versions.at(-1);
  const conditions=snapshot?.configurationModel==="indicator-bindings"?b.conditions:{...selected?.config,...b.conditions};
- return `${b.feature}：${conditionSummary({...b,conditions})}${b.policyId && b.policyId!=="none"?` → ${policy?.name ?? "策略已失效"}${version?` V${version}`:""}`:""}`;
+ return `${b.feature}：${conditionSummary({...b,conditions})}${b.policyId && b.policyId!=="none"?` → ${policy?.name ?? "策略已失效"}`:""}`;
 }
 export function bindingsDiff(rule:Rule,state:State):Array<[string,string,string]>{
  const old=rule.versions.at(-1)?.bindings ?? [],next=rule.draft?.bindings ?? [];

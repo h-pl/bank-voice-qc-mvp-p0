@@ -34,14 +34,12 @@ export function PolicyAssociationEditor({policy,state,onSubmit,onDone}:{policy:R
       }catch(e){completing.current=false;setBusy(false);setError(e instanceof Error?e.message:"保存失败，请重试。");}
     }}>
       <div className="action-form-body">
-        <p className="editor-intro">勾选检测结果使用本策略，保留规则已有的其他策略关联。</p>
         <PolicyAssociationFields state={state} config={config} selected={selected} onChange={next=>{setSelected(next);setError("");}}/>
       </div>
       <div className="modal-actions association-form-footer">
-        <p className="policy-save-impact">仅更新本策略的关联，保存后用于后续检测。</p>
         {error && <p ref={errorRef} tabIndex={-1} role="alert" className="form-error">{error}</p>}
         {discard && <p role="alert">关联尚未保存，是否放弃修改？</p>}
-        <div>{discard?<><Button onClick={()=>setDiscard(false)}>继续编辑</Button><Button intent="danger" onClick={finishClose}>放弃修改</Button></>:<><Button disabled={busy} onClick={finishClose}>取消</Button><Button primary type="submit" disabled={busy || !dirty}>保存关联</Button></>}</div>
+        <div className="dialog-footer-row"><p className="policy-save-impact dialog-footer-note">仅更新本策略的关联，保存后用于后续检测。</p><div className="dialog-footer-buttons">{discard?<><Button onClick={()=>setDiscard(false)}>继续编辑</Button><Button intent="danger" onClick={finishClose}>放弃修改</Button></>:<><Button disabled={busy} onClick={finishClose}>取消</Button><Button primary type="submit" disabled={busy || !dirty}>保存关联</Button></>}</div></div>
       </div>
     </form>
   </Modal>;

@@ -1,4 +1,7 @@
 "use client";
+import { caseSearchText } from "../lib/case-search";
+import { ResetFiltersButton } from "./reset-filters-button";
+import { CallReference, CopyRecordId, RecordReference, RecordRow } from "./record-id";
 import { distributionContext, responsibilityContext, supervisorReturnNote } from "../lib/case-context";
 import { activeDeadline, alertDeadlineLabel, alertFinished, deadlineRemaining } from "../lib/alert-deadlines";
 import { lifecycleLabel } from "../lib/lifecycle-labels";
@@ -6,22 +9,24 @@ import { alertTabs, alertCategory, problemRecords, problemLogs } from "../lib/al
 import { callTriggers } from "../lib/call-triggers";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./ui/table";
 import { useQueueScroll } from "./use-queue-scroll";
+import { QueueCard } from "./queue-card";
 import { Review2Indicators } from "./review2-indicators";
 import { Review2Findings } from "./review2-findings";
 import { Review2FindingDetail, Review2RuleDetail } from "./review2-detail";
 import { Disclosure } from "./disclosure";
 import { SelectField } from "./select-field";
-import { useEffect, useRef, useState } from "react";
-import { AudioPlayer } from "./audio-player";
+import { useEffect, useId, useRef, useState } from "react";
+import { EvidenceRecording } from "./evidence-recording";
 import { EventTimeline } from "./event-timeline";
+import { timelineReferences } from "../lib/timeline-presentation";
 import { ruleCategories } from "../lib/fixtures";
-import { CaseDocuments } from "./case-documents";
+import { CaseDocuments, DocumentRow } from "./case-documents";
 import { localDate } from "../lib/reports";
 import { useDemoClock } from "../lib/store";
 import { Badge, Button, Empty, Modal, SearchField, Tabs } from "./ui";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "./ui/sheet";
 import { Button as ShadcnButton, SurfaceButton } from "./ui/button";
-import { Input } from "./ui/input";
+import { DateRangePicker } from "./ui/date-range-picker";
 import { Icon } from "./icon";
 import {
   actions,
@@ -32,6 +37,7 @@ import {
   primaryAction,
   people,
   type Conclusion,
+  type Review,
   actionLabel,
   contextActions,
   canSee,
@@ -53,6 +59,11 @@ import {
   type Call,
   type Finding,
 } from "../lib/workflow";
+const queueSourceLabel = (item: Entity) =>
+  "findingIds" in item ? item.type === "spotcheck" ? "人工抽检" : item.type === "appeal" ? "申诉核查" : "系统检出"
+    : "conclusions" in item ? item.source === "auto" ? "系统检出" : "人工发现"
+      : "standardVersion" in item ? "整改" : "executor" in item ? "补件" : "申诉";
+
 export const stamp = (s?: string) =>
   s
     ? new Date(s).toLocaleString("zh-CN", {
@@ -125,7 +136,7 @@ export const viewFor = (s: State, id: string): View => {
       : e && ("findingIds" in e || "executor" in e)
         ? "workorders"
         : e && "conclusions" in e
-          ? roleOf(s) === "supervisor" &&
+          ? e.source === "auto" && roleOf(s) === "supervisor" &&
             ["candidate", "reminded", "supplement", "closed", "delivered"].includes(e.status)
             ? "alerts"
             : "workorders"
@@ -158,6 +169,7 @@ export function Workspace({
   onOpen: (id: string) => void;
   onAction: (id: string, action: string) => void;
 }) {
+  const [recordPreview, setRecordPreview] = useState<string>();
   const [tab, setTab] = useState(()=>{
       if(view==="calls")return "all";
       const target=focus ? entity(state,focus) : undefined;
@@ -167,19 +179,20 @@ export function Workspace({
     }),
     [overdueOnly,setOverdueOnly] = useState(false),
     [kind,setKind] = useState(""),
-    [moreFilters, setMoreFilters] = useState(false),
     [startDate,setStartDate] = useState(""), [endDate,setEndDate] = useState(""),
     [agent,setAgent] = useState(""), [group,setGroup] = useState(""), [execution,setExecution] = useState(""),
     [search, setSearch] = useState(""),
     [business, setBusiness] = useState(""),
+    [workflowStatus, setWorkflowStatus] = useState(""),
+    [riskLevel, setRiskLevel] = useState(""),
     [page, setPage] = useState(1),
-    [size, setSize] = useState(5),
+    [size, setSize] = useState(view === "calls" ? 10 : 5),
     [selection, setSelection] = useState<string>();
   useEffect(() => {
     if (view !== "alerts") return;
     const showArchive = (event: Event) => {
       const id = (event as CustomEvent<string>).detail;
-      setTab("closed"); setSearch(""); setBusiness(""); setAgent(""); setGroup("");
+      setTab("closed"); setRiskLevel(""); setSearch(""); setBusiness(""); setAgent(""); setGroup("");
       setStartDate(""); setEndDate(""); setPage(1); setSelection(id);
     };
     window.addEventListener("qc:show-archive", showArchive);
@@ -214,17 +227,20 @@ export function Workspace({
     const c = callFor(state, e.id);
     return (
       !invalidDates && (!business || c?.business === business) &&
+      (view !== "workorders" || !workflowStatus || stateLabel(e, state) === workflowStatus) &&
+      (view !== "alerts" || !riskLevel || "severity" in e && e.severity === riskLevel) &&
       (!agent || c?.agentId===agent) && (!group || c?.group===group) &&
       (!execution || c && detection(c)===execution) &&
       (!startDate || !!c && localDate(c.endedAt ?? c.startedAt)>=startDate) &&
       (!endDate || !!c && localDate(c.endedAt ?? c.startedAt)<=endDate) &&
-      `${e.id} ${label(e)} ${c?.id ?? ""} ${c ? person(c.agentId)?.name : ""} ${state.findings.filter(f=>f.callId===c?.id && canSee(state,f.id)).map(f=>f.id).join(" ")} ${state.reviews.filter(r=>r.callId===c?.id && canSee(state,r.id)).map(r=>r.id).join(" ")}`
-        .toLowerCase()
+      caseSearchText(state, e, caseTitle(state, e))
         .includes(search.toLowerCase())
     );
   });
   const isOverdue = (e: Entity) => !!activeDeadline(e) && Date.parse(activeDeadline(e)!) <= now && !!currentOwner(state,e) && !("pause" in e && e.pause);
   const filtered = searched.filter((e) => match(e, tab) && (!splitWorkspace || !overdueOnly || isOverdue(e))).sort((a,b)=>{
+    // Workorders retain their original record order; overdue is a separate filter/marker.
+    if (view === "workorders") return 0;
     const rank=(e:Entity)=> splitWorkspace && isOverdue(e) ? 0 : isTodo(state,e) ? (isOverdue(e) ? 0 : "severity" in e && e.severity==="high" ? 1 : 2) : 3;
     return rank(a)-rank(b) || ((activeDeadline(a) ? Date.parse(activeDeadline(a)!) : Infinity) - (activeDeadline(b) ? Date.parse(activeDeadline(b)!) : Infinity) || 0);
   });
@@ -233,10 +249,10 @@ export function Workspace({
     setPreviousFocus(focus);
     if(focusTarget && view!=="calls" && (!splitWorkspace || !filtered.some(item=>item.id===focusTarget.id))){
       setTab(view === "alerts" && "conclusions" in focusTarget ? alertCategory(focusTarget) : isTodo(state,focusTarget) ? "mine" : done(focusTarget) && tabs.some(([key])=>key==="done") ? "done" : "all");
-      setOverdueOnly(false);setKind("");setSearch("");setBusiness("");setAgent("");setGroup("");setExecution("");setStartDate("");setEndDate("");setPage(1);
+      setOverdueOnly(false);setKind("");setSearch("");setBusiness("");setAgent("");setGroup("");setExecution("");setWorkflowStatus("");setRiskLevel("");setStartDate("");setEndDate("");setPage(1);
     }
   }
-  const queueScope = JSON.stringify([state.identity,tab,search,business,overdueOnly,kind,startDate,endDate,agent,group,execution]);
+  const queueScope = JSON.stringify([state.identity,tab,search,business,overdueOnly,kind,startDate,endDate,agent,group,execution,workflowStatus,riskLevel]);
   const { rows: scrollRows, hasMore, loadMore, containerRef, sentinelRef } = useQueueScroll(filtered, queueScope, splitWorkspace, focus);
   const currentPage = Math.min(
       focus && filtered.some(item=>item.id===focus) ? Math.floor(filtered.findIndex(item=>item.id===focus)/size)+1 : page,
@@ -266,7 +282,7 @@ export function Workspace({
         <Tabs value={tab} label="记录分类" panelId={`workspace-${workspaceId}`} options={tabs.map(([value,label]) => ({value,label,count:searched.filter(x => match(x,value)).length}))} onChange={value => { setTab(value); setPage(1); onOpen(""); }}/>
         </div>
         <div role="tabpanel" id={`workspace-${workspaceId}`} aria-labelledby={`workspace-${workspaceId}-tab-${tab}`}>
-        <div className="filters">
+        <div className={`filters ${view === "calls" ? "call-filters-inline" : ""}`}>
           <SearchField label="搜索记录" name="record-search" placeholder="搜索编号、问题或坐席…" value={search} onValueChange={value => { setSearch(value); setPage(1); onOpen(""); }}/>
           {view === "improvement" && <SelectField aria-label="事项类型" value={kind} onValueChange={value => {setKind(value);setPage(1);onOpen("");}}><option value="">全部类型</option><option value="appeal">申诉</option><option value="remedy">整改</option></SelectField>}
           <SelectField
@@ -283,17 +299,22 @@ export function Workspace({
               <option key={x}>{x}</option>
             ))}
           </SelectField>
-          {view === "calls" && <ShadcnButton variant="outline" className="btn" aria-expanded={moreFilters} aria-controls="call-more-filters" onClick={()=>setMoreFilters(!moreFilters)}><Icon name="filter" size={16}/>筛选条件{[startDate,endDate,agent,group,execution].filter(Boolean).length ? ` · ${[startDate,endDate,agent,group,execution].filter(Boolean).length}` : ""}</ShadcnButton>}
-          {view === "calls" && <div id="call-more-filters" className="advanced-filters" hidden={!moreFilters}>
-            <label>开始日期<Input aria-label="通话开始日期" type="date" aria-invalid={invalidDates} aria-describedby={invalidDates ? "call-date-error" : undefined} value={startDate} onChange={e=>{setStartDate(e.target.value);setPage(1);onOpen("");}}/></label>
-            <label>结束日期<Input aria-label="通话结束日期" type="date" aria-invalid={invalidDates} aria-describedby={invalidDates ? "call-date-error" : undefined} value={endDate} onChange={e=>{setEndDate(e.target.value);setPage(1);onOpen("");}}/></label>
+          {view === "alerts" && <SelectField aria-label="风险等级" value={riskLevel} onValueChange={value => {setRiskLevel(value);setPage(1);setSelection(undefined);onOpen("");}}>
+            <option value="">全部风险</option>
+            <option value="high">高</option><option value="medium">中</option><option value="low">低</option>
+          </SelectField>}
+          {view === "workorders" && <SelectField aria-label="工单状态" value={workflowStatus} onValueChange={value => {setWorkflowStatus(value);setPage(1);setSelection(undefined);onOpen("");}}>
+            <option value="">全部状态</option>
+            {[...new Set([...all.map(item => stateLabel(item, state)), ...(workflowStatus ? [workflowStatus] : [])])].map(value => <option key={value} value={value}>{value}</option>)}
+          </SelectField>}
+          {view === "calls" && <>
+            <DateRangePicker start={startDate} end={endDate} onValueChange={(start,end)=>{setStartDate(start);setEndDate(end);setPage(1);onOpen("");}}/>
             <SelectField aria-label="通话坐席" value={agent} onValueChange={value => {setAgent(value);setPage(1);onOpen("");}}><option value="">全部坐席</option>{people.filter(p=>p.role==="agent" && (role!=="agent" || p.id===state.identity)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</SelectField>
-            <div className="additional-filters"><SelectField aria-label="通话班组" value={group} onValueChange={value => {setGroup(value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</SelectField><SelectField aria-label="检测状态" value={execution} onValueChange={value => {setExecution(value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</SelectField></div>
-          </div>}
+            <SelectField aria-label="通话班组" value={group} onValueChange={value => {setGroup(value);setPage(1);onOpen("");}}><option value="">全部班组</option>{[...new Set(state.calls.filter(c=>canSeeCall(state,c)).map(c=>c.group))].map(g=><option key={g}>{g}</option>)}</SelectField><SelectField aria-label="检测状态" value={execution} onValueChange={value => {setExecution(value);setPage(1);onOpen("");}}><option value="">全部检测状态</option>{["待处理","处理中","已完成","部分失败","失败"].map(x=><option key={x}>{x}</option>)}</SelectField>
+          </>}
+          <ResetFiltersButton active={!!(search || business || startDate || endDate || agent || group || execution || workflowStatus || riskLevel || overdueOnly || view === "improvement" && kind)} onClick={()=>{setSearch("");setBusiness("");setKind("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setWorkflowStatus("");setRiskLevel("");setOverdueOnly(false);setPage(1);setSelection(undefined);onOpen("");}}/>
           <div className="filter-actions">
           {splitWorkspace && (view !== "alerts" || overdue > 0) ? <ShadcnButton variant="ghost" size="sm" className={`review2-overdue-filter ${overdueOnly ? "is-active" : ""}`} aria-pressed={overdueOnly} onClick={()=>{setOverdueOnly(!overdueOnly);setPage(1);onOpen("");}}>仅看逾期 <b>{overdue}</b></ShadcnButton> : view !== "calls" && overdue > 0 && <span className="queue-overdue has-overdue">逾期 <b>{overdue}</b></span>}
-          {(search || business || startDate || endDate || agent || group || execution || view === "improvement" && kind) && <Button onClick={()=>{setSearch("");setBusiness("");setKind("");setStartDate("");setEndDate("");setAgent("");setGroup("");setExecution("");setPage(1);onOpen("");}}>重置筛选</Button>}
-          <span className="filter-total" role="status">共 {filtered.length} 条</span>
           <Button
             disabled={invalidDates}
             icon="download"
@@ -337,7 +358,7 @@ export function Workspace({
           </Button>
           </div>
         </div>
-        {(search || business || kind || startDate || endDate || agent || group || execution) && <div className="active-filter-list" aria-label="已生效筛选条件"><span>已筛选</span>{[{value:search,label:`关键词：${search}`,clear:()=>setSearch("")},{value:business,label:business,clear:()=>setBusiness("")},{value:kind,label:kind === "appeal" ? "申诉" : "整改",clear:()=>setKind("")},{value:startDate,label:`起：${startDate}`,clear:()=>setStartDate("")},{value:endDate,label:`止：${endDate}`,clear:()=>setEndDate("")},{value:agent,label:person(agent)?.name ?? agent,clear:()=>setAgent("")},{value:group,label:group,clear:()=>setGroup("")},{value:execution,label:execution,clear:()=>setExecution("")}].filter(x=>x.value).map((x,i)=><SurfaceButton key={i} aria-label={`移除筛选：${x.label}`} onClick={()=>{x.clear();setPage(1);onOpen("");}}>{x.label}<Icon name="close" size={12}/></SurfaceButton>)}</div>}
+        {view !== "calls" && view !== "alerts" && view !== "improvement" && (search || business || kind || startDate || endDate || agent || group || execution || workflowStatus) && <div className="active-filter-list" aria-label="已生效筛选条件"><span>已筛选</span>{[{value:search,label:`关键词：${search}`,clear:()=>setSearch("")},{value:business,label:business,clear:()=>setBusiness("")},{value:kind,label:kind === "appeal" ? "申诉" : "整改",clear:()=>setKind("")},{value:startDate || endDate,label:`日期：${startDate || "不限"} 至 ${endDate || "不限"}`,clear:()=>{setStartDate("");setEndDate("");}},{value:agent,label:person(agent)?.name ?? agent,clear:()=>setAgent("")},{value:group,label:group,clear:()=>setGroup("")},{value:execution,label:execution,clear:()=>setExecution("")},{value:workflowStatus,label:workflowStatus,clear:()=>setWorkflowStatus("")}].filter(x=>x.value).map((x,i)=><SurfaceButton key={i} aria-label={`移除筛选：${x.label}`} onClick={()=>{x.clear();setPage(1);onOpen("");}}>{x.label}<Icon name="close" size={12}/></SurfaceButton>)}</div>}
         {invalidDates ? <p className="filter-error" id="call-date-error" role="alert">开始日期不能晚于结束日期，请调整日期范围。<SurfaceButton className="text-button" onClick={() => { setStartDate(endDate); setEndDate(startDate); }}>交换日期</SurfaceButton></p> : null}
         {view === "calls" ? (
           <section className="calls-results" aria-label="通话列表">
@@ -370,8 +391,10 @@ export function Workspace({
                         <TableCell>
                           <div className="call-record-identity">
                             <span className="call-type-icon" aria-hidden="true"><Icon name="phone"/></span>
-                            <div><a className="record-link call-id-link" aria-label={`查看通话 ${c.id}`} href={`?view=calls&id=${c.id}`} onClick={e => { if (!e.metaKey && !e.ctrlKey) { e.preventDefault(); click(c.id); } }}>{c.id}</a>
-                            <small>{c.customer}</small></div>
+                            <div className="call-record-details">
+                              <ShadcnButton type="button" variant="ghost" className="call-id-link" data-record-open={c.id} aria-label={`查看通话 ${c.id}`} title={c.id} onClick={()=>setRecordPreview(c.id)}><b>{c.id}</b></ShadcnButton>
+                              <small>{c.customer}</small>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -408,8 +431,8 @@ export function Workspace({
                         </TableCell>
                         {role === "supervisor" && <TableCell>{state.reviews.filter(r=>r.callId===c.id && r.type==="spotcheck").length} 次</TableCell>}
                         <TableCell><div className="call-row-actions">
-                          <ShadcnButton variant="link" size="sm" onClick={()=>click(c.id)}>查看</ShadcnButton>
-                          {role === "supervisor" && <ShadcnButton variant="link" size="sm" disabled={!contextActions(state,c.id).includes("spotcheck")} onClick={()=>onAction(c.id,"spotcheck")}>人工抽检</ShadcnButton>}
+                          <ShadcnButton variant="link" size="sm" data-record-open={c.id} aria-label={`查看通话 ${c.id}`} onClick={()=>setRecordPreview(c.id)}>查看</ShadcnButton>
+                          {contextActions(state,c.id).map(action=><ShadcnButton key={action} variant="link" size="sm" onClick={()=>onAction(c.id,action)}>{actionLabel(state,c.id,action)}</ShadcnButton>)}
                         </div></TableCell>
                       </TableRow>
                     );
@@ -421,6 +444,7 @@ export function Workspace({
             <Pagination
               page={currentPage}
               total={filtered.length}
+              sizeOptions={[10, 20, 50]}
               size={size}
               onPage={n => { setPage(n); setSelection(undefined); onOpen(""); }}
               onSize={(n) => {
@@ -434,46 +458,26 @@ export function Workspace({
         ) : (
           <>
             <div className="work-layout">
-              <section id={`queue-${workspaceId}`} className="queue" aria-label="事项队列"><header className="queue-heading"><b>{review2 ? "工单队列" : view==="alerts" ? "预警队列" : view==="improvement" ? "事项队列" : "事项队列"}</b>{splitWorkspace && <span>{filtered.length} 条{review2 ? " · 逾期优先" : ""}</span>}</header><div className="queue-items" ref={containerRef} tabIndex={splitWorkspace ? 0 : undefined} aria-label={splitWorkspace ? "滚动事项队列" : undefined}>
+              <section id={`queue-${workspaceId}`} className="queue" aria-label="事项队列"><header className="queue-heading"><b>{review2 ? "工单队列" : view==="alerts" ? "预警队列" : view==="improvement" ? "事项队列" : "事项队列"}</b>{splitWorkspace && <span role="status">{filtered.length} 条</span>}</header><div className="queue-items" ref={containerRef} tabIndex={splitWorkspace ? 0 : undefined} aria-label={splitWorkspace ? "滚动事项队列" : undefined}>
                 {rows.length ? (
                   rows.map((e) => {
                     const c = callFor(state, e.id);
                     return (
-                      <ShadcnButton variant="ghost"
-                        key={e.id}
-                        aria-pressed={selectedId === e.id}
-                        className={`queue-card ${selectedId === e.id ? "selected" : ""}`}
-                        onClick={() => click(e.id)}
+                      <QueueCard key={e.id} selected={selectedId === e.id} onOpen={() => click(e.id)}
+                        label={`查看记录 ${e.id} ${caseTitle(state, e)}`}
                       >
                         <div className="queue-top">
-                          <span>{e.id}</span>
-                          {splitWorkspace && isOverdue(e) ? <Badge tone="danger">已逾期</Badge> : <Badge
-                            tone={
-                              "severity" in e && e.severity === "high"
-                                ? "danger"
-                                : "neutral"
-                            }
-                          >
-                            {role === "agent" && "conclusions" in e ? (latest(e) ? "质检结果" : "通话提醒") : "severity" in e
-                              ? e.severity === "high"
-                                ? "高风险"
-                                : e.severity === "medium" ? "中风险" : "低风险"
-                              : "standardVersion" in e
-                                ? "整改"
-                                : "findingIds" in e
-                                  ? e.type === "appeal"
-                                    ? "申诉核查"
-                                    : e.type === "spotcheck"
-                                      ? "人工抽检"
-                                      : "人工复核"
-                                  : "executor" in e
-                                    ? "补件"
-                                    : "申诉"}
-                          </Badge>}
+                          <CopyRecordId id={e.id}/>
+                          {("severity" in e || splitWorkspace && isOverdue(e)) && <div className="queue-flags">
+                            {splitWorkspace && isOverdue(e) && <span className="queue-overdue-label"><i aria-hidden="true"/>已逾期</span>}
+                            {"severity" in e && <span className="queue-risk" aria-label={`风险等级：${e.severity === "high" ? "高" : e.severity === "medium" ? "中" : "低"}`}>
+                              <Badge tone={e.severity === "high" ? "danger" : e.severity === "medium" ? "warning" : "neutral"}>{e.severity === "high" ? "高" : e.severity === "medium" ? "中" : "低"}</Badge>
+                            </span>}
+                          </div>}
                         </div>
                         <b>{caseTitle(state, e)}</b>
-                        <p>
-                          {c && person(c.agentId)?.name} · {c?.business}
+                        <p className="queue-context">
+                          <span>{queueSourceLabel(e)}</span><span>{c && person(c.agentId)?.name}</span><span>{c?.business}</span>
                         </p>
                         <div className="queue-bottom">
                           <span className="status-dot" />
@@ -484,7 +488,7 @@ export function Workspace({
                               : stamp(c?.startedAt)}
                           </span>
                         </div>
-                      </ShadcnButton>
+                      </QueueCard>
                     );
                   })
                 ) : (
@@ -507,7 +511,8 @@ export function Workspace({
                     workbenchStyle={splitWorkspace}
                     state={state}
                     item={selected}
-                    onOpen={onOpen}
+                    onOpen={setRecordPreview}
+                    onNavigate={onOpen}
                     onAction={onAction}
                   />
                 ) : (
@@ -522,40 +527,99 @@ export function Workspace({
         )}
         </div>
       </div>
-      {view === "calls" && focused && "batches" in focused && <CallSheet key={focused.id} state={state} call={focused} onClose={()=>onOpen("")} onOpen={onOpen} onAction={onAction}/>}
+      {recordPreview && <RecordPreviewDialog key={recordPreview} state={state} id={recordPreview} onClose={()=>setRecordPreview(undefined)}/>}
+      {view === "calls" && focused && "batches" in focused && <RecordPreviewDialog key={focused.id} state={state} id={focused.id} onClose={()=>onOpen("")}/>}
     </>
   );
 }
-function CallSheet({state,call,onClose,onOpen,onAction}:{state:State;call:Call;onClose:()=>void;onOpen:(id:string)=>void;onAction:(id:string,action:string)=>void}) {
+function CallSheet({state,call,onClose,onOpen,onAction,embedded=false}:{state:State;call:Call;onClose:()=>void;onOpen:(id:string)=>void;onAction:(id:string,action:string)=>void;embedded?:boolean}) {
+  const callPanelId=useId();
   const [tab,setTab]=useState("evidence");
+  const trigger = useRef<HTMLElement | null>(null);
   useEffect(()=>{
-    const show=(event:Event)=>{if((event as CustomEvent<string>).detail===call.id){setTab("history");requestAnimationFrame(()=>document.getElementById(`call-${call.id}-tab-history`)?.focus({preventScroll:true}));}};
+    const show=(event:Event)=>{if((event as CustomEvent<string>).detail===call.id){setTab("history");requestAnimationFrame(()=>document.getElementById(`${callPanelId}-tab-history`)?.focus({preventScroll:true}));}};
     window.addEventListener("qc:show-history",show);return()=>window.removeEventListener("qc:show-history",show);
-  },[call.id]);
+  },[call.id,callPanelId]);
   const findings=state.findings.filter(f=>f.callId===call.id && canSee(state,f.id));
-  const related=[...findings,...state.reviews,...state.appeals,...state.remedies,...state.supplements].filter(item=>callFor(state,item.id)?.id===call.id && canSee(state,item.id));
+  const related=[...state.reviews,...state.appeals,...state.remedies,...state.supplements].filter(item=>callFor(state,item.id)?.id===call.id && canSee(state,item.id));
   const logs=state.logs.filter(log=>log.target===call.id || log.callId===call.id && canSee(state,log.target));
-  return <Sheet open onOpenChange={open=>{if(!open)onClose();}}><SheetContent className="call-sheet" showCloseButton={false} onCloseAutoFocus={event=>{event.preventDefault();document.querySelector<HTMLAnchorElement>(`a.call-id-link[href$="id=${call.id}"]`)?.focus();}}>
-    <SheetHeader><div><SheetTitle>{call.id} · {call.business}</SheetTitle><SheetDescription>{person(call.agentId)?.name} · {call.group} · {clock(call.duration)}</SheetDescription></div><ShadcnButton variant="ghost" size="icon" aria-label="关闭通话详情" onClick={onClose}><Icon name="close"/></ShadcnButton></SheetHeader>
-    <div className="call-inspection-layout"><section className="call-inspection-main"><Tabs label="通话详情" panelId={`call-${call.id}`} value={tab} onChange={setTab} options={[{value:"evidence",label:"录音与证据"},{value:"history",label:"处理记录"},{value:"related",label:"问题与处理记录",count:findings.length}]}/>
-    <div className="call-sheet-body" role="tabpanel" id={`call-${call.id}`} aria-labelledby={`call-${call.id}-tab-${tab}`}>
+  function recordCard(item: Entity, source: string) {
+    const owner=person(currentOwner(state,item))?.name;
+    return <RecordRow key={item.id} className="call-record-card" label={`查看记录 ${item.id} ${caseTitle(state,item)}`} onOpen={()=>onOpen(item.id)}>
+      <div className="call-record-summary"><strong>{caseTitle(state,item)}</strong><div className="call-record-meta"><CopyRecordId id={item.id}/><span>{source}</span><span>{owner ? `负责人 ${owner}` : "当前无需办理"}</span></div></div>
+      <div className="call-record-trailing"><Badge tone={"status" in item && item.status==="done" ? "success" : "neutral"}>{stateLabel(item,state)}</Badge><span className="call-record-link" aria-hidden="true">查看详情<Icon name="chevron"/></span></div>
+    </RecordRow>;
+  }
+  const body=(<div className="call-inspection-layout"><section className="call-inspection-main"><Tabs label="通话详情" panelId={callPanelId} value={tab} onChange={setTab} options={[{value:"evidence",label:"录音与证据"},{value:"history",label:"处理记录"},{value:"related",label:"问题与事项",count:findings.length+related.length}]}/>
+    <div className="call-sheet-body" role="tabpanel" id={callPanelId} aria-labelledby={`${callPanelId}-tab-${tab}`}>
       {tab==="evidence" && <Evidence state={state} call={call} findings={findings}/>}
-      {tab==="history" && <EventTimeline events={logs.map(log=>({id:log.id,at:log.at,title:log.action,actor:log.actor==="system" ? "系统 · 工作流" : `${person(log.actor)?.name ?? "系统"} · ${person(log.actor) ? roleNames[person(log.actor).role] : "工作流"}`,note:log.note,kind:log.actor==="system" ? "system" : "human",demo:log.id.startsWith("EV-DEMO-") || log.id==="EV-SEED"}))}/>}
-      {tab==="related" && <section className="call-sheet-issues" aria-label="问题与处理记录"><h3>问题记录 · {findings.length} 项</h3>{findings.map(item=><ShadcnButton variant="ghost" key={item.id} onClick={()=>onOpen(item.id)}><span>{item.title}<small>{item.id} · {item.source === "auto" ? "自动预警" : "人工发现"} · {stateLabel(item,state)} · {person(currentOwner(state,item))?.name ?? "当前无需办理"}</small></span><span>查看详情<Icon name="chevron"/></span></ShadcnButton>)}{!findings.length && <p>暂无问题，抽检记录仍可在下方查看。</p>}<h3>关联办理事项</h3>{related.filter(item=>!("conclusions" in item)).map(item=><ShadcnButton variant="ghost" key={item.id} onClick={()=>onOpen(item.id)}><span>{caseTitle(state,item)}<small>{item.id} · {stateLabel(item,state)}</small></span><Icon name="chevron"/></ShadcnButton>)}{!related.length && <Empty text="暂无关联事项" hint="产生问题或复核工单后会显示在这里。"/>}</section>}
+      {tab==="history" && <EventTimeline onOpen={id=>id===call.id ? setTab("evidence") : onOpen(id)} events={logs.map(log=>({references:timelineReferences(state,log.target),id:log.id,at:log.at,title:log.action,actor:log.actor==="system" ? "系统 · 工作流" : `${person(log.actor)?.name ?? "系统"} · ${person(log.actor) ? roleNames[person(log.actor).role] : "工作流"}`,note:log.note,kind:log.actor==="system" ? "system" : "human",demo:log.id.startsWith("EV-DEMO-") || log.id==="EV-SEED"}))}/>}
+      {tab==="related" && <section className="call-sheet-issues call-records" aria-label="问题与事项">
+        <section className="call-record-group" aria-label="问题记录"><div className="call-record-heading"><h3>问题记录</h3><span>{findings.length} 项</span></div>
+          {findings.length ? <div className="call-record-list">{findings.map(item=>recordCard(item,item.source==="auto" ? "自动预警" : "人工发现"))}</div> : <p className="call-record-empty">暂无问题记录</p>}
+        </section>
+        <section className="call-record-group" aria-label="办理事项"><div className="call-record-heading"><h3>办理事项</h3><span>{related.length} 项</span></div>
+          {related.length ? <div className="call-record-list">{related.map(item=>recordCard(item,"findingIds" in item ? item.type==="spotcheck" ? "人工抽检" : "复核工单" : "executor" in item ? "补件" : "standardVersion" in item ? "整改" : "申诉"))}</div> : <div className="call-record-empty"><p>暂无办理事项</p><span>关联的复核、申诉、整改或补件记录会显示在这里。</span></div>}
+        </section>
+      </section>}
     </div>
     </section><aside className="call-inspection-rail" aria-label="通话信息与操作">
       <h3>通话信息</h3><dl><div><dt>坐席 / 班组</dt><dd>{person(call.agentId)?.name} · {call.group}</dd></div><div><dt>客户</dt><dd>{call.customer}</dd></div><div><dt>开始时间</dt><dd>{stamp(call.startedAt)}</dd></div><div><dt>结束时间</dt><dd>{call.endedAt ? stamp(call.endedAt) : "通话进行中"}</dd></div><div><dt>通话时长</dt><dd>{clock(call.duration)}</dd></div><div><dt>检测状态</dt><dd>{detection(call)}</dd></div></dl>
-      {contextActions(state,call.id).length>0 && <section className="call-inspection-actions"><h3>可用操作</h3><div className="call-sheet-actions">{contextActions(state,call.id).map((action,index)=><Button primary={index===0} key={action} onClick={()=>onAction(call.id,action)}>{actionLabel(state,call.id,action)}</Button>)}</div></section>}
-    </aside></div>
+      {!embedded && contextActions(state,call.id).length>0 && <section className="call-inspection-actions"><h3>可用操作</h3><div className="call-sheet-actions">{contextActions(state,call.id).map((action,index)=><Button primary={index===0} key={action} onClick={()=>onAction(call.id,action)}>{actionLabel(state,call.id,action)}</Button>)}</div></section>}
+    </aside></div>);
+  if(embedded)return body;
+  return <Sheet open onOpenChange={open=>{if(!open)onClose();}}><SheetContent className="call-sheet" showCloseButton={false} onOpenAutoFocus={event=>{trigger.current=document.activeElement as HTMLElement | null;event.preventDefault();(event.currentTarget as HTMLElement).focus({preventScroll:true});}} onCloseAutoFocus={event=>{event.preventDefault();(trigger.current?.isConnected ? trigger.current : document.querySelector<HTMLButtonElement>(`[data-record-open="${call.id}"]`))?.focus({preventScroll:true});}}>
+    <SheetHeader><div><SheetTitle><CopyRecordId id={call.id}/> · {call.business}</SheetTitle><SheetDescription>{person(call.agentId)?.name} · {call.group} · {clock(call.duration)}</SheetDescription></div><ShadcnButton variant="ghost" size="icon" aria-label="关闭通话详情" onClick={onClose}><Icon name="close"/></ShadcnButton></SheetHeader>
+    {body}
   </SheetContent></Sheet>;
 }
+
+export function RecordPreviewDialog({state,id,onClose}:{state:State;id:string;onClose:()=>void}) {
+  const [path,setPath]=useState([id]);
+  const frames=useRef(new Map<number,HTMLDivElement>());
+  const scrolls=useRef(new Map<number,number>());
+  const focusTargets=useRef(new Map<number,HTMLElement>());
+  const index=path.length-1;
+  const current=entity(state,path[index]);
+  const allowed=current && ('batches' in current ? canSeeCall(state,current) : canSee(state,current.id));
+  function open(next:string) {
+    if(next===path[index])return;
+    const frame=frames.current.get(index),body=frame?.closest('.modal-body');
+    scrolls.current.set(index,body?.scrollTop ?? 0);
+    if(document.activeElement instanceof HTMLElement)focusTargets.current.set(index,document.activeElement);
+    const existing=path.indexOf(next);
+    if(existing<0){scrolls.current.delete(index+1);focusTargets.current.delete(index+1);}
+    setPath(existing>=0 ? path.slice(0,existing+1) : [...path,next]);
+  }
+  useEffect(()=>{
+    const frame=frames.current.get(index),body=frame?.closest('.modal-body');
+    const timer=requestAnimationFrame(()=>{
+      if(body)body.scrollTop=scrolls.current.get(index) ?? 0;
+      const previous=focusTargets.current.get(index);
+      if(previous?.isConnected)previous.focus({preventScroll:true});else frame?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(timer);
+  },[index]);
+  return <Modal title={current && allowed ? 'batches' in current ? '通话详情' : 'conclusions' in current ? '问题详情' : 'findingIds' in current ? '工单详情' : 'standardVersion' in current ? '整改详情' : 'executor' in current ? '补件详情' : '申诉详情' : '关联事项'} variant="record" onClose={onClose}>
+    {index>0 && <ShadcnButton variant="ghost" className="record-preview-back" onClick={()=>setPath(path.slice(0,-1))}>← 返回上一项</ShadcnButton>}
+    {path.map((target,position)=>{
+      const item=entity(state,target),visible=item && ('batches' in item ? canSeeCall(state,item) : canSee(state,target));
+      return <div key={`${position}-${target}`} ref={node=>{if(node)frames.current.set(position,node);else frames.current.delete(position);}} hidden={position!==index} inert={position!==index} tabIndex={-1} className="record-preview-frame case-workspace">
+        {item && visible ? 'batches' in item ? <CallSheet embedded state={state} call={item} onClose={onClose} onOpen={open} onAction={()=>{}}/> : <Detail inPreview state={state} item={item} review2={'findingIds' in item} workbenchStyle onOpen={open} onAction={()=>{}}/> : <Empty text="关联事项暂不可查看" hint="记录可能已变更，或当前身份没有查看权限。"/>}
+      </div>;
+    })}
+  </Modal>;
+}
+
 export function Pagination({
+  sizeOptions = [5, 10, 20],
   page,
   total,
   size,
   onPage,
   onSize,
 }: {
+  sizeOptions?: readonly number[];
   page: number;
   total: number;
   size: number;
@@ -571,7 +635,7 @@ export function Pagination({
         value={size}
         onValueChange={value => onSize(Number(value))}
       >
-        {[5, 10, 20].map((n) => (
+        {sizeOptions.map((n) => (
           <option key={n} value={n}>
             {n} 条 / 页
           </option>
@@ -598,23 +662,28 @@ export function Pagination({
   );
 }
 export function Detail({
+  inPreview = false,
   review2 = false,
   workbenchStyle = false,
   state,
   item,
   onOpen,
+  onNavigate = onOpen,
   onAction,
 }: {
+  inPreview?: boolean;
   state: State;
   item: Entity;
   review2?: boolean;
   workbenchStyle?: boolean;
   onOpen: (id: string) => void;
+  onNavigate?: (id: string) => void;
   onAction: (id: string, action: string) => void;
 }) {
   const modernDetail = review2 || workbenchStyle;
   const alertDetail = "conclusions" in item && item.source === "auto";
-  const detailPanelId = `${review2 ? "review2-" : ""}detail-${item.id}`;
+  const detailInstance=useId();
+  const detailPanelId = `${detailInstance}-detail-${item.id}`;
   const [tab, setTab] = useState("overview");
   useEffect(()=>{
     const show=(event:Event)=>{if((event as CustomEvent<string>).detail===item.id){setTab("history");requestAnimationFrame(()=>document.getElementById(`${detailPanelId}-tab-history`)?.focus({preventScroll:true}));}};
@@ -675,16 +744,16 @@ export function Detail({
   const verdict = primary && !("findingIds" in item) ? closure ? primary.conclusions.find(c => c.version === item.conclusionVersion) : latest(primary) : undefined;
   const caseNote = "standardVersion" in item ? item.goal : "conclusionVersion" in item ? item.note : "findingIds" in item ? item.scope : "executor" in item ? item.note : primary?.reminder?.text ?? verdict?.note;
   const distinctNote=caseNote && caseNote!==caseTitle(state,item) && !(review2 && "findingIds" in item && item.type==="candidate") ? caseNote : undefined;
-  const hasSummary=("findingIds" in item && !item.findingIds.length) || !!supervisorComment || !!verdict || "conclusions" in item && !!call || !!distinctNote || "findingIds" in item && !!item.evidenceRequest || "pause" in item && !!item.pause || "standardVersion" in item || "executor" in item;
+  const hasSummary=("findingIds" in item && !item.findingIds.length) || !!supervisorComment || !!verdict || "conclusions" in item && !!call && !inPreview && !alertDetail || !!distinctNote || "findingIds" in item && !!item.evidenceRequest || "pause" in item && !!item.pause || "standardVersion" in item || "executor" in item;
   const hasDocuments=!!verdict && !("findingIds" in item) || "conclusionVersion" in item || "standardVersion" in item || supplements.length>0;
   return <>
-    <div className="case-shell">
+    <div className={`case-shell${alertDetail && !inPreview ? " alert-detail-shell" : ""}`}>
       <div className="case-main">
         <div className="detail-overview">
       <header className="detail-heading">
         <div>
           <div className="overline">
-            {item.id}
+            <CopyRecordId id={item.id}/>
           </div>
           <h2>{caseTitle(state, item)}</h2>
           <div className="detail-badges">
@@ -698,16 +767,12 @@ export function Detail({
             >
               {"batches" in item ? `检测${stateLabel(item, state)}` : stateLabel(item, state)}
             </Badge>
-            {primary && "conclusions" in item && (
-              <span>
-                {primary.source === "auto" ? "自动候选" : "人工发现"}
-              </span>
-            )}
           </div>
         </div>
-        {modernDetail && call && !("batches" in item) && <div className="case-header-tools"><Badge tone={call.endedAt ? "neutral" : "success"}>{call.endedAt ? "通话已结束" : "通话中"}</Badge></div>}
+        {!inPreview && modernDetail && call && !("batches" in item) && <div className="case-header-tools"><Badge tone={call.endedAt ? "neutral" : "success"}>{call.endedAt ? "通话已结束" : "通话中"}</Badge></div>}
       </header>
       <div className={`detail-meta${modernDetail ? " review2-header-meta" : ""}`}>
+        {"findingIds" in item && <span>工单来源 <b>{queueSourceLabel(item)}</b></span>}
         <span>
           坐席 <b>{call && person(call.agentId)?.name}</b>
         </span>
@@ -715,73 +780,84 @@ export function Detail({
           业务 <b>{call?.business}</b>
         </span>
         {"batches" in item ? <><span>通话状态 <b>{item.endedAt ? "已结束" : "通话中"}</b></span><span>时长 <b>{clock(item.duration)}</b></span><span>班组 <b>{item.group}</b></span></> : null}
-        {call && call.id !== item.id && <span>来源通话 {modernDetail ? <ShadcnButton variant="link" className="review2-inline-link" onClick={()=>onOpen(call.id)}>{call.id}</ShadcnButton> : <ShadcnButton variant="link" onClick={()=>onOpen(call.id)} aria-label={`查看关联通话 ${call.id}`}>{call.id}</ShadcnButton>}</span>}
-        {"findingIds" in item ? review2 ? <Review2Indicators state={state} findingIds={item.findingIds} onRule={(id, matchingIds)=>showRule(id,false,matchingIds)}/> : <span>问题 <b>{item.findingIds.length} 项</b></span> : primary && <span>指标 <b>{ruleCategories.find(([id])=>id===primary.indicator)?.[1] ?? primary.indicator}</b></span>}
+        {call && call.id !== item.id && <span>来源通话 {alertDetail || review2 ? <CopyRecordId id={call.id}/> : <CallReference id={call.id} onOpen={()=>onOpen(call.id)}/>}</span>}
+        {"findingIds" in item ? !inPreview && review2 ? <Review2Indicators state={state} findingIds={item.findingIds} onRule={(id, matchingIds)=>showRule(id,false,matchingIds)}/> : <span>问题 <b>{item.findingIds.length} 项</b></span> : !inPreview && alertDetail && primary ? <Review2Indicators state={state} findingIds={[primary.id]} onRule={(id, matchingIds)=>showRule(id,false,matchingIds)}/> : primary && <span>指标 <b>{ruleCategories.find(([id])=>id===primary.indicator)?.[1] ?? primary.indicator}</b></span>}
+        {inPreview && "conclusions" in item && <span>问题来源 <b>{item.source === "auto" ? "系统检出" : "人工发现"}</b></span>}
+        {inPreview && owner && <span>负责人 <b>{owner.name}</b></span>}
+        {inPreview && activeDeadline(item) && <span>完成期限 <b>{stamp(activeDeadline(item))}</b></span>}
         {!modernDetail && call && !("batches" in item) && <Badge tone={call.endedAt ? "neutral" : "success"}>{call.endedAt ? "通话已结束" : "通话中"}</Badge>}
       </div>
 
         </div>
-        <Tabs value={tab} label="事项详情" className="subtabs case-tabs" panelId={detailPanelId} options={[{value:"overview",label:review2 && "findingIds" in item ? "问题与证据" : "办理概览"},{value:"history",label:"处理记录"},{value:"related",label:`关联事项 ${related.length + otherFindings.length}`}]} onChange={setTab}/>
-        <div className="case-content" role="tabpanel" id={detailPanelId} aria-labelledby={`${detailPanelId}-tab-${tab}`}>
-          {tab === "overview" && <>
+        {!inPreview && <Tabs value={tab} label="事项详情" className="subtabs case-tabs" panelId={detailPanelId} options={[{value:"overview",label:alertDetail ? "告警详情" : review2 && "findingIds" in item ? "问题与证据" : "办理概览"},{value:"history",label:"处理记录"},{value:"related",label:`关联事项 ${related.length + otherFindings.length}`}]} onChange={setTab}/>}
+        <div className="case-content" role={inPreview ? "region" : "tabpanel"} aria-label={inPreview ? "详情内容" : undefined} id={detailPanelId} aria-labelledby={inPreview ? undefined : `${detailPanelId}-tab-${tab}`}>
+          {(inPreview || tab === "overview") && <>
             {hasSummary && <section className="case-section" aria-label="案件摘要">
-              {verdict && <div className="case-verdict"><span>{closure ? "原结论" : "当前结论"}</span><Badge tone={verdict.value === "risk" ? "danger" : "neutral"}>{verdictNames[verdict.value]} · V{verdict.version}</Badge></div>}
-              {"conclusions" in item && call && <div className="evidence-summary"><h3>命中片段</h3>{item.evidence.map(index=>call.transcript[index] && <ShadcnButton variant="ghost" key={index} className="evidence-excerpt" onClick={()=>showEvidence()}><time>{clock(call.transcript[index].at)}</time><span>{call.transcript[index].text}</span><Icon name="chevron" size={14}/></ShadcnButton>)}<p>{latest(item) ? "结论与原始证据保留供追溯。" : "自动结果待核对，请结合上下文确认。"}</p></div>}
-              {distribution && <div className="requirements"><h3>{distribution.title}</h3><p>{distribution.goal}</p><p>完成标准：{distribution.standard}</p><p>资料要求：{distribution.observation} · {distribution.sampleCount} 通样例</p><p>期限：{stamp(distribution.dueAt)} · 质检员：{distribution.inspector}</p>{distribution.guidance && <small>{distribution.guidance}</small>}</div>}
-              {primary && latest(primary)?.value === "false_positive" && <div className="requirements"><h3>{primary.source === "auto" ? "系统误报归档" : "人工发现撤销记录"}</h3><p>归档原因：{latest(primary)?.note}</p><p>确认人：{person(latest(primary)!.by)?.name} · {stamp(latest(primary)?.at)}</p><p>规则：{primary.ruleId} · V{latest(primary)?.ruleVersion ?? primary.ruleVersion} · 检测批次：{latest(primary)?.batchId ?? primary.batchId}</p><p>来源：{primary.source === "auto" ? "系统规则检测" : "人工抽检"} · 核实人：{person(latest(primary)?.reviewer ?? "")?.name ?? "主管直接确认"}</p>{primary.source === "auto" && <p>规则优化：{{pending:"待评估",recorded:"已记录优化建议",unnecessary:"无需调整"}[primary.optimization?.status ?? "pending"]} · {primary.optimization?.note ?? "等待主管记录反馈"}</p>}</div>}
+              {verdict && <div className="case-verdict"><span>{closure ? "原结论" : "当前结论"}</span><Badge tone={verdict.value === "risk" ? "danger" : "neutral"}>{verdictNames[verdict.value]}</Badge></div>}
+              {!inPreview && !alertDetail && "conclusions" in item && call && <div className="evidence-summary"><h3>命中片段</h3>{item.evidence.map(index=>call.transcript[index] && <ShadcnButton variant="ghost" key={index} className="evidence-excerpt" onClick={()=>showEvidence()}><time>{clock(call.transcript[index].at)}</time><span>{call.transcript[index].text}</span><Icon name="chevron" size={14}/></ShadcnButton>)}<p>{latest(item) ? "结论与原始证据保留供追溯。" : "自动结果待核对，请结合上下文确认。"}</p></div>}
+              {distribution && <div className="requirements"><h3>{distribution.title}</h3><p>{distribution.goal}</p><p>完成标准：{distribution.standard}</p><p>资料要求：{distribution.observation} · {distribution.sampleCount} 通样例</p><p>期限：{stamp(distribution.dueAt)} · 质检员：{distribution.inspector}</p>{distribution.status === "pending" && <><p>回应期限：{distribution.responseDueAt ? stamp(distribution.responseDueAt) : "未记录"}{distribution.responseDueAt && <span className={Date.parse(distribution.responseDueAt)<=now ? "red" : ""}> · {deadlineRemaining(distribution.responseDueAt, now)}</span>}</p>{Date.parse(distribution.dueAt)<=now && <p className="callout">整改完成期限已过，接受后不会重新起算。可申请调整分发期限。</p>}{distribution.extensionRequest && <p>待主管处理期限申请：{distribution.extensionRequest.note}</p>}{distribution.responseOverdueAt && <p>曾超过回应期限：{stamp(distribution.responseOverdueAt)}</p>}</>}{distribution.guidance && <small>{distribution.guidance}</small>}</div>}
+              {primary && latest(primary)?.value === "false_positive" && <div className="requirements"><h3>{primary.source === "auto" ? "系统误报归档" : "人工发现撤销记录"}</h3><p>归档原因：{latest(primary)?.note}</p><p>确认人：{person(latest(primary)!.by)?.name} · {stamp(latest(primary)?.at)}</p><p>规则：<CopyRecordId id={primary.ruleId}/> · 检测批次：<CopyRecordId id={latest(primary)?.batchId ?? primary.batchId}/></p><p>来源：{primary.source === "auto" ? "系统规则检测" : "人工抽检"} · 核实人：{person(latest(primary)?.reviewer ?? "")?.name ?? "主管直接确认"}</p>{primary.source === "auto" && <p>规则优化：{{pending:"待评估",recorded:"已记录优化建议",unnecessary:"无需调整"}[primary.optimization?.status ?? "pending"]} · {primary.optimization?.note ?? "等待主管记录反馈"}</p>}</div>}
               {"executor" in item && <div className="requirements"><h3>补件要求</h3><p>{item.note}</p><p>执行人：{person(item.executor)?.name} · 期限：{stamp(item.dueAt)}</p>{item.reply && <><h3>已提交材料</h3><p>{item.reply}</p></>}{item.cancellationReason && <p>结束原因：{item.cancellationReason}</p>}</div>}
               {"findingIds" in item && item.evidenceRequest && <div className="requirements"><h3>质检员补证申请</h3><p>{item.evidenceRequest.note}</p><small>安排执行人和补证期限，接收后由原质检员继续核实。</small></div>}
               {supervisorComment && <div className="requirements"><h3>主管退回意见</h3><p>{supervisorComment}</p><small>{"findingIds" in item && item.type !== "appeal" ? "请按退回要求重新核实并提交结果。" : "findingIds" in item ? "赞同则重新核查；不赞同则补充依据向主管说明。" : "赞同则补充要求退回坐席；不赞同则补充核验依据向主管说明。"}</small></div>}
               {"standardVersion" in item && item.supplementRequirements && <div className="requirements"><h3>本轮补充整改要求</h3><p>{item.supplementRequirements}</p></div>}
               {"findingIds" in item && !item.findingIds.length && <div className="requirements"><h3>人工抽检范围</h3><p>{item.scope}</p><p>{item.scopeResult==="clear" ? `范围内未发现问题：${item.summary ?? ""}` : "核查后登记人工发现，或提交未发现问题的范围核验说明。"}</p></div>}
-              {distinctNote && <div className="case-summary-note"><span>{"standardVersion" in item ? "整改目标" : "conclusionVersion" in item ? "申诉理由" : "findingIds" in item ? "检查范围" : "处理摘要"}</span><p>{distinctNote}</p>{!("conclusionVersion" in item) && <SurfaceButton className="text-button" onClick={()=>setPreview("materials")}>查看完整材料</SurfaceButton>}</div>}
+              {distinctNote && <div className="case-summary-note"><span>{"standardVersion" in item ? "整改目标" : "conclusionVersion" in item ? "申诉理由" : "findingIds" in item ? "检查范围" : "处理摘要"}</span><p>{distinctNote}</p>{!inPreview && !("conclusionVersion" in item) && <SurfaceButton className="text-button" onClick={()=>setPreview("materials")}>查看完整材料</SurfaceButton>}</div>}
               {"pause" in item && item.pause && <p className="case-pause">申诉处理中，整改暂停。可以补充材料，暂不能验收通过或结案。</p>}
-              {"standardVersion" in item && <div className="case-progress"><span>本轮样例 <b>{new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount}</b></span><span>完成标准 V{item.standardVersion}</span></div>}
+              {"standardVersion" in item && <div className="case-progress"><span>本轮样例 <b>{new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount}</b></span><span>第 {item.round} 轮整改</span></div>}
             </section>}
-            {"findingIds" in item && item.findingIds.length > 0 && (review2 ? <Review2Findings state={state} review={item} call={call} onEvidence={showEvidence} onRule={id=>showRule(id)}/> : <section className="case-section" aria-label="问题与意见"><div className="case-section-title"><h3>复核意见</h3><span>{item.status === "supervisor" ? "待主管确认 · " : ""}{item.findingIds.length} 项</span></div><div className="case-findings">{item.findingIds.map(id=>{const f=state.findings.find(x=>x.id===id);return f && <div key={id}><div><b>{f.title}</b><div className="finding-verdict">{item.opinions[id] ? <><Badge tone={item.opinions[id].value==='risk' ? 'danger' : item.opinions[id].value==='false_positive' ? 'success' : 'warning'}>{verdictNames[item.opinions[id].value]}</Badge><p>{item.opinions[id].note}</p></> : <span>待填写复核意见</span>}</div></div><Button onClick={()=>showEvidence(id)}>查看证据</Button></div>;})}</div></section>)}
-            {hasDocuments && <section className="case-section" aria-label="证据与材料"><div className="case-section-title"><h3>证据与材料</h3></div>
-              <CaseDocuments item={item} primary={primary} onOpen={onOpen}/>
-              {supplements.map(sp=><div className="case-supplement" key={sp.id}><SurfaceButton className="case-document" onClick={()=>setPreview("materials")}><span className="case-document-icon"><Icon name="file"/></span><span><b>{openSupplement(sp) ? "待补材料" : "补件记录"} · {stateLabel(sp,state)}</b><small>{person(sp.executor)?.name} · {stamp(sp.dueAt)}</small></span><span className="case-preview-label">预览</span></SurfaceButton><div>{contextActions(state,sp.id).map(action=><Button key={action} onClick={()=>onAction(sp.id,action)}>{actionLabel(state,sp.id,action)}</Button>)}</div></div>)}
+            {!inPreview && alertDetail && "conclusions" in item && <section className="case-section alert-evidence inline-evidence-surface" aria-label="录音与证据">
+              {call ? <Evidence key={item.id} state={state} call={call} findings={[item]} primary={item} inline/> : <p className="subtle">原始通话与证据暂不可用。</p>}
+            </section>}
+            {inPreview && "findingIds" in item && item.summary && <section className="readonly-review-note"><h3>{["supervisor","done"].includes(item.status) ? "核查说明" : "已记录说明"}</h3><p>{item.summary}</p></section>}
+            {inPreview && "conclusions" in item && <DirectFindingDetail state={state} finding={item} onOpen={onOpen}/>}
+            {"findingIds" in item && item.findingIds.length > 0 && (inPreview ? <section aria-label="问题完整详情">{item.findingIds.map(id=>{const finding=state.findings.find(f=>f.id===id);return finding && canSee(state,id) ? <DirectFindingDetail key={id} state={state} finding={finding} review={item} onOpen={onOpen}/> : <p key={id}>关联问题暂不可查看。</p>;})}</section> : review2 ? <Review2Findings key={item.id} state={state} review={item} title={caseTitle(state,item)} renderEvidence={finding=>{
+              const sourceCall=state.calls.find(source=>source.id===finding.callId);
+              return sourceCall && canSeeCall(state,sourceCall) ? <Evidence key={finding.id} state={state} call={sourceCall} findings={[finding]} primary={finding} evidenceOverride={item.opinions[finding.id]?.evidence} problemDetail inline/> : <p className="subtle">原始通话与证据暂不可用。</p>;
+            }}/> : <section className="case-section" aria-label="问题与意见"><div className="case-section-title"><h3>复核意见</h3><span>{item.status === "supervisor" ? "待主管确认 · " : ""}{item.findingIds.length} 项</span></div><div className="case-findings">{item.findingIds.map(id=>{const f=state.findings.find(x=>x.id===id);return f && <div key={id}><div><b>{f.title}</b><div className="finding-verdict">{item.opinions[id] ? <><Badge tone={item.opinions[id].value==='risk' ? 'danger' : item.opinions[id].value==='false_positive' ? 'success' : 'warning'}>{verdictNames[item.opinions[id].value]}</Badge><p>{item.opinions[id].note}</p></> : <span>待填写复核意见</span>}</div></div><Button onClick={()=>showEvidence(id)}>查看证据</Button></div>;})}</div></section>)}
+            {hasDocuments && !(inPreview && "conclusions" in item) && <section className="case-section" aria-label="证据与材料"><div className="case-section-title"><h3>证据与材料</h3></div>
+              <CaseDocuments inline={inPreview} item={item} primary={primary} onOpen={onOpen}/>
+              {supplements.map(sp=><div className="case-supplement" key={sp.id}>{inPreview ? <section className="inline-document-detail"><header><h4>补件记录</h4><Badge>{stateLabel(sp,state)}</Badge></header><p className="subtle">{person(sp.executor)?.name ?? "执行人未记录"} · 截止 {stamp(sp.dueAt)}</p><p>{sp.note}</p>{sp.reply && <p>已提交材料：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason}</p>}</section> : <><DocumentRow title={openSupplement(sp) ? "待补材料" : "补件记录"} summary={`${person(sp.executor)?.name ?? "执行人未记录"} · 截止 ${stamp(sp.dueAt)}`} status={stateLabel(sp,state)} onView={()=>onOpen(sp.id)}/><div>{contextActions(state,sp.id).map(action=><Button key={action} onClick={()=>onAction(sp.id,action)}>{actionLabel(state,sp.id,action)}</Button>)}</div></>}</div>)}
             </section>}
 
           </>}
-          {tab === "history" && <EventTimeline events={[
-            ...("firstOverdueAt" in item && item.firstOverdueAt ? [{id:`overdue-${item.id}`,at:item.firstOverdueAt,title:"超过办理期限",actor:"系统 · 时限记录",note:`当时截止时间：${stamp(item.firstOverdueAt)}；到期时尚未完成办理。当时责任人未记录。`,kind:"system" as const}] : []),
-            ...logs.map(log=>({id:log.id,at:log.at,title:log.action,actor:log.actor === "system" ? "系统 · 工作流" : `${person(log.actor)?.name ?? "系统"} · ${person(log.actor) ? roleNames[person(log.actor).role] : "工作流"}`,note:log.note,kind:log.actor === "system" ? "system" as const : "human" as const,demo:log.id.startsWith("EV-DEMO-") || log.id === "EV-SEED"})),
-            ...(item.deadlineChanges ?? []).map((entry,index)=>({id:`deadline-${index}`,at:entry.at,title:"调整完成期限",actor:"责任流转",note:`${stamp(entry.from)} → ${stamp(entry.to)}；${entry.reason}`,kind:"change" as const})),
-            ...(primary?.conclusions ?? []).map(conclusion=>({id:`conclusion-${conclusion.version}`,at:conclusion.at,title:`结论 V${conclusion.version} · ${verdictNames[conclusion.value]}`,actor:`${person(conclusion.by)?.name ?? "主管"} · 质检主管`,note:conclusion.note})),
-            ...("standardVersion" in item ? item.standards.map(standard=>({id:`standard-${standard.version}`,at:standard.at,title:`完成标准 V${standard.version}`,actor:"整改要求",note:`${standard.standard} ${standard.note}`,kind:"change" as const})) : []),
-            ...("standardVersion" in item ? item.pauseHistory.map((pause,index)=>({id:`pause-${index}`,at:pause.end,title:"恢复处理",actor:"系统 · 工作流",note:`${stamp(pause.start)} → ${stamp(pause.end)}；期限顺延 ${Math.round(pause.duration/1000)} 秒`,kind:"system" as const})) : []),
+          {!inPreview && tab === "history" && <EventTimeline onOpen={onOpen} events={[
+            ...("firstOverdueAt" in item && item.firstOverdueAt ? [{references:timelineReferences(state,item.id),id:`overdue-${item.id}`,at:item.firstOverdueAt,title:"超过办理期限",actor:"系统 · 时限记录",note:`当时截止时间：${stamp(item.firstOverdueAt)}；到期时尚未完成办理。当时责任人未记录。`,kind:"system" as const}] : []),
+            ...logs.map(log=>({references:timelineReferences(state,log.target),id:log.id,at:log.at,title:log.action,actor:log.actor === "system" ? "系统 · 工作流" : `${person(log.actor)?.name ?? "系统"} · ${person(log.actor) ? roleNames[person(log.actor).role] : "工作流"}`,note:log.note,kind:log.actor === "system" ? "system" as const : "human" as const,demo:log.id.startsWith("EV-DEMO-") || log.id === "EV-SEED"})),
+            ...(item.deadlineChanges ?? []).map((entry,index)=>({references:timelineReferences(state,item.id),id:`deadline-${index}`,at:entry.at,title:"调整完成期限",actor:"责任流转",note:`${stamp(entry.from)} → ${stamp(entry.to)}；${entry.reason}`,kind:"change" as const})),
+            ...(primary?.conclusions ?? []).filter(conclusion=>!logs.some(log=>log.target===primary?.id && log.at===conclusion.at && log.actor===conclusion.by && log.note===conclusion.note)).map(conclusion=>({references:timelineReferences(state,primary!.id),id:`conclusion-${conclusion.version}`,at:conclusion.at,title:`确认结论 · ${verdictNames[conclusion.value]}`,actor:`${person(conclusion.by)?.name ?? "主管"} · 质检主管`,note:conclusion.note})),
+            ...("standardVersion" in item ? item.standards.map(standard=>({references:timelineReferences(state,item.id),id:`standard-${standard.version}`,at:standard.at,title:"调整完成标准",actor:"整改要求",note:`${standard.standard} ${standard.note}`,kind:"change" as const})) : []),
+            ...("standardVersion" in item ? item.pauseHistory.map((pause,index)=>({references:timelineReferences(state,item.id),id:`pause-${index}`,at:pause.end,title:"恢复处理",actor:"系统 · 工作流",note:`${stamp(pause.start)} → ${stamp(pause.end)}；期限顺延 ${Math.round(pause.duration/1000)} 秒`,kind:"system" as const})) : []),
           ]}/>}
-          {tab === "related" && (
-            <div className="related-list">
-              {!review2 && otherFindings.length > 0 && <h3>同通话其他问题</h3>}
+          {!inPreview && tab === "related" && (
+            <div className={`related-list${modernDetail ? " related-list-unified" : ""}`}>
+              {!modernDetail && otherFindings.length > 0 && <h3>同通话其他问题</h3>}
               {otherFindings.map((f) => (
-                  <ShadcnButton variant="ghost" key={f.id} onClick={() => onOpen(f.id)}>
+                  <RecordRow key={f.id} label={`查看记录 ${f.id}`} onOpen={() => onOpen(f.id)}>
                     <Icon name="shield" />
                     <div>
                       <b>{f.title}</b>
                       <small>
-                        {f.id} · 风险问题
+                        <CopyRecordId id={f.id}/> · 风险问题
                       </small>
                     </div>
                     <Badge tone="neutral">{stateLabel(f, state)}</Badge>
-                    {!review2 && <Icon name="chevron" />}
-                  </ShadcnButton>
+                    {!modernDetail && <Icon name="chevron" />}
+                  </RecordRow>
                 ))}
-              {!review2 && related.length > 0 && otherFindings.length > 0 && <h3>处理事项</h3>}
+              {!modernDetail && related.length > 0 && otherFindings.length > 0 && <h3>处理事项</h3>}
               {related.map((r) => (
-                <ShadcnButton variant="ghost" key={r.id} onClick={() => onOpen(r.id)}>
+                <RecordRow key={r.id} label={`查看记录 ${r.id}`} onOpen={() => onOpen(r.id)}>
                   <Icon name="file" />
                   <div>
                     <b>{caseTitle(state, r)}</b>
                     <small>
-                      {r.id} · {"findingIds" in r ? "复核工单" : "standardVersion" in r ? "整改任务" : "申诉"}
+                      <CopyRecordId id={r.id}/> · {"findingIds" in r ? "复核工单" : "standardVersion" in r ? "整改任务" : "executor" in r ? "补件记录" : "申诉"}
                     </small>
                   </div>
                   <Badge tone={"status" in r && r.status === "done" ? "success" : "neutral"}>{stateLabel(r, state)}</Badge>
-                  {!review2 && <Icon name="chevron" />}
-                </ShadcnButton>
+                  {!modernDetail && <Icon name="chevron" />}
+                </RecordRow>
               ))}
               {!related.length && !otherFindings.length && (
                 <Empty text="暂无关联事项" hint="当前通话没有其他可查看的问题或处理记录。" />
@@ -790,7 +866,7 @@ export function Detail({
           )}
         </div>
       </div>
-      <aside className="case-rail" aria-label="当前责任与下一步操作">
+      {!inPreview && <aside className="case-rail" aria-label="当前责任与下一步操作">
         <CaseResponsibility state={state} item={item} now={now}/>
         <section className="case-next-action"><h3>{"batches" in item ? "通话操作" : "下一步操作"}</h3>
           {"findingIds" in item && item.status === "supervisor" && mainAction === "return_review" && <p className="case-action-hint">当前尚无可确认的完整结果，请退回质检员补充核实。</p>}
@@ -807,9 +883,9 @@ export function Detail({
             {!allowed.length && !supplementActions.length && !("batches" in item) && !("pause" in item && item.pause) && <p className="subtle">{owner ? `当前等待${owner.name}，无需重复提交。` : "当前无待办，可查看结果与处理记录。"}</p>}
             </>
           ) : appealDecision ? (
-            <Button primary onClick={() => onOpen(appealDecision.id)}>打开申诉裁定</Button>
+            <Button primary onClick={() => onNavigate(appealDecision.id)}>打开申诉裁定</Button>
           ) : assignedReview ? (
-            <Button primary onClick={() => onOpen(assignedReview.id)}>打开核查工单</Button>
+            <Button primary onClick={() => onNavigate(assignedReview.id)}>打开核查工单</Button>
           ) : (
             <p className="subtle">
               当前身份无需处理此阶段，相关结果与记录可继续查看。
@@ -839,25 +915,25 @@ export function Detail({
             )}
 
 
-      </aside>
+      </aside>}
     </div>
     {preview && <Modal title={preview === "finding" ? "问题详情" : preview === "rule" ? "命中规则" : preview === "evidence" ? "录音与证据" : "案件材料"} description={preview === "finding" || preview === "rule" ? `${selectedFinding?.title ?? "问题记录暂不可用"} · ${item.id}` : `${item.id} · ${caseTitle(state,item)}`} variant={preview !== "materials" ? "evidence" : "default"} onClose={()=>setPreview(null)}>
-      {(preview === "finding" || preview === "rule") && selectedFinding && call && "findingIds" in item ? <div className="review2-preview" ref={previewSurface} tabIndex={-1} aria-label={preview === "rule" ? "命中规则详情" : "问题详情内容"}>
-        {preview === "rule" ? <><ShadcnButton variant="ghost" className="finding-back" onClick={()=>{setPreviewSegment(undefined);setPreview(ruleReturn);}}>← {ruleReturn ? "返回问题详情" : "返回问题列表"}</ShadcnButton>{ruleFindingIds.length > 1 && <div className="review2-rule-choices" aria-label="该指标命中的问题与规则">{associated.filter(f=>ruleFindingIds.includes(f.id)).map(f=><ShadcnButton key={f.id} variant="ghost" aria-pressed={selectedFinding.id===f.id} onClick={()=>setPreviewFinding(f.id)}>{f.title} · {state.rules.find(r=>r.id===f.ruleId)?.name ?? f.ruleId} V{f.ruleVersion}</ShadcnButton>)}</div>}<Review2RuleDetail state={state} finding={selectedFinding}/></> : <Review2FindingDetail state={state} finding={selectedFinding} review={item} onRule={()=>showRule(selectedFinding.id,true)} onCall={()=>{setPreview(null);onOpen(call.id);}}><Evidence state={state} call={call} findings={[selectedFinding]} primary={selectedFinding} initialSegment={previewSegment} evidenceOverride={item.opinions[selectedFinding.id]?.evidence} problemDetail/></Review2FindingDetail>}
-      </div> : preview === "evidence" && call ? <Evidence state={state} call={call} findings={"batches" in item || "findingIds" in item ? associated : primary ? [primary] : []} primary={associated.find(f=>f.id===previewFinding) ?? primary} pinnedVersion={closure ? item.conclusionVersion : undefined}/> : <CaseMaterials state={state} item={item} primary={primary} onOpen={id=>{setPreview(null);onOpen(id);}} onAction={(id,action)=>{setPreview(null);onAction(id,action);}}/>}
+      {(preview === "finding" || preview === "rule") && selectedFinding && (preview === "rule" || call && "findingIds" in item) ? <div className="review2-preview" ref={previewSurface} tabIndex={-1} aria-label={preview === "rule" ? "命中规则详情" : "问题详情内容"}>
+        {preview === "rule" ? <>{ruleReturn && <ShadcnButton variant="ghost" className="finding-back" onClick={()=>{setPreviewSegment(undefined);setPreview(ruleReturn);}}>← 返回问题详情</ShadcnButton>}{ruleFindingIds.length > 1 && <div className="review2-rule-choices" aria-label="该指标命中的问题与规则">{associated.filter(f=>ruleFindingIds.includes(f.id)).map(f=><ShadcnButton key={f.id} variant="ghost" aria-pressed={selectedFinding.id===f.id} onClick={()=>setPreviewFinding(f.id)}>{f.title} · {state.rules.find(r=>r.id===f.ruleId)?.name ?? f.ruleId}</ShadcnButton>)}</div>}<Review2RuleDetail state={state} finding={selectedFinding}/></> : call && "findingIds" in item && <Review2FindingDetail state={state} finding={selectedFinding} review={item} onRule={()=>showRule(selectedFinding.id,true)} onCall={()=>{setPreview(null);onOpen(call.id);}}><Evidence state={state} call={call} findings={[selectedFinding]} primary={selectedFinding} initialSegment={previewSegment} evidenceOverride={item.opinions[selectedFinding.id]?.evidence} problemDetail/></Review2FindingDetail>}
+      </div> : preview === "evidence" && call ? <Evidence state={state} call={call} findings={"batches" in item || "findingIds" in item ? associated : primary ? [primary] : []} primary={associated.find(f=>f.id===previewFinding) ?? primary} pinnedVersion={closure ? item.conclusionVersion : undefined}/> : <CaseMaterials readOnly={inPreview} state={state} item={item} primary={primary} onOpen={id=>{setPreview(null);onOpen(id);}} onAction={(id,action)=>{setPreview(null);onAction(id,action);}}/>}
     </Modal>}
   </>;
 }
-function CaseMaterials({state,item,primary,onOpen,onAction}: {state:State;item:Entity;primary?:Finding;onOpen:(id:string)=>void;onAction:(id:string,action:string)=>void}) {
+function CaseMaterials({state,item,primary,onOpen,onAction,readOnly=false}: {readOnly?:boolean;state:State;item:Entity;primary?:Finding;onOpen:(id:string)=>void;onAction:(id:string,action:string)=>void}) {
   const supplements=state.supplements.filter(sp=>sp.target===item.id && canSee(state,sp.id));
   return <div className="case-materials">
-    {primary && <section className="case-section"><h3>结论依据</h3>{primary.conclusions.length ? primary.conclusions.map(c=><div key={c.version}><b>V{c.version} · {verdictNames[c.value]}</b><p>{c.note}</p>{c.noRemedy && <p>无需整改：{c.noRemedy}</p>}</div>) : <p>尚未形成正式结论。</p>}</section>}
+    {primary && <section className="case-section"><h3>结论依据</h3>{primary.conclusions.length ? primary.conclusions.map(c=><div key={c.version}><b>{verdictNames[c.value]}</b><p>{c.note}</p>{c.noRemedy && <p>无需整改：{c.noRemedy}</p>}</div>) : <p>尚未形成正式结论。</p>}</section>}
               {"standardVersion" in item && (
                 <div className="requirements">
                   <h3>
                     整改要求{" "}
                     <Badge>
-                      标准 V{item.standardVersion} · 第 {item.round} 轮
+                      第 {item.round} 轮
                     </Badge>
                   </h3>
                   <p>
@@ -878,12 +954,12 @@ function CaseMaterials({state,item,primary,onOpen,onAction}: {state:State;item:E
                         材料 {n + 1} · {stamp(m.at)}
                       </b>
                       <p>{m.text}</p>
-                      <div className="sample-links">{m.samples.map(id=><Button key={id} onClick={()=>onOpen(id)}>查看样例 {id}</Button>)}{m.attachment && <small>{m.attachment}</small>}</div>
+                      <div className="sample-links">{m.samples.map(id=><RecordReference key={id} id={id} label="查看样例" onOpen={()=>onOpen(id)}/>)}{m.attachment && <small>{m.attachment}</small>}</div>
                     </div>
                   ))}
                   <p>本轮已提交 {new Set(item.materials.flatMap(m=>m.samples)).size} / {item.sampleCount} 通样例</p>
-                  {item.rounds?.map(round=><Disclosure key={round.round} className="round-history" title={<>第 {round.round} 轮材料与验收 · 标准 V{round.standardVersion}</>}><p>目标：{round.goal}；标准：{round.standard}；要求：{round.sampleCount} 通 / {round.observation}</p>{round.materials.map((m,n)=><div key={n}><p>{m.text}</p>{m.samples.map(id=><Button key={id} onClick={()=>onOpen(id)}>查看样例 {id}</Button>)}{m.attachment && <p>{m.attachment}</p>}</div>)}<p>验收：{round.acceptance?.result === "fail" ? "不通过" : round.acceptance?.result === "pass" ? "通过" : "材料不足"} · {round.acceptance?.note}</p></Disclosure>)}
-                  {(item.acceptanceDraft || item.draft) && <div className="material-card"><b>验收草稿</b><p>{item.acceptanceDraft?.note ?? item.draft}</p><small>{item.acceptanceDraft ? `第 ${item.acceptanceDraft.round} 轮 · 标准 V${item.acceptanceDraft.version} · ${person(item.acceptanceDraft.author)?.name ?? "原验收人"}保存` : "旧版草稿，继续处理前需核对当前标准"}</small></div>}
+                  {item.rounds?.map(round=><Disclosure key={round.round} className="round-history" title={<>第 {round.round} 轮材料与验收</>}><p>目标：{round.goal}；标准：{round.standard}；要求：{round.sampleCount} 通 / {round.observation}</p>{round.materials.map((m,n)=><div key={n}><p>{m.text}</p>{m.samples.map(id=><RecordReference key={id} id={id} label="查看样例" onOpen={()=>onOpen(id)}/>)}{m.attachment && <p>{m.attachment}</p>}</div>)}<p>验收：{round.acceptance?.result === "fail" ? "不通过" : round.acceptance?.result === "pass" ? "通过" : "材料不足"} · {round.acceptance?.note}</p></Disclosure>)}
+                  {(item.acceptanceDraft || item.draft) && <div className="material-card"><b>验收草稿</b><p>{item.acceptanceDraft?.note ?? item.draft}</p><small>{item.acceptanceDraft ? `第 ${item.acceptanceDraft.round} 轮 · ${person(item.acceptanceDraft.author)?.name ?? "原验收人"}保存` : "旧版草稿，继续处理前需核对当前标准"}</small></div>}
                   {item.acceptance && (
                     <div className="material-card">
                       <b>
@@ -898,7 +974,7 @@ function CaseMaterials({state,item,primary,onOpen,onAction}: {state:State;item:E
                       </b>
                       <p>{item.acceptance.note}</p>
                       <small>
-                        针对标准 V{item.acceptance.version} · 第{" "}
+                        第{" "}
                         {item.acceptance.round} 轮
                       </small>
                     </div>
@@ -911,7 +987,7 @@ function CaseMaterials({state,item,primary,onOpen,onAction}: {state:State;item:E
               {"conclusionVersion" in item && !("standardVersion" in item) && (
                 <div className="requirements">
                   <h3>
-                    申诉理由 <Badge>结论 V{item.conclusionVersion}</Badge>
+                    申诉理由
                   </h3>
                   <p>{item.note}</p>
                   {item.sameReviewerReason && (
@@ -994,7 +1070,7 @@ function CaseMaterials({state,item,primary,onOpen,onAction}: {state:State;item:E
                   )}
                 </div>
               )}
-      {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{openSupplement(sp) ? "待补材料" : "补件记录"} <Badge>{stateLabel(sp, state)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} {openSupplement(sp) ? ` · 下一接收人：${person(currentOwner(state, {...sp, status:"submitted"}))?.name ?? "指定责任人"}` : ""}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason} · {stamp(sp.cancelledAt)}</p>}{contextActions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionLabel(state,sp.id,a)}</Button>)}</div>)}
+      {supplements.map(sp=><div className="requirements inline-supplement" key={sp.id}><h3>{openSupplement(sp) ? "待补材料" : "补件记录"} <Badge>{stateLabel(sp, state)}</Badge></h3><p>{sp.note}</p><small>执行：{person(sp.executor)?.name} · 期限：{stamp(sp.dueAt)} {openSupplement(sp) ? ` · 下一接收人：${person(currentOwner(state, {...sp, status:"submitted"}))?.name ?? "指定责任人"}` : ""}</small>{sp.reply && <p>补充说明：{sp.reply}</p>}{sp.cancellationReason && <p>结束原因：{sp.cancellationReason} · {stamp(sp.cancelledAt)}</p>}{!readOnly && contextActions(state,sp.id).map(a=><Button primary key={a} onClick={()=>onAction(sp.id,a)}>{actionLabel(state,sp.id,a)}</Button>)}</div>)}
     {"findingIds" in item && item.evidenceRequest && <div className="requirements"><h3>补证申请</h3><p>{item.evidenceRequest.note}</p></div>}
   </div>;
 }
@@ -1017,6 +1093,19 @@ function CaseResponsibility({ state, item, now }: { state: State; item: Entity; 
   </section>;
 }
 
+function DirectFindingDetail({state,finding,review,onOpen}:{state:State;finding:Finding;review?:Review;onOpen:(id:string)=>void}) {
+  const [ruleOpen,setRuleOpen]=useState(false);
+  const call=callFor(state,finding.id);
+  function showBasis(){setRuleOpen(true);}
+  return <article className="direct-finding-detail">
+    {review && <h3>{finding.title}</h3>}
+    <Review2FindingDetail state={state} finding={finding} review={review} showIdentity={!!review} onRule={showBasis} onCall={()=>onOpen(finding.callId)}>
+      {call ? <Evidence state={state} call={call} findings={[finding]} primary={finding} evidenceOverride={review?.opinions[finding.id]?.evidence} problemDetail/> : <p>原始通话与证据暂不可用。</p>}
+    </Review2FindingDetail>
+    {ruleOpen && <Modal containEscape title="命中规则与业务依据" variant="evidence" onClose={()=>setRuleOpen(false)}><Review2RuleDetail state={state} finding={finding}/></Modal>}
+  </article>;
+}
+
 function Evidence({
   state,
   call,
@@ -1026,6 +1115,7 @@ function Evidence({
   initialSegment,
   evidenceOverride,
   problemDetail = false,
+  inline = false,
 }: {
   state: State;
   call: Call;
@@ -1035,49 +1125,29 @@ function Evidence({
   initialSegment?: number;
   evidenceOverride?: number[];
   problemDetail?: boolean;
+  inline?: boolean;
 }) {
-  const audio = useRef<HTMLAudioElement>(null);
-  const [audioError, setAudioError] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [current, setCurrent] = useState(0),
-    [corrected, setCorrected] = useState(false);
-  const transcriptRef = useRef<HTMLDivElement>(null);
-  useEffect(()=>{
-    if(initialSegment===undefined)return;
-    const frame=requestAnimationFrame(()=>{
-      transcriptRef.current?.children[initialSegment]?.scrollIntoView({block:"center"});
-      if(audio.current && call.transcript[initialSegment])audio.current.currentTime=call.transcript[initialSegment].at;
-    });
-    return()=>cancelAnimationFrame(frame);
-  },[initialSegment,call]);
   const [chosen, setChosen] = useState<string>();
-  const [basis,setBasis]=useState(pinnedVersion ? String(pinnedVersion):"latest");
+  const basis=pinnedVersion ? String(pinnedVersion) : "latest";
   const f = findings.find((x) => x.id === chosen) ?? primary ?? findings[0];
   const conclusion: Conclusion | undefined = f ? basis === "original" ? undefined : basis === "latest" ? latest(f) : f.conclusions.find(c=>c.version===Number(basis)) : undefined;
   const evidence = evidenceOverride ?? conclusion?.evidence ?? f?.evidence ?? [];
-  const rule = f && state.rules.find((x) => x.id === f.ruleId),
-    version = rule?.versions.find((v) => v.version === (conclusion?.ruleVersion ?? f?.ruleVersion));
+  const rule = f && state.rules.find((x) => x.id === f.ruleId);
+  const ruleReference = !problemDetail && f && <div className="evidence-reference-links">
+    <div><span>判断依据：<b>{rule?.name ?? <CopyRecordId id={f.ruleId}/>}</b><small>{rule && <CopyRecordId id={rule.id}/>}</small></span></div>
+  </div>;
   return (
-    <div className="evidence-block">
-      <div className="section-title">
+    <div className="evidence-block evidence-reader">
+      {!inline && <div className="section-title">
         <h3>原音与转写</h3>
-        <Badge>{call.endedAt ? "证据已封存" : "通话进行中"}</Badge>
-      </div>
-      {call.audio ? (
-        <AudioPlayer audio={audio} src={call.audio} onTime={setCurrent} onPlaying={setPlaying} onError={()=>{setAudioError(true);setPlaying(false);}}/>
-      ) : (
-        <div className="audio-missing">
-          <Icon name="mic" size={20} />
-          <div>
-            <b>暂无可用录音</b>
-            <small>可先查看通话转写与已关联证据。</small>
-          </div>
-        </div>
-      )}
+        <Badge>{call.endedAt ? "通话已结束" : "通话进行中"}</Badge>
+      </div>}
+      {!problemDetail && !inline && <p className="evidence-call-reference">来源通话：<CopyRecordId id={call.id}/></p>}
+      <EvidenceRecording key={call.id} call={call} evidence={evidence} initialSegment={initialSegment} inline={inline}>
       {findings.length > 1 && (
         <label className="finding-switch">
           查看问题证据
-          <SelectField value={f?.id} onValueChange={value => {setChosen(value);setBasis("latest");}}>
+          <SelectField value={f?.id} onValueChange={value => {setChosen(value);}}>
             {findings.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.title}
@@ -1086,114 +1156,10 @@ function Evidence({
           </SelectField>
         </label>
       )}
-      {!problemDetail && !!f?.conclusions.length && <label className="finding-switch">判断依据版本<SelectField aria-label="判断依据版本" value={basis} onValueChange={value => setBasis(value)}><option value="latest">当前正式结论</option>{f.conclusions.map(c=><option key={c.version} value={String(c.version)}>结论 V{c.version} · {verdictNames[c.value]}</option>)}<option value="original">原始候选命中</option></SelectField></label>}
-      {!problemDetail && conclusion && <div className="result-banner"><b>{verdictNames[conclusion.value]} · V{conclusion.version}</b><p>{conclusion.note}</p>{!conclusion.evidence && <small>旧版记录未保存独立证据，以下显示原始命中供参考。</small>}</div>}
-      {f && (
-        <div className="evidence-caption">
-          <Icon name="spark" size={16} />
-          <span>定位片段仅作判断依据，需结合前后文确认。</span>
-        </div>
-      )}
-      {call.corrections?.length && (
-        <div className="correction-toggle">
-          <Button onClick={() => setCorrected(!corrected)}>
-            {corrected ? "查看原始转写" : "查看修订对照"}
-          </Button>
-          <small>修订独立保留，不覆盖原文</small>
-        </div>
-      )}
-      <div className="transcript" ref={transcriptRef}>
-        {call.transcript.map((seg, n) => (
-          <div
-            key={n}
-            className={`utterance ${evidence.includes(n) ? "hit" : ""} ${call.audio && playing && current >= seg.at && current < (call.transcript[n + 1]?.at ?? Infinity) ? "playing" : ""}`}
-          >
-            <ShadcnButton variant="link" size="sm"
-              className="timecode"
-              aria-label={`定位到 ${clock(seg.at)}`}
-              onClick={() => {
-                if (audio.current) {
-                  audio.current.currentTime = seg.at;
-                  audio.current.play().catch(() => { setAudioError(true); });
-                }
-              }}
-              disabled={!call.audio || audioError}
-            >
-              {clock(seg.at)}
-            </ShadcnButton>
-            <span className={`speaker ${seg.speaker}`}>
-              {seg.speaker === "agent" ? "坐席" : "客户"}
-            </span>
-            <p>
-              {corrected
-                ? (call.corrections?.find((x) => x.segment === n)?.text ??
-                  seg.text)
-                : seg.text}
-              {corrected && call.corrections?.some((x) => x.segment === n) && (
-                <small className="correction-original">
-                  原文：{seg.text}
-                  <br />
-                  {call.corrections.find((x) => x.segment === n)?.reason}
-                </small>
-              )}
-            </p>
-            {evidence.includes(n) && <span className="hit-label">证据</span>}
-          </div>
-        ))}
-      </div>
-      {!problemDetail && rule && version && (
-        <section className="basis evidence-basis">
-          <h3>
-            判断依据 · {rule.id} / V{version.version}
-          </h3>
-          <p>
-            <b>{rule.name}</b> · {rule.description}
-          </p>
-          <div className="basis-params">
-            <span>业务：{version.scope}</span>
-            {rule.editable === "threshold" && <span>静默阈值：{version.threshold} 秒</span>}{rule.editable === "trigger" && <span>提醒触发：{version.trigger}</span>}
-          </div>
-          {Object.entries(version.resources).map(([id, v]) => {
-            const r = state.resources.find((r) => r.id === id),
-              snapshot = r?.versions.find((x) => x.version === v);
-            return (
-              <div className="resource-excerpt" key={id}>
-                <b>
-                  {r?.name} · V{v}
-                </b>
-                <p>{snapshot?.content}</p>
-                <small>例外：{snapshot?.exception}</small>
-              </div>
-            );
-          })}
-          <small>
-            检测批次 {f?.batchId} · 保留命中时版本，不随当前参数改变
-          </small>
-        </section>
-      )}
-      <Disclosure className="basis" title={<>检测批次与执行状态（{call.batches.length}）</>}>
-        {call.batches.map((b) => (
-          <div className="batch" key={b.id}>
-            <b>
-              {b.id} · {stamp(b.startedAt)}
-            </b>
-            <p>
-              {b.checks
-                .map(
-                  (x) =>
-                    `${x.name}：${{ pending: "待处理", running: "处理中", success: "执行成功", failed: "执行失败" }[x.state]}`,
-                )
-                .join(" / ")}
-            </p>
-            <small>
-              固定版本：
-              {Object.entries(b.ruleVersions)
-                .map(([k, v]) => `${k} V${v}`)
-                .join("、")}
-            </small>
-          </div>
-        ))}
-      </Disclosure>
+      {!problemDetail && !inline && conclusion && <div className="result-banner"><b>{verdictNames[conclusion.value]}</b><p>{conclusion.note}</p>{!conclusion.evidence && <small>旧版记录未保存独立证据，以下显示原始命中供参考。</small>}</div>}
+      {inline && conclusion && !conclusion.evidence && <p className="subtle">旧版记录未保存独立证据，以下显示原始命中供参考。</p>}
+      {!inline && ruleReference}
+      </EvidenceRecording>
     </div>
   );
 }

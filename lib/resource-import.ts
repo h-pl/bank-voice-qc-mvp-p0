@@ -16,7 +16,7 @@ export async function readResourceFile(file: File, type: string): Promise<string
   if (file.size > MAX_RESOURCE_BYTES) throw new Error("文件不能超过 5 MB。");
   if (!file.name.toLowerCase().endsWith(".csv")) throw new Error("当前仅支持 CSV，请使用对应模板保存为 UTF-8 CSV。");
   const text = validateImportedContent((await file.text()).replace(/^\uFEFF/, ""));
-  if(resourceSchemas[type]) { validateResourceRows(type,text); return text; }
+  if(resourceSchemas[type]) { validateResourceRows(type,text,2); return text; }
   const rows=parseCsv(text);
   const bad=rows.findIndex(row=>row.length!==1 || /[\r\n]/.test(row[0]));
   if(bad>=0) throw new Error(`第 ${bad+1} 行：CSV 必须只有一列，不含表头或单元格内换行。SOP 步骤使用中文逗号「，」。`);
@@ -27,14 +27,14 @@ export async function readResourceFile(file: File, type: string): Promise<string
 
 export function serializeRows(rows:string[][]):string {return rows.map(row=>row.map(cell=>/[",\r\n]/.test(cell)?`"${cell.replaceAll('"','""')}"`:cell).join(",")).join("\n");}
 export function resourceRows(kind:string,content:string):string[][] { const rows=parseCsv(content,true); return rows[0]?.join("|")===resourceSchemas[kind]?.fields.join("|") ? rows.slice(1) : rows; }
-export function validateResourceRows(kind:string,content:string):string[][] {
+export function validateResourceRows(kind:string,content:string,rowOffset=kind==="hotword"?1:2):string[][] {
  const schema=resourceSchemas[kind];if(!schema)throw new Error("请选择有效业务资源类型");
  const parsed=parseCsv(validateImportedContent(content).replace(/^\uFEFF/,""),true);
  if(parsed[0]?.join("|")!==schema.fields.join("|"))throw new Error(`表头必须为：${schema.fields.join("、")}`);
  const rows=parsed.slice(1);if(!rows.length)throw new Error("请至少填写一条数据");
  const keys=new Set<string>(); const steps=new Map<string,number[]>();
  rows.forEach((row,index)=>{
-  const fail=(message:string)=>{throw new Error(`第 ${index+2} 行：${message}`);};
+  const fail=(message:string)=>{throw new Error(`第 ${index+rowOffset} 行：${message}`);};
   if(row.length!==schema.fields.length)fail(`应有 ${schema.fields.length} 列`);
   for(const col of schema.required)if(!row[col]?.trim())fail(`${schema.fields[col]}必填`);
   const key=kind==="sop"?`${row[0]}-${row[1]}`:row[0].trim();

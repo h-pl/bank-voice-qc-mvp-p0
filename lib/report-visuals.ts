@@ -5,6 +5,7 @@ import { supportsWarning } from './strategy-schema.ts';
 
 export type TrendPoint = { start: string; end: string; label: string; value: number | null; count: number; denominator?: number };
 export type VisualGroup = { key: string; label: string; rows: Row[] };
+const findingVerdict = (f: State['findings'][number]) => latest(f)?.value === 'false_positive' && f.source === 'manual' ? 'manual_revoked' : latest(f)?.value ?? 'pending';
 const dayMs = 86400000;
 const utc = (date: string) => Date.parse(`${date}T00:00:00Z`);
 const isoDay = (stamp: number) => new Date(stamp).toISOString().slice(0, 10);
@@ -52,15 +53,16 @@ export function reportVisuals(s: State, metrics: Metric[], filter: ReportFilter)
   const findingById = new Map(s.findings.map(f => [f.id, f]));
   const risk = byKey.get('risk')?.rows ?? [];
   const indicators: VisualGroup[] = officialIndicators.filter(i => s.rules.some(r => r.indicator === i.id)).map(i => ({ key: i.id, label: i.name, rows: risk.filter(r => findingById.get(r.id)?.indicator === i.id) }));
-  const verdictNames = { risk: '风险成立', false_positive: '误报', insufficient: '证据不足', pending: '尚未判定' };
-  const allFindings: Row[] = s.findings.filter(f => callIds.has(f.callId)).map(f => ({ id: f.id, callId: f.callId, title: f.title, status: verdictNames[latest(f)?.value ?? 'pending'], date: callById.get(f.callId)!.endedAt! }));
-  const verdicts: VisualGroup[] = Object.entries(verdictNames).map(([key, label]) => ({ key, label, rows: allFindings.filter(r => (latest(findingById.get(r.id)!)?.value ?? 'pending') === key) }));
+  const verdictNames = { risk: '风险成立', false_positive: '自动误报', manual_revoked: '人工问题已撤销', insufficient: '证据不足', pending: '尚未判定' };
+  const allFindings: Row[] = s.findings.filter(f => callIds.has(f.callId)).map(f => ({ id: f.id, callId: f.callId, title: f.title, status: verdictNames[findingVerdict(f)], date: callById.get(f.callId)!.endedAt! }));
+  const verdicts: VisualGroup[] = Object.entries(verdictNames).map(([key, label]) => ({ key, label, rows: allFindings.filter(r => findingVerdict(findingById.get(r.id)!) === key) }));
   const teams = people.filter(p => p.role === 'agent' && (!filter.agent || p.id === filter.agent) && (!filter.group || s.calls.some(c => c.agentId === p.id && c.group === filter.group))).map(p => {
     const calls = callRows.filter(r => callById.get(r.id)?.agentId === p.id), ids = new Set(calls.map(r => r.id));
     const findings = allFindings.filter(r => ids.has(r.callId));
     return { id: p.id, name: p.name, group: s.calls.find(c => c.agentId === p.id)?.group ?? '', calls,
       known: findings.filter(r => !!latest(findingById.get(r.id)!)), risk: risk.filter(r => ids.has(r.callId)),
-      fp: findings.filter(r => latest(findingById.get(r.id)!)?.value === 'false_positive'),
+      fp: findings.filter(r => findingVerdict(findingById.get(r.id)!) === 'false_positive'),
+      manualRevoked: findings.filter(r => findingVerdict(findingById.get(r.id)!) === 'manual_revoked'),
       insufficient: findings.filter(r => latest(findingById.get(r.id)!)?.value === 'insufficient'),
       activeRemedies: s.remedies.filter(r => ids.has(findingById.get(r.findingId)?.callId ?? '') && !['done', 'terminated'].includes(r.status)).length,
       indicators: indicators.map(i => ({ ...i, rows: i.rows.filter(r => ids.has(r.callId)) })) };
@@ -95,9 +97,9 @@ export function issueReportVisuals(s: State, metrics: Metric[], key: IssueMetric
   const indicators: VisualGroup[] = officialIndicators.filter(i => supportsWarning(i.id) &&
     (s.rules.some(rule => rule.indicator === i.id) || rows.some(row => findingById.get(row.id)?.indicator === i.id)))
     .map(i => ({ key: i.id, label: i.name, rows: rows.filter(row => findingById.get(row.id)?.indicator === i.id) }));
-  const verdictNames = { risk: '风险成立', false_positive: '误报', insufficient: '证据不足', pending: '尚未判定' };
+  const verdictNames = { risk: '风险成立', false_positive: '自动误报', manual_revoked: '人工问题已撤销', insufficient: '证据不足', pending: '尚未判定' };
   const verdicts: VisualGroup[] = Object.entries(verdictNames).map(([value, label]) => ({ key: value, label,
-    rows: rows.filter(row => (latest(findingById.get(row.id)!)?.value ?? 'pending') === value),
+    rows: rows.filter(row => findingVerdict(findingById.get(row.id)!) === value),
   }));
   const titles: Record<IssueMetricKey, string> = {
     candidates: '自动预警 · 指标分布', risk: '成立问题 · 预警指标分布',
@@ -144,7 +146,8 @@ export function teamReportVisuals(s: State, metrics: Metric[], filter: ReportFil
       rows:selectedRows, denominator, value:key === 'riskcalls' ? ratio(selectedRows.length,denominator) : String(selectedRows.length),
       callCount:agentCallIds.size, findingCount:agentFindings.length,
       risk:agentFindings.filter(f => latest(f)?.value === 'risk').length,
-      fp:agentFindings.filter(f => latest(f)?.value === 'false_positive').length,
+      fp:agentFindings.filter(f => f.source === 'auto' && latest(f)?.value === 'false_positive').length,
+      manualRevoked:agentFindings.filter(f => f.source === 'manual' && latest(f)?.value === 'false_positive').length,
       insufficient:agentFindings.filter(f => latest(f)?.value === 'insufficient').length,
       indicators:indicators.map(i => {
         const matches=agentFindings.filter(f => f.indicator === i.id), ids=new Set(matches.map(f=>key === 'risk' ? f.id : f.callId));

@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { RecordText } from "./record-id";
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Button as ShadcnButton } from "./ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
-import { Input } from "./ui/input";
+import { InputGroup, InputGroupInput } from "./ui/input-group";
 import { Badge as ShadcnBadge } from "./ui/badge";
 import { Tabs as TabsRoot, TabsList, TabsTrigger } from "./ui/tabs";
 import { Icon, type IconName } from "./icon";
@@ -81,6 +82,8 @@ export function Empty({
     </div>
   );
 }
+const ModalLayerContext = createContext<(() => () => void) | null>(null);
+
 export function Modal({
   title,
   children,
@@ -88,27 +91,43 @@ export function Modal({
   variant = "default",
   description,
   footer,
+  containEscape = false,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
-  variant?: "default" | "notification" | "navigation" | "evidence" | "resource" | "action";
+  variant?: "default" | "notification" | "navigation" | "evidence" | "resource" | "action" | "record";
   description?: string;
   footer?: ReactNode;
+  containEscape?: boolean;
 }) {
+  const parentLayer = useContext(ModalLayerContext);
+  const [childCount, setChildCount] = useState(0);
+  const registerChild = useCallback(() => {
+    setChildCount(count => count + 1);
+    return () => setChildCount(count => Math.max(0, count - 1));
+  }, []);
   const descriptionId = useId();
   const prior = useRef<HTMLElement | null>(null);
-  useEffect(() => { prior.current = document.activeElement as HTMLElement | null; }, []);
-  return <Dialog open onOpenChange={open=>{if(!open)onClose();}}>
-    <DialogContent showCloseButton={false} className={`modal ${variant}-dialog`} aria-describedby={description ? descriptionId : undefined} onCloseAutoFocus={event=>{event.preventDefault();prior.current?.focus();}} onPointerDownOutside={event=>event.preventDefault()} onEscapeKeyDown={event=>{
+  const content = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    prior.current ??= document.activeElement as HTMLElement | null;
+    return parentLayer?.();
+  }, [parentLayer]);
+  return <ModalLayerContext.Provider value={registerChild}><Dialog open onOpenChange={open=>{if(!open)onClose();}}>
+    <DialogContent ref={content} layerCovered={childCount > 0} layerNested={!!parentLayer} showCloseButton={false} className={`modal ${variant}-dialog`} aria-describedby={description ? descriptionId : undefined} onOpenAutoFocus={event=>{ prior.current ??= document.activeElement as HTMLElement | null; event.preventDefault(); content.current?.focus({preventScroll:true}); }} onCloseAutoFocus={event=>{event.preventDefault();const target=prior.current;requestAnimationFrame(()=>{if(target?.isConnected)target.focus({preventScroll:true});});}} onPointerDownOutside={event=>event.preventDefault()} onEscapeKeyDown={event=>{
       // Base UI popups handle Escape after Radix's capture listener. Keep the parent open.
+      const openDialogs = document.querySelectorAll('[data-slot="dialog-content"][data-state="open"]');
+      if(openDialogs[openDialogs.length - 1] !== content.current) { event.preventDefault(); return; }
       const target=event.target;
-      if(target instanceof Element && target.closest('[role="dialog"]')?.querySelector('[data-slot="combobox-chip-input"][aria-expanded="true"]')) event.preventDefault();
+      if(target instanceof Element && target.closest('[role="dialog"]')?.querySelector('[data-slot="combobox-chip-input"][aria-expanded="true"]')) { event.preventDefault(); return; }
+      if(document.querySelector('[data-slot="tooltip-content"][data-state$="open"]')) { event.preventDefault(); return; }
+      if(containEscape) { event.preventDefault(); event.stopImmediatePropagation(); onClose(); }
     }}>
-      <header><div><DialogTitle>{title}</DialogTitle>{description && <DialogDescription id={descriptionId} className="modal-description">{description}</DialogDescription>}</div><ShadcnButton type="button" variant="ghost" size="icon" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></ShadcnButton></header>
-      {variant === "action" ? children : <><div className="modal-body">{children}</div>{variant !== "navigation" && <div className="modal-actions">{footer ?? <Button onClick={onClose}>关闭</Button>}</div>}</>}
+      <header><div><DialogTitle>{title}</DialogTitle>{description && <DialogDescription id={descriptionId} className="modal-description"><RecordText text={description}/></DialogDescription>}</div><ShadcnButton type="button" variant="ghost" size="icon" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><Icon name="close"/></ShadcnButton></header>
+      {variant === "action" ? children : <><div className="modal-body">{children}</div>{variant !== "navigation" && <div className="modal-actions">{footer ?? <Button onClick={onClose}>{parentLayer ? "返回上一级" : "关闭"}</Button>}</div>}</>}
     </DialogContent>
-  </Dialog>;
+  </Dialog></ModalLayerContext.Provider>;
 }
 
 
@@ -121,17 +140,18 @@ export function SearchField({ value, onValueChange, label, placeholder, name }: 
   const composing = useRef(false);
   useEffect(() => { if (input.current && !composing.current) input.current.value = value; }, [value]);
   const commit = (next: string) => {
-    if (onValueChange(next) === false && input.current) input.current.value = value;
+    const accepted = onValueChange(next) !== false;
+    if (input.current) input.current.value = accepted ? next : value;
   };
-  return <div className="search-box">
+  return <InputGroup className="search-box">
     <Icon name="search" size={17}/>
-    <Input ref={input} type="search" name={name} aria-label={label} autoComplete="off" placeholder={placeholder} defaultValue={value}
+    <InputGroupInput ref={input} type="search" name={name} aria-label={label} autoComplete="off" placeholder={placeholder} defaultValue={value}
       onCompositionStart={() => { composing.current = true; }}
       onCompositionEnd={e => { composing.current = false; commit(e.currentTarget.value); }}
       onChange={e => { if (!composing.current) commit(e.currentTarget.value); }}
       onKeyDown={e => { if (e.key === "Escape" && !e.nativeEvent.isComposing && !composing.current) { e.preventDefault(); commit(""); } }}/>
     <ShadcnButton variant="ghost" size="icon-sm" className="search-clear" type="button" aria-label={`清除${label}`} title={`清除${label}`} disabled={!value} style={{visibility:value ? "visible" : "hidden"}} onClick={() => { composing.current = false; commit(""); input.current?.focus(); }}><Icon name="close" size={15}/></ShadcnButton>
-  </div>;
+  </InputGroup>;
 }
 
 export function Tabs<T extends string>({ value, options, onChange, label, panelId, className = "tabs" }: {

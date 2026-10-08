@@ -5,6 +5,8 @@
 .review2-shell .sidebar nav a:not(.active):hover { color:var(--ink); }
 .review2-shell .sidebar nav a.active { color:var(--accent-ink); background:var(--selection-bg); }
 :is(.review-workspace2,.case-workspace) { border:0; border-radius:0; background:transparent; }
+/* Preserve the 3px control focus ring at the flush workspace edges. */
+.work-panel:is(.review-workspace2,.case-workspace) { overflow-clip-margin:4px; }
 :is(.review-workspace2,.case-workspace) .workspace-tabs-row { padding:0; background:transparent; }
 :is(.review-workspace2,.case-workspace) .workspace-tabs-row .tabs { padding:0 0 10px; }
 :is(.review-workspace2,.case-workspace) .filters { padding:12px 0 18px; background:transparent; border:0; gap:12px; }
@@ -15,9 +17,7 @@
 :is(.review-workspace2,.case-workspace) .filters [data-slot="select-trigger"],
 :is(.review-workspace2,.case-workspace) .filters .btn[data-slot="button"] { height:var(--review2-control-height); min-height:var(--review2-control-height); border-radius:7px; border:1px solid var(--line); box-shadow:none; }
 :is(.review-workspace2,.case-workspace) .filters .search-box input { height:100%; min-height:0; }
-:is(.review-workspace2,.case-workspace) .filters .search-box:focus-within,
-:is(.review-workspace2,.case-workspace) .filters [data-slot="select-trigger"]:focus-visible,
-:is(.review-workspace2,.case-workspace) .filters .btn[data-slot="button"]:focus-visible { border-color:var(--focus); box-shadow:0 0 0 2px rgb(173 74 25 / 12%); }
+/* Interaction states are shared in control-states.css. */
 @media (max-width:700px) { :is(.review-workspace2,.case-workspace) .filters { --review2-control-height:44px; } }
 
 :is(.review-workspace2,.case-workspace) .review2-overdue-filter { color:var(--red); gap:7px; border:1px solid transparent; font-size:12px; }
@@ -193,7 +193,7 @@
 /* Shared item geometry and hover surface across the three detail tabs. */
 :is(.review-workspace2,.case-workspace) { --review-item-padding:18px; --review-item-gap:16px; }
 :is(.review-workspace2,.case-workspace) .case-content .review2-issue,
-:is(.review-workspace2,.case-workspace) .case-content .related-list > button[data-slot="button"],
+:is(.review-workspace2,.case-workspace) .case-content .related-list > :is(button,.record-row)[data-slot="button"],
 :is(.review-workspace2,.case-workspace) .case-content .event-timeline li {
   box-sizing:border-box; width:100%; min-width:0; margin:0;
   padding:var(--review-item-padding); border:0; border-radius:10px;
@@ -205,17 +205,17 @@
 @media (hover:hover) and (pointer:fine) {
   :is(.review-workspace2,.case-workspace) .case-content .review2-issue:hover,
   :is(.review-workspace2,.case-workspace) .case-content .event-timeline li:hover,
-  :is(.review-workspace2,.case-workspace) .case-content .related-list > button[data-slot="button"]:hover { background:var(--surface-subtle); }
+  :is(.review-workspace2,.case-workspace) .case-content .related-list > :is(button,.record-row)[data-slot="button"]:hover { background:var(--surface-subtle); }
 }
 :is(.review-workspace2,.case-workspace) .case-content .review2-issue:has(:focus-visible),
-:is(.review-workspace2,.case-workspace) .case-content .related-list > button[data-slot="button"]:focus-visible { background:var(--surface-subtle); }
-:is(.review-workspace2,.case-workspace) .case-content .related-list > button[data-slot="button"]:focus-visible {
+:is(.review-workspace2,.case-workspace) .case-content .related-list > :is(button,.record-row)[data-slot="button"]:focus-visible { background:var(--surface-subtle); }
+:is(.review-workspace2,.case-workspace) .case-content .related-list > :is(button,.record-row)[data-slot="button"]:focus-visible {
   outline:2px solid var(--focus); outline-offset:-3px;
 }
 @media (prefers-reduced-motion:reduce) {
   :is(.review-workspace2,.case-workspace) .case-content .review2-issue,
   :is(.review-workspace2,.case-workspace) .case-content .event-timeline li,
-  :is(.review-workspace2,.case-workspace) .case-content .related-list > button[data-slot="button"] { transition:none; }
+  :is(.review-workspace2,.case-workspace) .case-content .related-list > :is(button,.record-row)[data-slot="button"] { transition:none; }
 }
 :is(.review-workspace2,.case-workspace) .case-content .event-timeline li { grid-template-columns:14px minmax(0,1fr); gap:14px; }
 :is(.review-workspace2,.case-workspace) .case-content .event-timeline li > div { min-width:0; }
@@ -281,3 +281,91 @@
 }
 
 .case-workspace .detail:has(>.empty){background:var(--surface);border-radius:12px}
+
+/* Related cases use the same rows in reviews, appeals and remediation. */
+:is(.review-workspace2,.case-workspace) .case-content .related-list-unified>.record-row[data-slot=button]{display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:14px;min-height:80px}
+.related-list-unified>.record-row>svg{width:20px;height:20px;color:var(--muted)}
+.related-list-unified>.record-row>div{min-width:0}
+.related-list-unified>.record-row>div>b{display:block;font-size:14px;line-height:1.65;font-weight:600;overflow-wrap:anywhere}
+.related-list-unified>.record-row>div>small{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:5px;font-size:12px;line-height:1.6;color:var(--muted)}
+.related-list-unified>.record-row>.badge{justify-self:end;max-width:none;white-space:normal;text-align:left}
+:is(.review-workspace2,.case-workspace) .case-content .related-list-unified>.record-row:has(:focus-visible){background:var(--surface-subtle)}
+@media(max-width:700px){
+ :is(.review-workspace2,.case-workspace) .case-content .related-list-unified>.record-row[data-slot=button]{grid-template-columns:20px minmax(0,1fr);gap:8px 12px;padding:14px}
+ .related-list-unified>.record-row>svg{align-self:start;margin-top:2px}
+ .related-list-unified>.record-row>.badge{grid-column:2;justify-self:start;max-width:100%}
+}
+
+/* Evidence rows remain open; complete IDs can wrap without squeezing status. */
+:is(.review-workspace2,.case-workspace) .case-content .case-supplement{border:0}
+:is(.review-workspace2,.case-workspace) .case-main .detail-heading>div:first-child{display:flex;flex-wrap:wrap;gap:8px 12px}
+:is(.review-workspace2,.case-workspace) .case-main .detail-heading .overline{min-width:0;max-width:100%}
+:is(.review-workspace2,.case-workspace) .case-main .detail-heading h2{order:1;flex-basis:100%;margin-top:0}
+
+/* Call filters share one desktop row, with one date-range control. */
+.calls-workspace .filters.call-filters-inline{gap:8px;flex-wrap:wrap}
+.calls-workspace .filters.call-filters-inline .search-box{flex:1 1 180px;width:auto;min-width:160px;max-width:280px}
+.calls-workspace .filters.call-filters-inline>.select-field{min-width:100px;flex:0 0 auto}
+.calls-workspace .filters.call-filters-inline>.date-range-field{flex:0 0 236px;width:236px;margin-top:0}
+.calls-workspace .filters.call-filters-inline .date-picker-trigger{height:40px;min-height:40px;font-size:13px;white-space:nowrap}
+.calls-workspace .filters.call-filters-inline .filter-actions{flex:0 0 auto;flex-wrap:nowrap;margin-left:auto}
+.date-range-popover .date-range-hint{margin:0;padding:12px 12px 0;font-size:12px;color:var(--muted)}
+.date-range-popover .date-range-summary{margin:0;padding:8px 12px;font-size:12px;color:var(--ink);border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+@media(max-width:700px){
+ .calls-workspace .filters.call-filters-inline .search-box{flex-basis:100%;max-width:none;min-width:0}
+ .calls-workspace .filters.call-filters-inline>.date-range-field{flex:1 1 100%;width:100%}
+ .calls-workspace .filters.call-filters-inline>.select-field{flex:1 1 100px;min-width:0}
+ .calls-workspace .filters.call-filters-inline .date-picker-trigger{height:44px;min-height:44px}
+ .calls-workspace .filters.call-filters-inline .filter-actions{width:auto}
+}
+
+
+/* Single-alert reading layout: compact context, followed by uninterrupted transcript. */
+.case-workspace .alert-detail-shell .case-content > .alert-evidence { padding:16px 0 0; margin:0; }
+.inline-evidence-surface .evidence-reference-links { margin:0 0 8px; }
+.inline-evidence-surface .evidence-reference-links > div > span { line-height:24px; }
+.inline-evidence-surface .evidence-reference-links b { font-weight:500; }
+.inline-evidence-surface .evidence-reader .audio-missing { padding:0; margin:0 0 20px; border:0; border-radius:0; background:transparent; gap:6px; color:var(--muted); min-height:24px; }
+.inline-evidence-surface .evidence-reader .audio-missing b { font-size:12px; font-weight:400; color:var(--muted); }
+.inline-evidence-surface .evidence-reader .recording-player { margin:12px 0 20px; }
+.inline-evidence-surface .evidence-transcript-heading h3 { font-size:15px; font-weight:600; }
+.inline-evidence-surface .evidence-reader .evidence-reading-hint { margin:0 0 12px; }
+.inline-evidence-surface .evidence-reader .utterance { grid-template-columns:44px 32px minmax(0,1fr); padding:10px 12px; border:1px solid transparent; border-left:3px solid transparent; border-radius:6px; gap:10px; }
+.inline-evidence-surface .evidence-reader .utterance + .utterance { margin-top:4px; }
+.inline-evidence-surface .evidence-reader .utterance.hit { border-color:var(--accent-border, #f6dfc9); border-left-color:var(--orange); }
+.inline-evidence-surface .evidence-reader .utterance p { min-width:0; }
+.inline-evidence-surface .evidence-reader .utterance.hit p { color:var(--ink); font-weight:500; }
+.inline-evidence-surface .evidence-reader .utterance p > .hit-label { display:inline-block; margin-left:10px; padding:0 5px; border-radius:3px; line-height:20px; vertical-align:baseline; white-space:nowrap; background:var(--surface); color:var(--accent-ink); font-size:11px; font-weight:500; }
+@media (max-width:600px) {
+  .inline-evidence-surface .evidence-reader .utterance { grid-template-columns:44px 32px minmax(0,1fr); gap:4px 8px; }
+  .inline-evidence-surface .evidence-reader .utterance p { grid-column:1 / -1; grid-row:2; }
+  .inline-evidence-surface .evidence-reader .audio-missing > svg { margin-top:0; }
+}
+
+
+/* Review work orders expose full issue content without summary cards or detail dialogs. */
+.review-workspace2 .review2-findings-inline { display:block; padding:16px 0 0; }
+.review2-findings-inline .review2-inline-issue { padding:0; background:transparent; border:0; }
+.review2-findings-inline .review2-inline-issue + .review2-inline-issue { margin-top:32px; padding-top:24px; border-top:1px solid var(--line); }
+.review2-inline-issue-title { display:flex; align-items:baseline; gap:12px; margin:0 0 12px; font-size:16px; font-weight:600; }
+.review2-inline-issue-title > span { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+.review2-findings-inline .finding-detail .finding-detail-section { margin-top:20px; padding:0; }
+.review2-findings-inline .finding-detail-meta + .finding-detail-section { margin-top:12px; }
+.review2-findings-inline .finding-detail-section h3 { font-size:14px; margin-bottom:8px; }
+.review2-findings-inline .finding-detail-section > .review2-summary-fields + h3 { margin-top:16px; }
+.review2-findings-inline .review2-summary-fields { gap:8px 20px; }
+.review2-findings-inline .review2-summary-fields + .review2-summary-fields { margin-top:12px; }
+.review2-findings-inline .finding-checks { gap:10px; margin-top:12px; }
+.review2-findings-inline .finding-checks > div { padding:0; background:transparent; border-radius:0; }
+.review2-findings-inline .finding-checks > div > div { justify-content:flex-start; gap:12px; }
+.review2-findings-inline .finding-checks p { margin:4px 0 0; }
+.review2-findings-inline .finding-review-result { flex-wrap:wrap; gap:8px; }
+.review2-findings-inline .finding-conclusions { margin-top:16px; }
+.review2-findings-inline .finding-audio .evidence-transcript-heading h3 { margin:0; font-size:15px; }
+.review2-findings-inline .finding-audio .evidence-reader .utterance p { margin:0; }
+@media (max-width:600px) {
+  .review2-findings-inline .finding-checks > div > div { flex-wrap:wrap; gap:4px 8px; }
+}
+
+/* Work-order header owns source and indicator metadata. */
+.review2-findings-inline .finding-detail > .finding-detail-section:first-child { margin-top:0; }

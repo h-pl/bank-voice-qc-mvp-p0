@@ -1,3 +1,4 @@
+import { taskDeadlineLimit } from './task-deadlines.ts';
 import type { AlertTiming } from "./alert-deadlines.ts";
 import { prepareNewPolicyAssociations } from "./policy-associations.ts";
 import { withPolicyBindingFeatures, validateBindings, bindingPolicyVersions, refreshPolicyReferences, type IndicatorBinding } from "./indicator-bindings.ts";
@@ -97,6 +98,10 @@ export type Distribution = {
   status: "pending" | "accepted" | "appealed";
   goal: string; standard: string; observation: string; sampleCount: number;
   dueAt: string; inspector: string; at: string;
+  responseDueAt?: string; originalResponseDueAt?: string; originalDueAt?: string;
+  responseOverdueAt?: string; completionOverdueAt?: string; respondedAt?: string;
+  extensionRequest?: { note: string; at: string };
+  deadlineHistory?: { at: string; dueAt: string; responseDueAt?: string; note: string }[];
 };
 export type Finding = Base & {
   alertTiming?: AlertTiming;
@@ -214,6 +219,7 @@ export type Remedy = Base & {
     | "done"
     | "terminated";
   supervisorReason?: "approve" | "return" | "adjust";
+  adjustmentOrigin?: "pending" | "executing";
   goal: string;
   standard: string;
   standardVersion: number;
@@ -504,6 +510,10 @@ export const actionNames: Record<string, string> = {
   decide: "提交申诉裁定",
   accept_remedy: "接收整改",
   adjust_request: "申请调整要求",
+  reject_adjustment: "不同意调整，按原要求继续",
+  request_distribution_extension: "申请调整分发期限",
+  adjust_distribution: "调整分发期限",
+  reject_distribution_extension: "维持原期限",
   material: "提交整改材料",
   save_acceptance: "保存验收草稿",
   verify: "提交验收意见",
@@ -521,7 +531,7 @@ export const actionNames: Record<string, string> = {
   discard_rule: "放弃参数草稿",
   save_resource: "保存资源草稿",
   check_resource: "查看资源预设检查",
-  publish_resource: "发布资源版本",
+  publish_resource: "发布资源",
   switch_resource: "切换规则引用",
   discard_resource: "放弃资源草稿",
   followup: "登记补证跟进",
@@ -529,8 +539,12 @@ export const actionNames: Record<string, string> = {
 // Shared by detail buttons, forms and event history so each stage uses the same wording.
 export function actionLabel(s: State, id: string, action: string): string {
   const item = entity(s, id);
+  if (item && "standardVersion" in item && item.status === "supervisor" && item.supervisorReason === "adjust") {
+    if (action === "change_standard") return "同意调整要求";
+    if (action === "extend") return "同意调整期限";
+  }
   if (action === "check_rule" || action === "check_resource") return "检查草稿";
-  if (action === "publish_rule" || action === "publish_resource") return "发布新版本";
+  if (action === "publish_rule" || action === "publish_resource") return "发布更新";
   if (item && "conclusionVersion" in item && !("standardVersion" in item) && action === "decide") return "确认申诉裁定";
   if (item && "standardVersion" in item && action === "verify") return "提交核验结果";
   if (item && "standardVersion" in item && action === "close_remedy") return "确认整改完成并归档";
@@ -572,6 +586,10 @@ export function actions(s: State, id: string): string[] {
         // Missing evidence belongs to the assigned review, not a fourth triage route.
 
       }
+      if (e.distribution?.status === "pending") {
+        out.push("adjust_distribution");
+        if (e.distribution.extensionRequest) out.push("reject_distribution_extension");
+      }
       if (latest(e) && e.status === "delivered" && !e.distribution) out.push("followup");
       if (latest(e)?.value === "false_positive" && e.source === "auto") out.push("optimization_feedback");
     }
@@ -582,7 +600,7 @@ export function actions(s: State, id: string): string[] {
       }
       const c = latest(e);
       if (c) {
-        if (e.distribution?.status === "pending") out.push("accept_result");
+        if (e.distribution?.status === "pending") out.push("accept_result", ...(!e.distribution.extensionRequest ? ["request_distribution_extension"] : []));
         if (e.seenVersion !== c.version) out.push("ack");
         out.push("feedback_result");
         if (
@@ -665,6 +683,7 @@ export function actions(s: State, id: string): string[] {
       if (!e.pause && (e.status !== "supervisor" && e.status !== "response" || e.supervisorReason === "adjust"))
         out.push("change_standard", "extend", ...(e.inspector ? ["reassign"] : e.origin === "direct" ? ["assign_inspector"] : []));
       if (e.status === "supervisor" && !e.pause) {
+        if (e.supervisorReason === "adjust") out.push("reject_adjustment");
         if (
           e.supervisorReason === "approve" &&
           e.acceptance?.result === "pass" &&
@@ -738,12 +757,13 @@ export type Input = {
   sourceFile?: string;
   referenceRevs?: Record<string, number>;
   findingId?: string;
-  dispositions?: Record<string, { remedy: boolean; noRemedy?: string; goal?: string; standard?: string; owner?: string; dueAt?: string; sampleCount?: number; observation?: string }>;
+  dispositions?: Record<string, { remedy: boolean; noRemedy?: string; goal?: string; standard?: string; owner?: string; dueAt?: string; responseDueAt?: string; sampleCount?: number; observation?: string }>;
   refs?: string[];
   resourceType?: Resource["type"];
   note?: string;
   owner?: string;
   dueAt?: string;
+  responseDueAt?: string;
   value?: string;
   evidence?: number[];
   opinions?: Record<string, Opinion>;
@@ -904,7 +924,13 @@ export function standaloneSupplements(s: State) {
 }
 export function visibleTaskTarget(s: State, id: string) {
   const item = entity(s, id);
-  return item && "executor" in item && canSee(s, item.target) ? item.target : id;
+  if (item && "executor" in item && canSee(s, item.target)) return visibleTaskTarget(s, item.target);
+  if (item && "conclusions" in item && item.source === "manual" && latest(item)?.value === "false_positive") {
+    const appeal = s.appeals.findLast(a => a.findingId === id && canSee(s, a.id));
+    const review = s.reviews.findLast(r => r.findingIds.includes(id) && canSee(s, r.id));
+    return appeal?.id ?? review?.id ?? item.callId;
+  }
+  return id;
 }
 export function agentWorkItems(s: State): Entity[] {
   return [...s.findings.filter(f => canSee(s, f.id) && (!!latest(f) || !!f.reminder)), ...standaloneSupplements(s)];
@@ -1039,8 +1065,20 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   for (const task of [...s.reviews, ...s.appeals, ...s.remedies]) {
     if (Date.parse(task.dueAt) < now.getTime() && !["done","cancelled","terminated","withdrawn","rejected"].includes(task.status) && !("pause" in task && task.pause)) task.firstOverdueAt ??= task.dueAt;
   }
+  for (const f of s.findings.filter(f => f.id === e.id)) {
+    const d = f.distribution;
+    if (d?.status !== "pending") continue;
+    if (d.responseDueAt && Date.parse(d.responseDueAt) <= now.getTime()) d.responseOverdueAt ??= d.responseDueAt;
+    if (Date.parse(d.dueAt) <= now.getTime()) d.completionOverdueAt ??= d.dueAt;
+  }
   const due = () => {
     must(future(i.dueAt, now), "请选择晚于当前时间的期限。");
+    const limit = taskDeadlineLimit(s, e);
+    must(!limit || Date.parse(i.dueAt!) <= Date.parse(limit), "办理期限超过上级处置期限（含主管预留时间）；剩余时间不足时请联系主管升级处理，不得重置总期限。");
+    if (s.appeals.some(ap => ap.id === e.id)) {
+      const child = s.reviews.find(r => r.appealId === e.id && !["done", "cancelled"].includes(r.status));
+      if (a === "extend" && child) must(Date.parse(child.dueAt) <= Date.parse(i.dueAt!), "申诉截止不能早于未完成的核查期限，请先调整核查期限。");
+    }
     return i.dueAt!;
   };
   const inspector = () => {
@@ -1134,7 +1172,9 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     must(Number.isInteger(d.sampleCount) && d.sampleCount! >= 1 && d.sampleCount! <= 20, "样例数量须为 1–20");
     must(future(d.dueAt,now), "请选择晚于当前时间的整改期限");
     must(source === "direct" || validInspector(owner), "复核或抽检结果必须沿用经办质检员");
-    f.distribution = {source,version:latest(f)!.version,status:"pending",goal:d.goal!,standard:d.standard!,observation:d.observation!,sampleCount:d.sampleCount!,dueAt:d.dueAt!,inspector:owner,at};
+    const responseDueAt = d.responseDueAt ?? new Date(Math.min(now.getTime() + 4 * 3600000, Date.parse(d.dueAt!))).toISOString();
+    must(future(responseDueAt,now) && Date.parse(responseDueAt) <= Date.parse(d.dueAt!), "回应期限须晚于当前时间，且不晚于整改完成期限");
+    f.distribution = {source,version:latest(f)!.version,status:"pending",goal:d.goal!,standard:d.standard!,observation:d.observation!,sampleCount:d.sampleCount!,dueAt:d.dueAt!,originalDueAt:d.dueAt!,responseDueAt,originalResponseDueAt:responseDueAt,inspector:owner,at};
   };
   const createRemedy = (f: Finding, owner?: string, origin?: Remedy["origin"]) => {
     const d=f.distribution;
@@ -1142,13 +1182,27 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     must(!s.remedies.some(r=>r.findingId===f.id && r.conclusionVersion===d.version && !terminalRemedy(r)), "本结论已有整改任务");
     const assigned=owner ?? d.inspector;
     must(validInspector(assigned) || d.source==="direct" && !owner, "此来源必须沿用已记录的质检员");
-    s.remedies.push({id:`${uid("REC")}-${f.id}`,rev:0,findingId:f.id,conclusionVersion:d.version,agentId:callFor(s,f.id)!.agentId,inspector:assigned,origin:origin ?? d.source,status:"executing",goal:d.goal,standard:d.standard,standardVersion:1,sampleCount:d.sampleCount,observation:d.observation,dueAt:d.dueAt,originalDueAt:d.dueAt,createdAt:at,round:1,materials:[],acceptanceHistory:[],pauseHistory:[],standards:[{version:1,goal:d.goal,standard:d.standard,note:"按已分发要求进入整改",at}]});
+    s.remedies.push({id:`${uid("REC")}-${f.id}`,rev:0,findingId:f.id,conclusionVersion:d.version,agentId:callFor(s,f.id)!.agentId,inspector:assigned,origin:origin ?? d.source,status:"executing",goal:d.goal,standard:d.standard,standardVersion:1,sampleCount:d.sampleCount,observation:d.observation,dueAt:d.dueAt,originalDueAt:d.originalDueAt ?? d.dueAt,firstOverdueAt:d.completionOverdueAt,createdAt:at,round:1,materials:[],acceptanceHistory:[],pauseHistory:[],standards:[{version:1,goal:d.goal,standard:d.standard,note:"按已分发要求进入整改",at}]});
     d.status="accepted";f.seenVersion=d.version;f.rev++;
   };
   const returnToAgent = (r: Remedy) => {
     (r.rounds ??= []).push({round:r.round,standard:r.standard,standardVersion:r.standardVersion,goal:r.goal,sampleCount:r.sampleCount,observation:r.observation,materials:structuredClone(r.materials),acceptance:structuredClone(r.acceptance),at});
     r.round++;r.status="executing";r.materials=[];r.acceptance=undefined;r.supervisorReason=undefined;r.supplementRequirements=i.note;
   };
+  if (a === "request_distribution_extension") {
+    const d = (e as Finding).distribution!;
+    d.extensionRequest = {note:i.note!,at};
+  }
+  if (a === "reject_distribution_extension") delete (e as Finding).distribution!.extensionRequest;
+  if (a === "adjust_distribution") {
+    const d = (e as Finding).distribution!;
+    must(future(i.dueAt,now), "完成期限须晚于当前时间");
+    const responseDueAt = i.responseDueAt ?? d.responseDueAt;
+    must(responseDueAt && (responseDueAt === d.responseDueAt || future(responseDueAt,now)) && Date.parse(responseDueAt) <= Date.parse(i.dueAt!), "回应期限须在完成期限之内；新回应期限须晚于当前时间");
+    d.originalDueAt ??= d.dueAt; d.originalResponseDueAt ??= d.responseDueAt;
+    (d.deadlineHistory ??= []).push({at,dueAt:d.dueAt,responseDueAt:d.responseDueAt,note:i.note!});
+    d.dueAt = i.dueAt!; d.responseDueAt = responseDueAt; delete d.extensionRequest;
+  }
   if(a==="dispatch") { const f=e as Finding; conclude(f,"risk",i.note!,undefined,undefined,evidence(f.callId));distribution(f,i,"direct",""); }
   if(a==="accept_result") createRemedy(e as Finding);
   if(a==="assign_inspector") {
@@ -1411,7 +1465,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       originalDueAt: new Date(now.getTime() + 86400000).toISOString(),
     };
     s.appeals.push(ap);
-    if(f.distribution) {f.distribution.status="appealed";f.seenVersion=c.version;}
+    if(f.distribution) {f.distribution.status="appealed";f.distribution.respondedAt=at;f.seenVersion=c.version;}
     s.remedies
       .filter((r) => r.findingId === f.id && !terminalRemedy(r))
       .forEach((r) => pauseRemedy(r, ap.id, now));
@@ -1429,7 +1483,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       f = s.findings.find((f) => f.id === ap.findingId)!;
     must(
       latest(f)?.version === ap.conclusionVersion,
-      "结论版本已变化，请查看最新结果",
+      "结论已变化，请查看最新结果",
     );
     if (a === "accept_appeal") {
       ap.status = "accepted";
@@ -1445,6 +1499,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
         .forEach((r) => resumeRemedy(r, ap.id, now));
     }
     if (a === "assign_appeal") {
+      must(i.dueAt && Date.parse(i.dueAt) <= Date.parse(ap.dueAt), "核查期限不得晚于申诉总期限，请先调整申诉期限");
       const own = inspector();
       if (own === latest(f)?.reviewer) {
         must(
@@ -1637,8 +1692,14 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "accept_remedy") (e as Remedy).status = "executing";
   if (a === "adjust_request") {
     const r = e as Remedy;
+    r.adjustmentOrigin = r.status === "pending" ? "pending" : "executing";
     r.status = "supervisor";
     r.supervisorReason = "adjust";
+  }
+  if (a === "reject_adjustment") {
+    const r = e as Remedy;
+    must(r.status === "supervisor" && r.supervisorReason === "adjust", "当前没有待处理的调整申请");
+    r.status = r.adjustmentOrigin ?? "executing"; r.supervisorReason = undefined; r.adjustmentOrigin = undefined;
   }
   if (a === "material") {
     const r = e as Remedy;
@@ -1757,6 +1818,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     if (Date.parse(e.dueAt) < now.getTime())
       (e as Review | Appeal | Remedy).firstOverdueAt ??= e.dueAt;
     e.dueAt = due();
+    if ("standardVersion" in e && e.supervisorReason === "adjust") { e.status = e.adjustmentOrigin ?? "executing"; e.supervisorReason = undefined; e.adjustmentOrigin = undefined; }
   }
   if (a === "start_detection") {
     const c = e as Call;
@@ -1897,7 +1959,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     must(owner !== ("findingIds" in e ? e.owner : "standardVersion" in e ? e.inspector : undefined), "请选择另一位质检员进行转派");
     if ("findingIds" in e) {
       e.owner = owner;
-      e.dueAt = due();
+      if (i.dueAt && i.dueAt !== e.dueAt) e.dueAt = due();
       if (e.status === "supervisor") e.status = "working";
       if (e.appealId) {
         if (e.status === "response") e.status = "working";
@@ -1910,7 +1972,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       e.inspector = owner;
       e.acceptance = undefined;
       if (e.materials.length) e.status = "verification";
-      e.dueAt = due();
+      if (i.dueAt && i.dueAt !== e.dueAt) e.dueAt = due();
     }
   }
   if (a === "save_resource" || a === "create_resource") {
@@ -1940,6 +2002,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       };
       s.resources.push(r);
     }
+    if (r.kind === "hotword" && i.content) i.content = i.content.trim();
     must(
       (i.content ?? "").trim().length >= 4 && (r.kind || (i.scope && i.resourceRole)),
       r.kind === "voice" ? "请填写声纹记录" : "请填写内容、业务范围和适用角色",
@@ -1947,7 +2010,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     if (r.kind) {
       i.scope="全部业务";i.resourceRole="双方";i.exception="";
       must(resourceSchemas[r.kind]?.group===r.type,"资源类型与模板不一致");
-      validateResourceRows(r.kind,i.content!);
+      validateResourceRows(r.kind,i.content!,1);
     }
     if (!r.kind && r.type === "词库") {
       const words = i
@@ -2003,6 +2066,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
       r.checked = false;
     }
   }
+  if ((a === "accept_result" || a === "appeal") && "conclusions" in e && e.distribution) e.distribution.respondedAt = at;
   e.rev++;
   s.revision++;
   s.requests.push(cmd.requestId);
@@ -2061,6 +2125,7 @@ export function needsWork(s: State, e: Entity): boolean {
     if (!parent || terminalAppeal(parent) || parent.status === "supplement") return false;
   }
   if(s.supplements.some(x=>x.target===e.id && openSupplement(x) && currentOwner(s,x)===s.identity)) return true;
+  if ("conclusions" in e && e.distribution?.status === "pending" && e.distribution.extensionRequest && roleOf(s) === "supervisor") return true;
   if("conclusions" in e && e.status === "review") return false;
   if("pause" in e && e.pause) return false;
   if("findingIds" in e && s.supplements.some(x=>x.target===e.id && openSupplement(x))) return false;

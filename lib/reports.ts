@@ -1,3 +1,4 @@
+import { remedyReportStages, remedyReportStage, appealOutcomeLabels } from "./report-status.ts";
 import {
   latest,
   statusNames,
@@ -67,7 +68,7 @@ export function report(s: State, f: ReportFilter, asOf = new Date()): Metric[] {
     title: string,
     status: string,
     date: string,
-  ): Row => ({ id, callId: callFor(s, id)?.id ?? "", title, status: status === "pending" && s.remedies.some(r=>r.id===id) ? "待坐席接收" : status === "supervisor" && s.reviews.some(r=>r.id===id && r.evidenceRequest) ? "待主管协调补证" : ({...statusNames,...verdictNames,maintain:"维持原结论",adjust:"调整成立范围"} as Record<string,string>)[status] ?? status, date });
+  ): Row => ({ id, callId: callFor(s, id)?.id ?? "", title, status: s.appeals.some(a=>a.id===id) && appealOutcomeLabels[status] ? appealOutcomeLabels[status] : s.findings.some(f=>f.id===id && f.source==="manual") && status==="false_positive" ? "人工问题已撤销" : s.findings.some(f=>f.id===id && f.source==="auto") && status==="false_positive" ? "自动预警误报" : s.remedies.some(r=>r.id===id) ? remedyReportStages.find(([key])=>key===remedyReportStage(s.remedies.find(r=>r.id===id)!))![1] : status === "pending" && s.remedies.some(r=>r.id===id) ? "待坐席接收" : status === "supervisor" && s.reviews.some(r=>r.id===id && r.evidenceRequest) ? "待主管协调补证" : ({...statusNames,...verdictNames,maintain:"维持原结论",adjust:"调整成立范围"} as Record<string,string>)[status] ?? status, date });
   const callRows = (arr: Call[]) =>
     arr.map((c) =>
       row(c.id, c.business, detection(c), c.endedAt ?? c.startedAt),
@@ -257,16 +258,9 @@ export function report(s: State, f: ReportFilter, asOf = new Date()): Metric[] {
       },
     );
   }
-  for (const [key, name] of [
-    ["pending", "待接收"],
-    ["executing", "执行中"],
-    ["verification", "待验收"],
-    ["supervisor", "待主管处理"],
-    ["done", "已结案"],
-    ["terminated", "已终止"],
-  ] as const) {
+  for (const [key, name] of remedyReportStages) {
     const subset = s.remedies.filter(
-      (r) => scope(callFor(s, r.id)) && r.status === key,
+      (r) => scope(callFor(s, r.id)) && remedyReportStage(r) === key,
     );
     result.push({
       key: `remedy-state-${key}`,
@@ -348,7 +342,6 @@ export function reportCsv(
 ) {
   return csv([
     [
-      "口径版本",
       "统计截止",
       "指标",
       "对象编号",
@@ -368,7 +361,6 @@ export function reportCsv(
         (x) => x.id === r.id,
       );
       return [
-        "P0-1.1",
         asOf,
         metric.label,
         r.id,

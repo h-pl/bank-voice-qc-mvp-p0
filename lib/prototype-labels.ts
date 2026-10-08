@@ -1,4 +1,5 @@
 import type { State } from './workflow.ts';
+import { resourceSchemas } from './strategy-schema.ts';
 
 /** Clean known legacy fixture labels without resetting progress or rewriting free text. */
 export function normalizeLegacyLabels(input: State): State {
@@ -8,6 +9,8 @@ export function normalizeLegacyLabels(input: State): State {
     if (index && call.customer === `演示客户 ${index}`) call.customer = `客户 ${index}`;
   }
   for (const resource of state.resources) {
+    const schema = resource.kind ? resourceSchemas[resource.kind] : undefined;
+    if (schema && resource.id === `RES-CFG-${resource.kind!.toUpperCase()}` && resource.name === `${schema.name} · 银行示例`) resource.name = schema.name;
     if (resource.id === 'RES-SERVICE-TIME' && resource.name === '业务处理时限告知要求（演示）') resource.name = '业务处理时限告知要求';
     if (!/^RES-UI-[1-6]$/.test(resource.id)) continue;
     for (const version of [...resource.versions, ...(resource.draft ? [resource.draft] : [])]) {
