@@ -1,3 +1,4 @@
+import { splitLegacyReviews } from "./single-problem-reviews.ts";
 import { withPrototypeAlertDeadlines } from "./prototype-alert-deadlines.ts";
 import { createPrototypeState, migrateUntouchedSeeds, migrateRuleCatalog, migrateContextScenarios } from "./prototype-seeds.ts";
 import { normalizeLegacyLabels } from "./prototype-labels.ts";
@@ -76,6 +77,16 @@ export function getSnapshot(): State {
       } catch {}
       cache = timed;
       try { localStorage.setItem(storageKey, JSON.stringify(cache)); } catch {}
+    }
+    const single = splitLegacyReviews(cache);
+    if (single !== cache) {
+      // No seed reset: retain a recoverable snapshot before the targeted structural migration.
+      try {
+        const key = `${storageKey}-before-single-problem-reviews`;
+        if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(cache));
+        localStorage.setItem(storageKey, JSON.stringify(single));
+      } catch { /* In-memory state remains safe; refresh retries persistence. */ }
+      cache = single;
     }
     const allowed = nav[person(cache.identity).role],
       query = new URLSearchParams(location.search).get("view");

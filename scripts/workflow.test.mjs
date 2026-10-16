@@ -322,7 +322,7 @@ test("T12: 3 roles, 7 business routes with one review workspace, identity-scoped
     /记录已更新/,
   );
 });
-test("T13: normal spot check creates no fake false positive; multi findings retained independently", () => {
+test("T13: normal spotcheck creates no false positive; a second finding requires a separate work order", () => {
   let s = start();
   const original = s.findings.length;
   s = run(s, "CALL-1025", "spotcheck", { scope: "身份核验完整性" });
@@ -337,11 +337,15 @@ test("T13: normal spot check creates no fake false positive; multi findings reta
     title: "人工发现第一项问题",
     ruleId: "R-SOP-006",
   });
-  s = run(s, multi, "add_finding", {
-    title: "人工发现第二项问题",
-    ruleId: "R-SVC-009",
-  });
-  assert.equal(entity(s, multi).findingIds.length, 2);
+  assert.throws(() => run(s, multi, "add_finding", {
+    title: "人工发现第二项问题", ruleId: "R-SVC-009",
+  }), /不允许|一个问题|另建工单/);
+  assert.equal(entity(s, multi).findingIds.length, 1);
+  s = run(as(s, "S01"), "CALL-1024", "spotcheck", { scope: "服务表达核验" });
+  const separate = s.reviews.at(-1).id;
+  s = run(as(s, "Q01"), separate, "add_finding", { title: "人工发现第二项问题", ruleId: "R-SVC-009" });
+  assert.equal(entity(s, separate).findingIds.length, 1);
+  assert.notEqual(entity(s, multi).findingIds[0], entity(s, separate).findingIds[0]);
 });
 test("T14: human-added finding never enters automatic-candidate precision denominator", () => {
   let s = start();

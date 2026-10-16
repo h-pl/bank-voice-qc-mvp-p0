@@ -9,8 +9,8 @@ import { EvidenceNavigation } from "./evidence-navigation";
 import { Button } from "./ui";
 import { Headphones } from "lucide-react";
 
-export function EvidenceRecording({ call, evidence, initialSegment, children }: {
-  call: Call; evidence: number[]; initialSegment?: number; children?: ReactNode;
+export function EvidenceRecording({ call, evidence, initialSegment, children, afterTranscript }: {
+  call: Call; evidence: number[]; initialSegment?: number; children?: ReactNode; afterTranscript?: ReactNode;
 }) {
   const source = recordingSource(call);
   const controller = useRef<RecordingController>(null);
@@ -51,7 +51,7 @@ export function EvidenceRecording({ call, evidence, initialSegment, children }: 
     {!source && navigation}
     {!!call.corrections?.length && <div className="correction-toggle"><Button onClick={() => setCorrected(!corrected)}>{corrected ? "查看原始转写" : "查看修订对照"}</Button><small>修订独立保留，不覆盖原文</small></div>}
     {!call.transcript.length && <p className="evidence-empty" role="status">暂无通话转写</p>}
-    <div className="transcript transcript-linked" ref={transcriptRef} role="region" aria-label="通话转写内容" tabIndex={0}>
+    <div className="transcript transcript-linked" ref={transcriptRef} role="region" aria-label={afterTranscript ? "通话转写与依据" : "通话转写内容"} tabIndex={0}>
       {call.transcript.map((segment, index) => <button type="button" key={index} className={`utterance ${segments.includes(index) ? "hit" : ""}`} aria-label={`${source ? "定位到" : "选择片段"} ${clock(segment.at)} ${segment.speaker === "agent" ? "坐席" : "客户"}${segments.includes(index) ? "，命中片段" : ""}`} aria-pressed={selected === index} data-selected={selected === index} data-hovered={hovered === index} data-playing={selected === index && playing} onClick={() => select(index)} onPointerEnter={() => setHovered(index)} onPointerLeave={() => setHovered(undefined)} onFocus={() => setHovered(index)} onBlur={() => setHovered(undefined)}>
         <span className="utterance-meta">
           <span className="timecode">{clock(segment.at)}</span>
@@ -62,6 +62,7 @@ export function EvidenceRecording({ call, evidence, initialSegment, children }: 
           {corrected && call.corrections?.some(correction => correction.segment === index) && <small className="correction-original">原文：{segment.text}<br/>{call.corrections.find(correction => correction.segment === index)?.reason}</small>}
         </span>
       </button>)}
+      {afterTranscript}
     </div>
   </>;
 }

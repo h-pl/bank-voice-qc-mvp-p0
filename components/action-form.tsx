@@ -304,7 +304,7 @@ function StandardActionForm({
     <EvidenceSelection call={call} selected={selected} onChange={onChange}/>
   );
   return (
-    <Surface title={isAcceptance ? "整改核验" : ["save_review","submit_review"].includes(action) ? actionLabel(state,id,"submit_review") : resourceEditing && input.resourceKind === "voice" ? action === "create_resource" ? "新增声纹库" : "编辑声纹库" : actionTitle} onClose={closeForm} {...(!embedded ? {variant:"action" as const, description: action === "create_resource" ? "保存后分配资源编号" : `${id} · ${isReview ? target.scope : "title" in target ? target.title : "name" in target ? target.name : person(state.identity).name}`} : {})}>
+    <Surface title={isAcceptance ? "整改核验" : ["save_review","submit_review"].includes(action) ? actionLabel(state,id,"submit_review") : resourceEditing && input.resourceKind === "voice" ? action === "create_resource" ? "新增声纹库" : "编辑声纹库" : actionTitle} onClose={closeForm} {...(!embedded ? {variant:"action" as const, description: action === "create_resource" ? "保存后分配资源编号" : `${id} · ${isReview ? state.findings.find(finding => finding.id === target.findingIds[0])?.title ?? target.scope : "title" in target ? target.title : "name" in target ? target.name : person(state.identity).name}`} : {})}>
       <form ref={formRef} className="action-form" noValidate onSubmit={(e:FormEvent<HTMLFormElement>)=>{
         e.preventDefault();
         if (discardPrompt) return;
@@ -557,7 +557,7 @@ function StandardActionForm({
                     });
                   return (
                     <fieldset className="opinion-section" key={fid}>
-                      <legend><span>{target.findingIds.indexOf(fid)+1}.</span> {finding.title}</legend>
+                      <legend>{finding.title}</legend>
                       {action === "publish" ? <div className="requirements"><p>质检员核实结论：<strong>{reviewResultLabel(op.value, target.type)}</strong></p><p>判断依据：{op.note}</p><p>证据：{op.evidence.map(index => call?.transcript[index]).filter(Boolean).map(segment => `${segment!.text}`).join("；")}</p><small>有异议请取消，退回质检员重新核实。</small></div> : <><label className="opinion-verdict-field">
                         <span>结论</span>
                         <SelectField
@@ -587,7 +587,7 @@ function StandardActionForm({
                         )}
                       </div>
                       </>}
-                      {action === "publish" && op.value === "risk" && <DispositionFields value={input.dispositions?.[fid] ?? {remedy:false}} onChange={patch=>set("dispositions",{...input.dispositions,[fid]:{...input.dispositions?.[fid],remedy:false,...input.dispositions?.[fid],...patch}})} previous={target.findingIds.indexOf(fid)>0 ? input.dispositions?.[target.findingIds[target.findingIds.indexOf(fid)-1]] : undefined} />}
+                      {action === "publish" && op.value === "risk" && <DispositionFields value={input.dispositions?.[fid] ?? {remedy:false}} onChange={patch=>set("dispositions",{...input.dispositions,[fid]:{...input.dispositions?.[fid],remedy:false,...input.dispositions?.[fid],...patch}})} />}
                     </fieldset>
                   );
                 })
@@ -837,10 +837,9 @@ function StandardActionForm({
   );
 }
 
-function DispositionFields({value,onChange,previous,appealDecision=false}:{appealDecision?:boolean;value:NonNullable<Input["dispositions"]>[string];onChange:(patch:Partial<NonNullable<Input["dispositions"]>[string]>)=>void;previous?:NonNullable<Input["dispositions"]>[string]}) {
+function DispositionFields({value,onChange,appealDecision=false}:{appealDecision?:boolean;value:NonNullable<Input["dispositions"]>[string];onChange:(patch:Partial<NonNullable<Input["dispositions"]>[string]>)=>void}) {
   return <div className="disposition-fields">
     <p className="subtle">{appealDecision ? "确认申诉不成立后直接进入整改，沿用本案核查质检员，无需坐席再次接受。" : "分发处理结果与要求后，坐席接受进入整改，不接受进入申诉。"}</p>
-    {previous && <Button onClick={()=>onChange({...previous})}>沿用上一项要求</Button>}
     <label>整改目标<Textarea className="resize-none" required value={value.goal ?? ""} onChange={e=>onChange({goal:e.target.value})}/></label>
     <label>完成标准<Textarea className="resize-none" required value={value.standard ?? ""} onChange={e=>onChange({standard:e.target.value})}/></label>
     <p className="subtle">{value.owner && person(value.owner)?.role==="inspector" ? `沿用质检员：${person(value.owner)?.name}` : "直接提醒：坐席接受后由主管补派质检员，不阻塞坐席整改。"}</p>

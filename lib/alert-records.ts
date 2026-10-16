@@ -7,7 +7,7 @@ export function alertCategory(finding: Finding): string {
   if (finding.status === "delivered") return "delivered";
   return "mine";
 }
-/** Follow issue IDs, never every event from the same call. Shared review events remain shared. */
+/** Follow issue IDs, never every event from the same call. Pre-split review events remain shared only through explicit historical targets. */
 export function problemRecords(state: State, findingIds: string[]): Entity[] {
   const ids = new Set(findingIds);
   const records: Entity[] = [
@@ -25,5 +25,8 @@ export function problemRecords(state: State, findingIds: string[]): Entity[] {
 }
 export function problemLogs(state: State, findingIds: string[]) {
   const targets = new Set([...findingIds, ...problemRecords(state, findingIds).map(item => item.id)]);
-  return state.logs.filter(log => targets.has(log.target) && canSee(state, log.target));
+  return state.logs.flatMap(log => {
+    const target = [log.target, ...(log.relatedTargets ?? [])].find(id => targets.has(id) && canSee(state, id));
+    return target ? [{ ...log, target }] : [];
+  });
 }

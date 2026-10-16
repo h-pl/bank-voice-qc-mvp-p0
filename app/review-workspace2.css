@@ -343,7 +343,7 @@
 }
 
 
-/* Review work orders expose full issue content without summary cards or detail dialogs. */
+/* Review work orders keep the active issue and evidence in the detail surface. */
 .review-workspace2 .review2-findings-inline { display:block; padding:16px 0 0; }
 .review2-findings-inline .review2-inline-issue { padding:0; background:transparent; border:0; }
 .review2-findings-inline .review2-inline-issue + .review2-inline-issue { margin-top:32px; padding-top:24px; border-top:1px solid var(--line); }
@@ -369,3 +369,68 @@
 
 /* Work-order header owns source and indicator metadata. */
 .review2-findings-inline .finding-detail > .finding-detail-section:first-child { margin-top:0; }
+
+
+/* Review evidence: keep the source visible, with full context in per-issue read dialogs. */
+.review2-findings-inline .review2-context-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 12px; }
+.review2-findings-inline .review2-context-heading h3 { margin:0; }
+.review2-findings-inline .review2-context-heading + p { margin:6px 0 0; line-height:1.8; }
+.review2-findings-inline .review2-context-action[data-slot="button"] { height:auto; min-height:32px; padding:5px 8px; border-radius:6px; color:var(--muted); font-size:12px; font-weight:400; white-space:nowrap; }
+.review2-findings-inline .review2-context-action[data-slot="button"]:hover { background:var(--surface-subtle); color:var(--ink); }
+.review2-findings-inline .review2-context-action[data-slot="button"]:active { background:var(--line); }
+.review2-findings-inline .review2-context-action[data-slot="button"]:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+.review2-findings-inline .review2-summary-verdict { margin-top:8px; gap:6px 8px; }
+.review2-findings-inline .review2-summary-verdict > .review2-context-action { margin-left:auto; }
+.review2-findings-inline .finding-detail .finding-audio { margin-top:12px; }
+.review2-findings-inline .finding-audio .recording-player-linked { margin-top:0; }
+.review2-context-dialog .review2-summary-fields { grid-template-columns:minmax(0,1fr); gap:12px; }
+.review2-context-dialog .review2-summary-fields dd { overflow-wrap:anywhere; }
+.review2-context-dialog .finding-checks > div > div { flex-wrap:wrap; gap:6px 12px; }
+.review-workspace2 .case-tabs { flex-wrap:nowrap; overflow-x:auto; }
+.review-workspace2 .case-tabs > button { flex-shrink:0; white-space:nowrap; }
+
+/* Match alerts: keep review context and transport outside the transcript scroll.
+   Extra case materials and short/narrow viewports retain the full reading flow. */
+@media (min-width:1251px) {
+  .review-workspace2 .case-content:has(> .review2-findings-inline[data-reader-fit="true"]:only-child) { display:flex; flex:1; min-height:0; overflow:hidden; padding-bottom:12px; }
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child,
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child > .review2-inline-issue,
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child > .review2-inline-issue > .finding-detail,
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .finding-audio,
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .evidence-reader { display:flex; flex-direction:column; flex:1; min-height:0; min-width:0; }
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .finding-detail > :not(.finding-audio),
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .evidence-reader > :not(.transcript-linked) { flex-shrink:0; }
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .recording-player-linked { position:relative; margin:0 0 10px; }
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .transcript-linked { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain; scrollbar-gutter:stable; scrollbar-width:thin; scrollbar-color:#b7bdc5 transparent; padding-right:8px; }
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .transcript-linked::-webkit-scrollbar { width:7px; }
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .transcript-linked::-webkit-scrollbar-thumb { background:#b7bdc5; border-radius:4px; }
+  .review-workspace2 .case-content > .review2-findings-inline[data-reader-fit="true"]:only-child .transcript-linked .utterance { scroll-margin-block:8px; }
+}
+
+/* Two light reading areas: source and current opinion, followed by playable evidence. */
+.review2-problem-area { padding:0; }
+.review2-problem-area h3 { margin:0; font-size:15px; font-weight:600; }
+.review2-origin-summary { display:grid; grid-template-columns:64px minmax(0,1fr); gap:12px; margin-top:6px; font-size:13px; line-height:1.7; }
+.review2-origin-summary > span { color:var(--muted); }
+.review2-origin-summary p { margin:0; overflow-wrap:anywhere; }
+.review2-current-review { margin-top:8px; }
+.review2-problem-area .review2-summary-verdict { margin:0; }
+.review2-current-reason { margin:2px 0 0; font-size:13px; line-height:1.7; overflow-wrap:anywhere; }
+.review2-findings-inline .finding-audio > .review2-evidence-heading { flex-shrink:0; margin:0 0 10px; font-size:15px; font-weight:600; }
+.review2-check-note { color:var(--muted); font-size:12px; font-weight:400; }
+.review2-origin-note { color:var(--muted); font-size:13px; line-height:1.7; margin:0 0 16px; }
+@media (max-width:600px) {
+  .review2-origin-summary { grid-template-columns:minmax(0,1fr); gap:2px; }
+}
+
+/* One home for each record: basis follows the transcript; opinions live in history. */
+.review2-problem-description { margin:0; font-size:14px; line-height:1.8; overflow-wrap:anywhere; }
+.review2-evidence-basis { margin-top:24px; padding:16px 12px 8px; border-top:1px solid var(--line); }
+.review2-findings-inline .review2-evidence-basis h3 { margin:0 0 8px; font-size:14px; }
+.review2-evidence-basis .finding-checks { margin-top:12px; }
+.review2-evidence-basis .finding-checks > div { padding:8px 0; }
+.review2-evidence-basis .finding-checks > div > div { flex-wrap:wrap; }
+.review2-history-opinion { padding:20px 0 12px; }
+.review2-history-opinion h3 { margin:0 0 8px; font-size:14px; }
+.review2-history-opinion p { white-space:pre-wrap; overflow-wrap:anywhere; }
+.review2-history-opinion small { color:var(--muted); }

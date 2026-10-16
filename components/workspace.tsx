@@ -4,7 +4,7 @@ import { ResetFiltersButton } from "./reset-filters-button";
 import { CallReference, CopyRecordId, RecordReference, RecordRow } from "./record-id";
 import { currentTaskContext, distributionContext, taskIsOverdue, supervisorReturnNote } from "../lib/case-context";
 import { alertFinished, deadlineRemaining } from "../lib/alert-deadlines";
-import { lifecycleLabel } from "../lib/lifecycle-labels";
+import { lifecycleLabel, reviewResultLabel } from "../lib/lifecycle-labels";
 import { alertTabs, alertCategory, problemRecords, problemLogs } from "../lib/alert-records";
 import { callTriggers } from "../lib/call-triggers";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./ui/table";
@@ -15,7 +15,7 @@ import { Review2Findings } from "./review2-findings";
 import { Review2FindingDetail, Review2RuleDetail } from "./review2-detail";
 import { Disclosure } from "./disclosure";
 import { SelectField } from "./select-field";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { EvidenceRecording } from "./evidence-recording";
 import { EventTimeline } from "./event-timeline";
 import { timelineReferences } from "../lib/timeline-presentation";
@@ -99,7 +99,7 @@ export const label = (e: Entity) =>
 export const caseTitle = (state: State, item: Entity) =>
   "findingId" in item
     ? state.findings.find(f => f.id === item.findingId)?.title ?? label(item)
-    : "findingIds" in item && item.type === "candidate" && item.findingIds.length === 1
+    : "findingIds" in item && item.findingIds.length === 1
       ? state.findings.find(f => f.id === item.findingIds[0])?.title ?? label(item)
       : label(item);
 
@@ -734,6 +734,20 @@ export function Detail({
   const issueIds = "findingIds" in item ? item.findingIds : primary ? [primary.id] : [];
   const related = problemRecords(state, issueIds).filter(record => record.id !== item.id);
   const logs = (issueIds.length ? problemLogs(state, issueIds) : state.logs.filter(log => log.target === item.id && canSee(state, log.target))).slice().reverse();
+  const reviewSubmitted = "findingIds" in item && ["supervisor", "done"].includes(item.status) && !item.evidenceRequest && !state.supplements.some(supplement => (supplement.target === item.id || supplement.target === item.appealId) && ["pending", "submitted"].includes(supplement.status));
+  const submittedReview = reviewSubmitted
+    ? logs.filter(log => log.action === "提交复核意见" && (log.target === item.id || log.relatedTargets?.includes(item.id))).sort((a,b) => Date.parse(b.at) - Date.parse(a.at))[0] : undefined;
+  const reviewOpinionText = "findingIds" in item ? item.findingIds.flatMap(fid => {
+    const opinion = item.opinions[fid];
+    return opinion ? [`${reviewResultLabel(opinion.value, item.type)}：${opinion.note || "尚未填写详细理由"}`] : [];
+  }).join("\n") : "";
+  const submittedReviewNote = submittedReview && "findingIds" in item ? item.findingIds.flatMap(fid => {
+    const opinion = item.opinions[fid];
+    if (!opinion) return [];
+    const label = reviewResultLabel(opinion.value, item.type);
+    const reasonAlreadyRecorded = opinion.note && submittedReview.note.includes(opinion.note);
+    return reasonAlreadyRecorded ? (submittedReview.note.includes(label) ? [] : [`复核建议：${label}`]) : [`${label}：${opinion.note || "尚未填写详细理由"}`];
+  }).join("\n") : "";
   const showEvidence = (findingId?: string, segment?: number) => { setPreviewFinding(findingId); setPreviewSegment(segment); findingScroll.current=0; setPreview(review2 && "findingIds" in item && findingId ? "finding" : "evidence"); };
   const showRule = (findingId: string, fromDetail = false, matchingIds: string[] = [findingId]) => {
     setRuleFindingIds(matchingIds);
@@ -813,9 +827,9 @@ export function Detail({
             </section>}
             {inPreview && "findingIds" in item && item.summary && <section className="readonly-review-note"><h3>{["supervisor","done"].includes(item.status) ? "核查说明" : "已记录说明"}</h3><p>{item.summary}</p></section>}
             {inPreview && "conclusions" in item && <DirectFindingDetail state={state} finding={item} onOpen={onOpen}/>}
-            {"findingIds" in item && item.findingIds.length > 0 && (inPreview ? <section aria-label="问题完整详情">{item.findingIds.map(id=>{const finding=state.findings.find(f=>f.id===id);return finding && canSee(state,id) ? <DirectFindingDetail key={id} state={state} finding={finding} review={item} onOpen={onOpen}/> : <p key={id}>关联问题暂不可查看。</p>;})}</section> : review2 ? <Review2Findings key={item.id} state={state} review={item} title={caseTitle(state,item)} renderEvidence={finding=>{
+            {"findingIds" in item && item.findingIds.length > 0 && (inPreview ? <section aria-label="问题完整详情">{item.findingIds.map(id=>{const finding=state.findings.find(f=>f.id===id);return finding && canSee(state,id) ? <DirectFindingDetail key={id} state={state} finding={finding} review={item} onOpen={onOpen}/> : <p key={id}>关联问题暂不可查看。</p>;})}</section> : review2 ? <Review2Findings key={item.id} state={state} review={item} renderEvidence={(finding, basis)=>{
               const sourceCall=state.calls.find(source=>source.id===finding.callId);
-              return sourceCall && canSeeCall(state,sourceCall) ? <Evidence key={finding.id} state={state} call={sourceCall} findings={[finding]} primary={finding} evidenceOverride={item.opinions[finding.id]?.evidence} problemDetail inline/> : <p className="subtle">原始通话与证据暂不可用。</p>;
+              return sourceCall && canSeeCall(state,sourceCall) ? <Evidence key={finding.id} state={state} call={sourceCall} findings={[finding]} primary={finding} evidenceOverride={item.opinions[finding.id]?.evidence} afterTranscript={basis} problemDetail inline/> : <><p className="subtle">原始通话与证据暂不可用。</p>{basis}</>;
             }}/> : <section className="case-section" aria-label="问题与意见"><div className="case-section-title"><h3>复核意见</h3><span>{item.status === "supervisor" ? "待主管确认 · " : ""}{item.findingIds.length} 项</span></div><div className="case-findings">{item.findingIds.map(id=>{const f=state.findings.find(x=>x.id===id);return f && <div key={id}><div><b>{f.title}</b><div className="finding-verdict">{item.opinions[id] ? <><Badge tone={item.opinions[id].value==='risk' ? 'danger' : item.opinions[id].value==='false_positive' ? 'success' : 'warning'}>{verdictNames[item.opinions[id].value]}</Badge><p>{item.opinions[id].note}</p></> : <span>待填写复核意见</span>}</div></div><Button onClick={()=>showEvidence(id)}>查看证据</Button></div>;})}</div></section>)}
             {hasDocuments && showCaseMaterials && !(inPreview && "conclusions" in item) && <section className="case-section" aria-label="证据与材料"><div className="case-section-title"><h3>证据与材料</h3></div>
               <CaseDocuments inline={inPreview} item={item} primary={primary} onOpen={onOpen}/>
@@ -823,14 +837,16 @@ export function Detail({
             </section>}
 
           </>}
-          {!inPreview && tab === "history" && <EventTimeline onOpen={onOpen} events={[
+          {!inPreview && tab === "history" && <>
+            {review2 && "findingIds" in item && !submittedReview && reviewOpinionText && <section className="review2-history-opinion"><h3>{reviewSubmitted ? "已保存的复核意见" : "当前复核草稿"}</h3><p>{reviewOpinionText}</p><small>{person(item.owner)?.name ?? "未记录复核人"} · {reviewSubmitted ? "提交时间未记录" : "尚未提交"}</small></section>}
+            <EventTimeline onOpen={onOpen} events={[
             ...("firstOverdueAt" in item && item.firstOverdueAt ? [{references:timelineReferences(state,item.id),id:`overdue-${item.id}`,at:item.firstOverdueAt,title:"超过办理期限",actor:"系统 · 时限记录",note:`当时截止时间：${stamp(item.firstOverdueAt)}；到期时尚未完成办理。当时责任人未记录。`,kind:"system" as const}] : []),
-            ...logs.map(log=>({references:timelineReferences(state,log.target),id:log.id,at:log.at,title:log.action,actor:log.actor === "system" ? "系统 · 工作流" : `${person(log.actor)?.name ?? "系统"} · ${person(log.actor) ? roleNames[person(log.actor).role] : "工作流"}`,note:log.note,kind:log.actor === "system" ? "system" as const : "human" as const,demo:log.id.startsWith("EV-DEMO-") || log.id === "EV-SEED"})),
+            ...logs.map(log=>({references:timelineReferences(state,log.target),id:log.id,at:log.at,title:log.action,actor:log.actor === "system" ? "系统 · 工作流" : `${person(log.actor)?.name ?? "系统"} · ${person(log.actor) ? roleNames[person(log.actor).role] : "工作流"}`,note:log.id === submittedReview?.id && submittedReviewNote ? `${log.note}\n${submittedReviewNote}` : log.note,kind:log.actor === "system" ? "system" as const : "human" as const,demo:log.id.startsWith("EV-DEMO-") || log.id === "EV-SEED"})),
             ...(item.deadlineChanges ?? []).map((entry,index)=>({references:timelineReferences(state,item.id),id:`deadline-${index}`,at:entry.at,title:"调整完成期限",actor:"责任流转",note:`${stamp(entry.from)} → ${stamp(entry.to)}；${entry.reason}`,kind:"change" as const})),
             ...(primary?.conclusions ?? []).filter(conclusion=>!logs.some(log=>log.target===primary?.id && log.at===conclusion.at && log.actor===conclusion.by && log.note===conclusion.note)).map(conclusion=>({references:timelineReferences(state,primary!.id),id:`conclusion-${conclusion.version}`,at:conclusion.at,title:`确认结论 · ${verdictNames[conclusion.value]}`,actor:`${person(conclusion.by)?.name ?? "主管"} · 质检主管`,note:conclusion.note})),
             ...("standardVersion" in item ? item.standards.map(standard=>({references:timelineReferences(state,item.id),id:`standard-${standard.version}`,at:standard.at,title:"调整完成标准",actor:"整改要求",note:`${standard.standard} ${standard.note}`,kind:"change" as const})) : []),
             ...("standardVersion" in item ? item.pauseHistory.map((pause,index)=>({references:timelineReferences(state,item.id),id:`pause-${index}`,at:pause.end,title:"恢复处理",actor:"系统 · 工作流",note:`${stamp(pause.start)} → ${stamp(pause.end)}；期限顺延 ${Math.round(pause.duration/1000)} 秒`,kind:"system" as const})) : []),
-          ]}/>}
+          ]}/></>}
           {!inPreview && tab === "related" && (
             <div className={`related-list${modernDetail ? " related-list-unified" : ""}`}>
               {!modernDetail && otherFindings.length > 0 && <h3>同通话其他问题</h3>}
@@ -872,6 +888,7 @@ export function Detail({
         <CaseResponsibility state={state} item={item} now={now}/>
         <section className="case-next-action"><h3>{"batches" in item ? "通话操作" : "下一步操作"}</h3>
           {"findingIds" in item && item.status === "supervisor" && mainAction === "return_review" && <p className="case-action-hint">当前尚无可确认的完整结果，请退回质检员补充核实。</p>}
+          {"findingIds" in item && mainAction === "publish" && item.findingIds.length === 1 && <p className="case-action-hint">{item.opinions[item.findingIds[0]]?.value === "risk" ? `质检员已提交“${reviewResultLabel("risk", item.type)}”建议，待主管确认。确认后向坐席分发处理要求；有异议可退回核实。` : `质检员已提交“${reviewResultLabel("false_positive", item.type)}”建议，待主管确认。确认后归档；有异议可退回核实。`}</p>}
           {closure && "pause" in item && item.pause && <p className="case-action-hint">申诉处理中，整改暂停；暂不能验收通过或结案。</p>}
           <div className="case-action-buttons">
           {supplementActions.length || allowed.length || actions(state,item.id).includes("save_acceptance") || actions(state,item.id).includes("save_review") ? (
@@ -1115,6 +1132,7 @@ function Evidence({
   pinnedVersion,
   initialSegment,
   evidenceOverride,
+  afterTranscript,
   problemDetail = false,
   inline = false,
 }: {
@@ -1125,6 +1143,7 @@ function Evidence({
   pinnedVersion?: number;
   initialSegment?: number;
   evidenceOverride?: number[];
+  afterTranscript?: ReactNode;
   problemDetail?: boolean;
   inline?: boolean;
 }) {
@@ -1144,7 +1163,7 @@ function Evidence({
         <Badge>{call.endedAt ? "通话已结束" : "通话进行中"}</Badge>
       </div>}
       {!problemDetail && !inline && <p className="evidence-call-reference">来源通话：<CopyRecordId id={call.id}/></p>}
-      <EvidenceRecording key={call.id} call={call} evidence={evidence} initialSegment={initialSegment}>
+      <EvidenceRecording key={call.id} call={call} evidence={evidence} initialSegment={initialSegment} afterTranscript={afterTranscript}>
       {findings.length > 1 && (
         <label className="finding-switch">
           查看问题证据

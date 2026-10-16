@@ -1,3 +1,4 @@
+import {splitLegacyReviews} from '../lib/single-problem-reviews.ts';
 import {legacyInitial} from './helpers/legacy-initial.mjs';
 import {legacyIssued} from './helpers/legacy-issuance.mjs';
 import test from 'node:test';
@@ -77,8 +78,8 @@ test('R09: inspector requests evidence before verdict, supervisor assigns, suppl
  assert.equal(entity(s,'WO-1038').status,'working');assert.equal(entity(s,'WO-1038').owner,'Q01');assert.match(entity(s,'WO-1038').opinions['F-1040'].note,/等待/);assert.ok(isTodo(as(s,'Q01'),entity(s,'WO-1038')));
 });
 test('R10/R12: pending reads are tasks, paused remedies are not, next business action is primary',()=>{
- const s=as(legacyInitial(now),'A1048');assert.ok(isTodo(s,entity(s,'F-1035')));assert.ok(!isTodo(s,entity(s,'REC-1033')));assert.equal(primaryAction(s,'AP-1033'),undefined);
- assert.equal(primaryAction(as(s,'Q01'),'WO-1038'),'submit_review');assert.equal(primaryAction(as(s,'S01'),'WO-1039'),'return_review');
+ const s=as(splitLegacyReviews(legacyInitial(now),now),'A1048');assert.ok(isTodo(s,entity(s,'F-1035')));assert.ok(!isTodo(s,entity(s,'REC-1033')));assert.equal(primaryAction(s,'AP-1033'),undefined);
+ assert.equal(primaryAction(as(s,'Q01'),'WO-1038'),'submit_review');assert.equal(primaryAction(as(s,'S01'),'WO-1039'),'publish');assert.equal(primaryAction(as(s,'S01'),'WO-1039-S2'),'return_review');
 });
 test('C03: compound acceptance is atomic, records both events, and request retry is idempotent',()=>{
  const s=legacyInitial(now);const cmd={id:'AP-1033',rev:entity(s,'AP-1033').rev,action:'accept_assign',requestId:'compound',input:{owner:'Q02',dueAt:due,note:'由其他质检员进行独立核查'}};

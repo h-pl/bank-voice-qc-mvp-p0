@@ -140,6 +140,7 @@ export type Finding = Base & {
 export type Opinion = { value: Verdict; note: string; evidence: number[] };
 export type Review = Base & {
   callId: string;
+  /** Zero only while a spotcheck has no finding; otherwise exactly one. */
   findingIds: string[];
   type: "candidate" | "spotcheck" | "appeal";
   scope: string;
@@ -267,6 +268,7 @@ export type Remedy = Base & {
   acceptanceDraftHistory?: AcceptanceDraft[];
 };
 export type Supplement = Base & {
+  splitFrom?: string;
   target: string;
   executor: string;
   dueAt: string;
@@ -331,6 +333,7 @@ export type Rule = Base & {
   checked?: boolean;
 };
 export type Log = {
+  relatedTargets?: string[]; // Shared historical targets after a legacy review split.
   id: string;
   target: string;
   callId?: string;
@@ -345,6 +348,7 @@ export type Log = {
 };
 export type State = {
   schema: 2;
+  reviewSplits?: { source: Review; at: string; parts: { reviewId: string; findingId: string }[] }[];
   demoUiVersion?: number;
   strategyDemoVersion?: number;
   ruleCatalogVersion?: number;
@@ -575,7 +579,7 @@ export function actions(s: State, id: string): string[] {
   if ("type" in e && "versions" in e && e.deletedAt) return role === "supervisor" ? ["create_resource"] : [];
   if ("batches" in e) {
     if (role === "supervisor") {
-      if (e.endedAt && !s.reviews.some(r=>r.callId===id && r.type==="spotcheck" && !["done","cancelled"].includes(r.status))) out.push("spotcheck");
+      if (e.endedAt && !s.reviews.some(r=>r.callId===id && r.type==="spotcheck" && !r.findingIds.length && !["done","cancelled"].includes(r.status))) out.push("spotcheck");
       if (detection(e) === "处理中") out.push("finish_detection");
       else out.push("start_detection");
       if (!e.endedAt) out.push("end_call");
@@ -621,6 +625,7 @@ export function actions(s: State, id: string): string[] {
     }
   }
   if ("findingIds" in e) {
+    if (e.findingIds.length > 1 || (!e.findingIds.length && e.type !== "spotcheck")) return [];
     if (e.appealId) {
       const ap = s.appeals.find((a) => a.id === e.appealId);
       if (!ap || terminalAppeal(ap) || ap.status === "supplement") return [];
@@ -636,7 +641,7 @@ export function actions(s: State, id: string): string[] {
       out.push("save_review");
       if (callFor(s, id)?.endedAt) out.push("submit_review");
       out.push(e.type === "appeal" ? "supplement" : "request_evidence");
-      if (e.type === "spotcheck") {
+      if (e.type === "spotcheck" && !e.findingIds.length) {
         out.push("add_finding");
         if (linkableFindings(s, e).length) out.push("link_finding");
       }
@@ -741,6 +746,7 @@ export function actions(s: State, id: string): string[] {
   return [...new Set(out)];
 }
 export function linkableFindings(s: State, review: Review) {
+  if (review.type !== "spotcheck" || review.findingIds.length) return [];
   return s.findings.filter(f => f.callId === review.callId && !latest(f) && ["candidate", "reminded"].includes(f.status) && canSee(s, f.id) && !review.findingIds.includes(f.id) && !activeAppeal(s, f.id) && !s.reviews.some(other => other.id !== review.id && other.findingIds.includes(f.id) && !["done", "cancelled"].includes(other.status)));
 }
 
@@ -1011,6 +1017,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   }
   const old = entity(state, cmd.id);
   must(old, "对象不存在");
+  if ("findingIds" in old) must(old.findingIds.length <= 1 && (old.findingIds.length === 1 || old.type === "spotcheck"), "一张复核工单只能处理一个问题，请刷新页面完成旧工单拆分。");
   must(old.rev === cmd.rev, "记录已更新，请关闭旧表单后重新操作。");
   must(
     actions(state, cmd.id).includes(cmd.action),
@@ -1313,7 +1320,9 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
     r.status = "supervisor";
   }
   if (a === "link_finding") {
-    const r = e as Review, f = s.findings.find(f=>f.id === i.findingId);
+    const r = e as Review;
+    must(r.type === "spotcheck" && !r.findingIds.length, "工单已关联问题，请为其他问题另建工单");
+    const f = s.findings.find(f=>f.id === i.findingId);
     must(f && f.callId === r.callId && canSee(s,f.id), "请选择同通话的已有问题");
     must(!r.findingIds.includes(f.id), "该问题已经关联");
     must(!latest(f) && ["candidate", "reminded"].includes(f.status), "已形成结论或正在核实的问题不能重新关联抽检");
@@ -1342,6 +1351,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   }
   if (a === "add_finding") {
     const r = e as Review;
+    must(r.type === "spotcheck" && !r.findingIds.length, "工单已关联问题，请为其他问题另建工单");
     must(i.title?.trim() && i.ruleId, "请填写问题标题并选择规则");
     must(
       !s.findings.some(
@@ -1373,6 +1383,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "save_review" || a === "submit_review") {
     const r = e as Review;
     const opinions = i.opinions ?? {};
+    must(Object.keys(opinions).every(id => r.findingIds.includes(id)), "只能保存当前工单对应问题的复核意见");
     if (a === "submit_review") {
       must(callFor(s,r.id)?.endedAt, "通话结束后才能提交正式复核");
       for (const id of r.findingIds) {
@@ -1385,7 +1396,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
             op.evidence.every(
               (n) => s.calls.find((c) => c.id === r.callId)!.transcript[n],
             ),
-          "每个问题均须填写判断、说明和有效证据",
+          "请填写当前问题的判断、说明和有效证据",
         );
       }
       if (!r.findingIds.length) {
@@ -1429,6 +1440,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
   if (a === "publish") {
     const r = e as Review;
     must(r.type !== "appeal", "申诉核查须在申诉案件裁定");
+    must([...Object.keys(i.opinions ?? {}), ...Object.keys(i.dispositions ?? {})].every(id => r.findingIds.includes(id)), "只能确认当前工单对应问题的处理结果");
     must(callFor(s,r.id)?.endedAt, "通话结束后才能确认正式结论");
     if(!r.findingIds.length) must(r.scopeResult === "clear" && !!r.summary?.trim(),"请先由质检员提交未发现问题的范围核验说明");
     for (const id of r.findingIds) {
@@ -1444,7 +1456,7 @@ export function apply(state: State, cmd: Command, now = new Date()): State {
           op.evidence.every(
             (n) => s.calls.find((c) => c.id === r.callId)!.transcript[n],
           ),
-        "每个问题均须保留有效结论说明与证据",
+        "当前问题须保留有效结论说明与证据",
       );
       must(
         ["risk", "false_positive"].includes(op.value),
